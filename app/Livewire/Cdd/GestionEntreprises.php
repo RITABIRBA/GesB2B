@@ -1,10 +1,18 @@
 <?php
 
-namespace App\Livewire\Admin;
+namespace App\Livewire\Cdd;
 
 use Livewire\Component;
 use App\Models\Entreprise;
 
+/**
+ * Composant CDD — Gestion des Entreprises
+ *
+ * Le CDD peut :
+ * - Voir la liste des entreprises de sa délégation
+ * - Modifier les informations d'une entreprise
+ * - Valider ou rejeter une inscription
+ */
 class GestionEntreprises extends Component
 {
     public $entreprise_id;
@@ -17,7 +25,6 @@ class GestionEntreprises extends Component
     public $email = '';
     public $statut_validation = 'en_attente';
     public $showModal = false;
-    public $isEditing = false;
     public $search = '';
 
     public $secteurs = [
@@ -33,11 +40,18 @@ class GestionEntreprises extends Component
         'Nigeria', 'France', 'Allemagne', 'États-Unis', 'Chine', 'Autre',
     ];
 
-    public function openModal()
+    public function openModal($id)
     {
-        $this->resetFields();
-        $this->showModal = true;
-        $this->isEditing = false;
+        $e = Entreprise::findOrFail($id);
+        $this->entreprise_id     = $e->id;
+        $this->nom               = $e->nom;
+        $this->secteur_activite  = $e->secteur_activite;
+        $this->sous_secteur      = $e->sous_secteur;
+        $this->pays              = $e->pays;
+        $this->ville             = $e->ville;
+        $this->telephone         = $e->contact;
+        $this->statut_validation = $e->statut_validation;
+        $this->showModal         = true;
     }
 
     public function closeModal()
@@ -55,24 +69,8 @@ class GestionEntreprises extends Component
         $this->pays              = '';
         $this->ville             = '';
         $this->telephone         = '';
-        $this->email             = '';
         $this->statut_validation = 'en_attente';
         $this->resetErrorBag();
-    }
-
-    public function modifier($id)
-    {
-        $e = Entreprise::findOrFail($id);
-        $this->entreprise_id     = $e->id;
-        $this->nom               = $e->nom;
-        $this->secteur_activite  = $e->secteur_activite;
-        $this->sous_secteur      = $e->sous_secteur;
-        $this->pays              = $e->pays;
-        $this->ville             = $e->ville;
-        $this->telephone         = $e->contact;
-        $this->statut_validation = $e->statut_validation;
-        $this->isEditing         = true;
-        $this->showModal         = true;
     }
 
     public function sauvegarder()
@@ -80,32 +78,21 @@ class GestionEntreprises extends Component
         $this->validate([
             'nom'              => 'required|string|max:255',
             'secteur_activite' => 'required|string|max:255',
-            'sous_secteur'     => 'nullable|string|max:255',
             'pays'             => 'required|string|max:255',
             'ville'            => 'required|string|max:255',
             'telephone'        => 'required|string|max:20',
-            'email'            => 'nullable|email|max:255',
         ]);
 
-        $data = [
+        Entreprise::findOrFail($this->entreprise_id)->update([
             'nom'               => $this->nom,
             'secteur_activite'  => $this->secteur_activite,
             'sous_secteur'      => $this->sous_secteur,
             'pays'              => $this->pays,
             'ville'             => $this->ville,
-            'contact'           => $this->telephone . ($this->email ? ' / ' . $this->email : ''),
-            'statut_validation' => $this->statut_validation,
-        ];
+            'contact'           => $this->telephone,
+        ]);
 
-        if ($this->isEditing) {
-            Entreprise::findOrFail($this->entreprise_id)->update($data);
-            session()->flash('success', 'Entreprise modifiée avec succès.');
-        } else {
-            $data['statut_validation'] = 'en_attente';
-            Entreprise::create($data);
-            session()->flash('success', 'Entreprise créée avec succès.');
-        }
-
+        session()->flash('success', 'Entreprise modifiée avec succès.');
         $this->closeModal();
     }
 
@@ -121,20 +108,16 @@ class GestionEntreprises extends Component
         session()->flash('success', 'Entreprise rejetée.');
     }
 
-    public function supprimer($id)
-    {
-        Entreprise::findOrFail($id)->delete();
-        session()->flash('success', 'Entreprise supprimée.');
-    }
-
     public function render()
     {
-        return view('livewire.admin.gestion-entreprises', [
+        return view('livewire.cdd.gestion-entreprises', [
             'entreprises' => Entreprise::when($this->search, fn($q) =>
-                $q->where('nom', 'like', '%'.$this->search.'%')
-                  ->orWhere('pays', 'like', '%'.$this->search.'%')
-                  ->orWhere('ville', 'like', '%'.$this->search.'%')
-            )->latest()->get(),
-        ])->layout('layouts.admin', ['title' => 'Gestion des Entreprises']);
+                    $q->where('nom', 'like', '%'.$this->search.'%')
+                      ->orWhere('pays', 'like', '%'.$this->search.'%')
+                      ->orWhere('ville', 'like', '%'.$this->search.'%')
+                )
+                ->latest()
+                ->get(),
+        ])->layout('layouts.cdd', ['title' => 'Mes Entreprises']);
     }
 }

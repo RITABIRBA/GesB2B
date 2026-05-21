@@ -32,10 +32,9 @@ class Participant extends Model
     }
 
     public function badge()
-    {
-        return $this->hasOne(Badge::class, 'id_participant');
-    }
-
+{
+    return $this->hasOne(Badge::class, 'id_participant');
+}
     public function notifications()
     {
         return $this->hasMany(Notification::class, 'id_participant');

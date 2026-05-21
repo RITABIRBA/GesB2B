@@ -32,9 +32,7 @@ class GestionTypeEvenements extends Component
 
     public function sauvegarder()
     {
-        $this->validate([
-            'nom' => 'required|string|max:255',
-        ]);
+        $this->validate(['nom' => 'required|string|max:255']);
 
         if ($this->isEditing) {
             TypeEvenement::find($this->type_id)->update(['nom' => $this->nom]);
@@ -48,9 +46,9 @@ class GestionTypeEvenements extends Component
 
     public function modifier($id)
     {
-        $type = TypeEvenement::find($id);
-        $this->type_id = $type->id;
-        $this->nom = $type->nom;
+        $type            = TypeEvenement::find($id);
+        $this->type_id   = $type->id;
+        $this->nom       = $type->nom;
         $this->isEditing = true;
         $this->showModal = true;
     }

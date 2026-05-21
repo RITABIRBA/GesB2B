@@ -1,5 +1,4 @@
 <div>
-    {{-- Message succès --}}
     @if(session('success'))
     <div class="bg-green-100 border border-green-300 text-green-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
         <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
@@ -7,33 +6,26 @@
     </div>
     @endif
 
-    {{-- En-tête --}}
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
-            <h3 class="text-xl font-bold text-gray-700">Liste des entreprises</h3>
-            <span class="text-sm px-3 py-1 rounded-full text-white font-medium" style="background-color: #007A3D;">
+            <h3 class="text-xl font-bold text-gray-700">Mes Entreprises</h3>
+            <span class="text-sm px-3 py-1 rounded-full text-white font-medium"
+                style="background-color: #2d5a8e;">
                 {{ $entreprises->count() }} entreprise(s)
             </span>
         </div>
-        <button wire:click="openModal"
-            class="px-5 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow"
-            style="background-color: #C8102E;">
-            <i class="fa-solid fa-plus"></i>
-            Nouvelle entreprise
-        </button>
     </div>
 
-    {{-- Recherche --}}
     <div class="mb-5">
         <div class="relative w-full md:w-1/3">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
             <input wire:model.live="search" type="text"
-                placeholder="Rechercher par nom, pays ou ville..."
-                class="w-full border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                placeholder="Rechercher une entreprise..."
+                class="w-full border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 text-sm"
+                style="--tw-ring-color: #2d5a8e;">
         </div>
     </div>
 
-    {{-- Tableau --}}
     <div class="bg-white rounded-xl shadow overflow-hidden">
         <table class="w-full text-left">
             <thead style="background-color: #f8f9fa;">
@@ -51,21 +43,22 @@
                 <tr class="border-b hover:bg-gray-50 transition">
                     <td class="px-6 py-4 font-semibold text-gray-800">{{ $entreprise->nom }}</td>
                     <td class="px-6 py-4">
-                        <span class="text-xs px-3 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
+                        <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
                             {{ $entreprise->secteur_activite }}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-gray-600">
+                    <td class="px-6 py-4 text-gray-600 text-sm">
                         <i class="fa-solid fa-flag text-gray-400 mr-1"></i>
                         {{ $entreprise->pays }}
                     </td>
-                    <td class="px-6 py-4 text-gray-600">
+                    <td class="px-6 py-4 text-gray-600 text-sm">
                         <i class="fa-solid fa-location-dot text-gray-400 mr-1"></i>
                         {{ $entreprise->ville }}
                     </td>
                     <td class="px-6 py-4">
                         @if($entreprise->statut_validation == 'valide')
-                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium" style="background-color: #007A3D;">
+                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium"
+                                style="background-color: #007A3D;">
                                 <i class="fa-solid fa-circle-check mr-1"></i> Validé
                             </span>
                         @elseif($entreprise->statut_validation == 'rejete')
@@ -87,18 +80,15 @@
                                 <i class="fa-solid fa-check"></i> Valider
                             </button>
                             <button wire:click="rejeter({{ $entreprise->id }})"
+                                wire:confirm="Voulez-vous vraiment rejeter cette entreprise ?"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700 flex items-center gap-1">
                                 <i class="fa-solid fa-xmark"></i> Rejeter
                             </button>
                             @endif
-                            <button wire:click="modifier({{ $entreprise->id }})"
-                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-blue-600 transition hover:bg-blue-700 flex items-center gap-1">
+                            <button wire:click="openModal({{ $entreprise->id }})"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
+                                style="background-color: #2d5a8e;">
                                 <i class="fa-solid fa-pen"></i> Modifier
-                            </button>
-                            <button wire:click="supprimer({{ $entreprise->id }})"
-                                wire:confirm="Voulez-vous vraiment supprimer cette entreprise ?"
-                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-gray-500 transition hover:bg-gray-600 flex items-center gap-1">
-                                <i class="fa-solid fa-trash"></i> Supprimer
                             </button>
                         </div>
                     </td>
@@ -107,12 +97,7 @@
                 <tr>
                     <td colspan="6" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-building text-5xl mb-3 block text-gray-300"></i>
-                        <p class="text-lg font-medium">Aucune entreprise pour le moment</p>
-                        <button wire:click="openModal"
-                            class="mt-3 px-5 py-2 rounded-xl text-white text-sm font-medium"
-                            style="background-color: #C8102E;">
-                            Ajouter la première entreprise
-                        </button>
+                        <p class="text-lg font-medium">Aucune entreprise dans votre délégation</p>
                     </td>
                 </tr>
                 @endforelse
@@ -120,113 +105,73 @@
         </table>
     </div>
 
-    {{-- MODAL --}}
     @if($showModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
-
-            {{-- Header modal --}}
-            <div class="flex justify-between items-center px-8 py-5 border-b" style="background: linear-gradient(135deg, #007A3D, #005a2d);">
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-plus' }}"></i>
-                    {{ $isEditing ? 'Modifier l\'entreprise' : 'Nouvelle entreprise' }}
+                    <i class="fa-solid fa-pen"></i> Modifier l'entreprise
                 </h3>
-                <button wire:click="closeModal" class="text-white/70 hover:text-white text-2xl transition">
-                    &times;
-                </button>
+                <button wire:click="closeModal" class="text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
-
-            {{-- Body modal --}}
             <div class="p-8">
                 <div class="grid grid-cols-2 gap-5">
-
-                    {{-- Nom --}}
                     <div class="col-span-2">
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom de l'entreprise *</label>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom *</label>
                         <input wire:model="nom" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
-                            placeholder="Ex: Société Burkinabè de Commerce">
-                        @error('nom') <span class="text-red-500 text-xs mt-1 flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span> @enderror
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                        @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    {{-- Secteur --}}
                     <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Secteur d'activité *</label>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Secteur *</label>
                         <select wire:model="secteur_activite"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
                             <option value="">-- Choisir --</option>
-                            @foreach($secteurs as $secteur)
-                            <option value="{{ $secteur }}">{{ $secteur }}</option>
+                            @foreach($secteurs as $s)
+                            <option value="{{ $s }}">{{ $s }}</option>
                             @endforeach
                         </select>
-                        @error('secteur_activite') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('secteur_activite') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    {{-- Sous-secteur --}}
                     <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Sous-secteur <span class="text-gray-400 font-normal">(optionnel)</span>
-                        </label>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Sous-secteur</label>
                         <input wire:model="sous_secteur" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
-                            placeholder="Ex: Céréales, BTP...">
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
                     </div>
-
-                    {{-- Pays --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays *</label>
                         <select wire:model="pays"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
                             <option value="">-- Choisir --</option>
                             @foreach($pays_liste as $p)
                             <option value="{{ $p }}">{{ $p }}</option>
                             @endforeach
                         </select>
-                        @error('pays') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('pays') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    {{-- Ville --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville *</label>
                         <input wire:model="ville" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
-                            placeholder="Ex: Ouagadougou">
-                        @error('ville') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                        @error('ville') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    {{-- Téléphone --}}
-                    <div>
+                    <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone *</label>
                         <input wire:model="telephone" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
-                            placeholder="Ex: +226 70 00 00 00">
-                        @error('telephone') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                        @error('telephone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    {{-- Email --}}
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Email <span class="text-gray-400 font-normal">(optionnel)</span>
-                        </label>
-                        <input wire:model="email" type="email"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
-                            placeholder="Ex: contact@entreprise.com">
-                        @error('email') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                    </div>
-
                 </div>
-
-                {{-- Boutons --}}
                 <div class="flex justify-end gap-3 mt-7">
                     <button wire:click="closeModal"
-                        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
+                        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="sauvegarder"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
-                        style="background-color: #C8102E;">
-                        <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
-                        {{ $isEditing ? 'Modifier' : 'Enregistrer' }}
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
+                        style="background-color: #2d5a8e;">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> Enregistrer
                     </button>
                 </div>
             </div>
