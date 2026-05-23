@@ -4,39 +4,65 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'GesB2B' }} — CDD</title>
+    <title>{{ $title ?? 'GesB2B' }} — Participant</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     @livewireStyles
+    <style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+
+        #recu-print {
+            visibility: visible;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+        }
+
+        #recu-print * {
+            visibility: visible;
+        }
+
+        /* Cache les boutons à l'impression */
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
 </head>
 <body class="font-sans antialiased bg-gray-100">
 
 <div class="flex h-screen overflow-hidden">
 
-    {{-- SIDEBAR CDD --}}
+    {{-- SIDEBAR PARTICIPANT --}}
     <aside class="w-64 flex flex-col shadow-xl flex-shrink-0"
-        style="background: linear-gradient(180deg, #1e3a5f 0%, #2d5a8e 100%);">
+        style="background: linear-gradient(180deg, #006B34 0%, #007A3D 100%);">
 
         {{-- Logo --}}
-        <div class="p-6 text-center border-b border-blue-800">
+        <div class="p-6 text-center border-b border-green-800">
             <div class="flex items-center justify-center gap-2 mb-1">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                    style="background-color: #C8102E;">C</div>
+                    style="background-color: #C8102E;">P</div>
                 <h1 class="text-xl font-bold text-white">GesB2B</h1>
             </div>
-            <p class="text-xs text-blue-300 mt-1">Espace CDD</p>
+            <p class="text-xs text-green-300 mt-1">Espace Participant</p>
         </div>
 
         {{-- Navigation --}}
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
             $navItems = [
-    ['route' => 'cdd.dashboard',    'icon' => 'fa-gauge',           'label' => 'Dashboard'],
-    ['route' => 'cdd.entreprises',  'icon' => 'fa-building',        'label' => 'Mes Entreprises'],
-    ['route' => 'cdd.participants', 'icon' => 'fa-users',           'label' => 'Mes Participants'],
-    ['route' => 'cdd.inscriptions', 'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions'],
-    ['route' => 'cdd.souhaits',     'icon' => 'fa-heart',           'label' => 'Souhaits RDV'],
-    ['route' => 'cdd.catalogue',    'icon' => 'fa-book-open',       'label' => 'Catalogue'],
+    ['route' => 'participant.dashboard',   'icon' => 'fa-gauge',           'label' => 'Dashboard'],
+    ['route' => 'participant.profil',      'icon' => 'fa-user',            'label' => 'Mon Profil'],
+    ['route' => 'participant.inscription', 'icon' => 'fa-clipboard-list',  'label' => 'Mon Inscription'],
+    ['route' => 'participant.souhaits',    'icon' => 'fa-heart',           'label' => 'Mes Souhaits'],
+    ['route' => 'participant.rendez-vous', 'icon' => 'fa-handshake',       'label' => 'Mes RDV'],
+    ['route' => 'participant.badge',       'icon' => 'fa-id-badge',        'label' => 'Mon Badge'],
+    ['route' => 'participant.catalogue',   'icon' => 'fa-book-open',       'label' => 'Catalogue'],
 ];
             @endphp
 
@@ -45,21 +71,21 @@
                 class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                 {{ request()->routeIs($item['route'])
                     ? 'text-white font-semibold shadow-lg'
-                    : 'text-blue-100 hover:text-white hover:bg-white/10' }}"
+                    : 'text-green-100 hover:text-white hover:bg-white/10' }}"
                 @if(request()->routeIs($item['route']))
                     style="background-color: #C8102E;"
                 @endif>
                 <i class="fa-solid {{ $item['icon'] }} w-5 text-center
                     {{ request()->routeIs($item['route'])
                         ? 'text-white'
-                        : 'text-blue-300 group-hover:text-white' }}"></i>
+                        : 'text-green-300 group-hover:text-white' }}"></i>
                 <span class="text-sm">{{ $item['label'] }}</span>
             </a>
             @endforeach
         </nav>
 
         {{-- Profil + Déconnexion --}}
-        <div class="p-4 border-t border-blue-800">
+        <div class="p-4 border-t border-green-800">
             <div class="flex items-center gap-3 px-3 py-2 mb-2">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
                     style="background-color: #C8102E;">
@@ -67,13 +93,13 @@
                 </div>
                 <div>
                     <p class="text-white text-sm font-medium">{{ auth()->user()->name }}</p>
-                    <p class="text-blue-300 text-xs">Chef de Délégation</p>
+                    <p class="text-green-300 text-xs">Participant</p>
                 </div>
             </div>
-            <form method="POST" action="/logout">
+            <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit"
-                    class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-blue-100 hover:bg-red-600 hover:text-white transition-all duration-200 text-sm">
+                    class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-green-100 hover:bg-red-600 hover:text-white transition-all duration-200 text-sm">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     Déconnexion
                 </button>

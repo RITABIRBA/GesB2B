@@ -27,18 +27,20 @@
 
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
-            $navItems = [
-                ['route' => 'admin.dashboard',    'icon' => 'fa-gauge',        'label' => 'Dashboard'],
-                ['route' => 'admin.evenements',   'icon' => 'fa-calendar',     'label' => 'Événements'],
-                ['route' => 'admin.entreprises',  'icon' => 'fa-building',     'label' => 'Entreprises'],
-                ['route' => 'admin.participants', 'icon' => 'fa-users',        'label' => 'Participants'],
-                ['route' => 'admin.stands',       'icon' => 'fa-store',        'label' => 'Stands'],
-                ['route' => 'admin.souhaits',     'icon' => 'fa-heart',        'label' => 'Souhaits RDV'],
-                ['route' => 'admin.rendez-vous',  'icon' => 'fa-handshake',    'label' => 'Rendez-vous'],
-                ['route' => 'admin.badges',       'icon' => 'fa-id-badge',     'label' => 'Badges'],
-                ['route' => 'admin.traducteurs',  'icon' => 'fa-language',     'label' => 'Traducteurs'],
-                ['route' => 'admin.notifications','icon' => 'fa-bell',         'label' => 'Notifications'],
-            ];
+           $navItems = [
+    ['route' => 'admin.dashboard',    'icon' => 'fa-gauge',           'label' => 'Dashboard'],
+    ['route' => 'admin.evenements',   'icon' => 'fa-calendar',        'label' => 'Événements'],
+    ['route' => 'admin.entreprises',  'icon' => 'fa-building',        'label' => 'Entreprises'],
+    ['route' => 'admin.participants', 'icon' => 'fa-users',           'label' => 'Participants'],
+    ['route' => 'admin.inscriptions', 'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions'],
+    ['route' => 'admin.paiements',    'icon' => 'fa-money-bill',      'label' => 'Paiements'],
+    ['route' => 'admin.stands',       'icon' => 'fa-store',           'label' => 'Stands'],
+    ['route' => 'admin.souhaits',     'icon' => 'fa-heart',           'label' => 'Souhaits RDV'],
+    ['route' => 'admin.rendez-vous',  'icon' => 'fa-handshake',       'label' => 'Rendez-vous'],
+    ['route' => 'admin.badges',       'icon' => 'fa-id-badge',        'label' => 'Badges'],
+    ['route' => 'admin.traducteurs',  'icon' => 'fa-language',        'label' => 'Traducteurs'],
+    ['route' => 'admin.notifications','icon' => 'fa-bell',            'label' => 'Notifications'],
+];
             @endphp
 
             @foreach($navItems as $item)
@@ -60,11 +62,20 @@
 
             <div class="border-t border-green-800 my-3"></div>
 
-            <a href="#"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl text-green-100 hover:text-white hover:bg-white/10 transition-all duration-200 group">
-                <i class="fa-solid fa-users-gear w-5 text-center text-green-300 group-hover:text-white"></i>
-                <span class="text-sm">Utilisateurs</span>
-            </a>
+            <a href="{{ route('admin.utilisateurs') }}"
+    class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
+    {{ request()->routeIs('admin.utilisateurs')
+        ? 'text-white font-semibold shadow-lg'
+        : 'text-green-100 hover:text-white hover:bg-white/10' }}"
+    @if(request()->routeIs('admin.utilisateurs'))
+        style="background-color: #C8102E;"
+    @endif>
+    <i class="fa-solid fa-users-gear w-5 text-center
+        {{ request()->routeIs('admin.utilisateurs')
+            ? 'text-white'
+            : 'text-green-300 group-hover:text-white' }}"></i>
+    <span class="text-sm">Utilisateurs</span>
+</a>
         </nav>
 
         <div class="p-4 border-t border-green-800">
