@@ -13,31 +13,29 @@
 
 <div class="flex h-screen overflow-hidden">
 
-    {{-- SIDEBAR CDD --}}
     <aside class="w-64 flex flex-col shadow-xl flex-shrink-0"
-        style="background: linear-gradient(180deg, #1e3a5f 0%, #2d5a8e 100%);">
+        style="background: linear-gradient(180deg, #006B34 0%, #007A3D 100%);">
 
-        {{-- Logo --}}
-        <div class="p-6 text-center border-b border-blue-800">
+        <div class="p-6 text-center border-b border-green-800">
             <div class="flex items-center justify-center gap-2 mb-1">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                    style="background-color: #C8102E;">C</div>
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-8 h-8 object-contain rounded-lg">
                 <h1 class="text-xl font-bold text-white">GesB2B</h1>
             </div>
-            <p class="text-xs text-blue-300 mt-1">Espace CDD</p>
+            <p class="text-xs text-green-300 mt-1">Espace CDD</p>
         </div>
 
-        {{-- Navigation --}}
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
             $navItems = [
-    ['route' => 'cdd.dashboard',    'icon' => 'fa-gauge',           'label' => 'Dashboard'],
-    ['route' => 'cdd.entreprises',  'icon' => 'fa-building',        'label' => 'Mes Entreprises'],
-    ['route' => 'cdd.participants', 'icon' => 'fa-users',           'label' => 'Mes Participants'],
-    ['route' => 'cdd.inscriptions', 'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions'],
-    ['route' => 'cdd.souhaits',     'icon' => 'fa-heart',           'label' => 'Souhaits RDV'],
-    ['route' => 'cdd.catalogue',    'icon' => 'fa-book-open',       'label' => 'Catalogue'],
-];
+                ['route' => 'cdd.dashboard',             'icon' => 'fa-gauge',          'label' => 'Dashboard'],
+                ['route' => 'cdd.entreprises',           'icon' => 'fa-building',       'label' => 'Mes Entreprises'],
+                ['route' => 'cdd.participants',          'icon' => 'fa-users',          'label' => 'Mes Participants'],
+                ['route' => 'cdd.inscriptions',          'icon' => 'fa-clipboard-list', 'label' => 'Inscriptions'],
+                ['route' => 'cdd.souhaits',              'icon' => 'fa-heart',          'label' => 'Souhaits RDV'],
+                ['route' => 'cdd.statistiques-souhaits', 'icon' => 'fa-chart-bar',      'label' => 'Stats Souhaits'],
+                ['route' => 'cdd.catalogue',             'icon' => 'fa-book-open',      'label' => 'Catalogue'],
+            ];
             @endphp
 
             @foreach($navItems as $item)
@@ -45,21 +43,20 @@
                 class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                 {{ request()->routeIs($item['route'])
                     ? 'text-white font-semibold shadow-lg'
-                    : 'text-blue-100 hover:text-white hover:bg-white/10' }}"
+                    : 'text-green-100 hover:text-white hover:bg-white/10' }}"
                 @if(request()->routeIs($item['route']))
                     style="background-color: #C8102E;"
                 @endif>
                 <i class="fa-solid {{ $item['icon'] }} w-5 text-center
                     {{ request()->routeIs($item['route'])
                         ? 'text-white'
-                        : 'text-blue-300 group-hover:text-white' }}"></i>
+                        : 'text-green-300 group-hover:text-white' }}"></i>
                 <span class="text-sm">{{ $item['label'] }}</span>
             </a>
             @endforeach
         </nav>
 
-        {{-- Profil + Déconnexion --}}
-        <div class="p-4 border-t border-blue-800">
+        <div class="p-4 border-t border-green-800">
             <div class="flex items-center gap-3 px-3 py-2 mb-2">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
                     style="background-color: #C8102E;">
@@ -67,13 +64,13 @@
                 </div>
                 <div>
                     <p class="text-white text-sm font-medium">{{ auth()->user()->name }}</p>
-                    <p class="text-blue-300 text-xs">Chef de Délégation</p>
+                    <p class="text-green-300 text-xs">Chef de Délégation</p>
                 </div>
             </div>
-            <form method="POST" action="/logout">
+            <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit"
-                    class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-blue-100 hover:bg-red-600 hover:text-white transition-all duration-200 text-sm">
+                    class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-green-100 hover:bg-red-600 hover:text-white transition-all duration-200 text-sm">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     Déconnexion
                 </button>
@@ -82,12 +79,12 @@
 
     </aside>
 
-    {{-- CONTENU PRINCIPAL --}}
     <div class="flex-1 flex flex-col overflow-hidden">
 
-        {{-- Header --}}
         <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center flex-shrink-0">
             <div class="flex items-center gap-3">
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-8 h-8 object-contain">
                 <span class="text-2xl font-bold" style="color: #C8102E;">CCI-BF</span>
                 <span class="text-gray-300">|</span>
                 <h2 class="text-lg font-semibold text-gray-700">{{ $title ?? 'Dashboard' }}</h2>
@@ -104,7 +101,6 @@
             </div>
         </header>
 
-        {{-- Contenu --}}
         <main class="flex-1 overflow-y-auto p-8">
             {{ $slot }}
         </main>

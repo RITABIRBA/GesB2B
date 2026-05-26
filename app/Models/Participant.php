@@ -9,18 +9,18 @@ class Participant extends Model
     protected $table = 'participants';
 
     protected $fillable = [
-        'id_entreprise',
-        'id_evenement',
-        'nom',
-        'prenom',
-        'secteur_activite',
-        'email',
-        'telephone',
-        'code_acces',
-        'role',
-        'statut_historique',
-    ];
-
+    'id_cdd',
+    'id_entreprise',
+    'id_evenement',
+    'nom',
+    'prenom',
+    'secteur_activite',
+    'email',
+    'telephone',
+    'code_acces',
+    'role',
+    'statut_historique',
+];
     public function entreprise()
     {
         return $this->belongsTo(Entreprise::class, 'id_entreprise');

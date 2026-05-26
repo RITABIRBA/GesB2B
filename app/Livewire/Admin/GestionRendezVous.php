@@ -21,17 +21,9 @@ class GestionRendezVous extends Component
     // =========================================================
     // PROPRIÉTÉS — RÉSUMÉ AUTOMATIQUE
     // =========================================================
-
-    /** @var object|null Événement sélectionné avec ses infos */
     public $evenement_selectionne = null;
-
-    /** @var int Nombre de créneaux calculés */
     public $nb_creneaux = 0;
-
-    /** @var int Nombre de stands disponibles */
     public $nb_stands = 0;
-
-    /** @var int Nombre de paires à planifier */
     public $nb_paires = 0;
 
     // =========================================================
@@ -39,9 +31,17 @@ class GestionRendezVous extends Component
     // =========================================================
     public $showGenerateModal   = false;
     public $showTraducteurModal = false;
+    public $showRematchModal    = false;
     public $rdv_id;
     public $rdv_courant         = null;
     public $id_traducteur       = '';
+
+    // =========================================================
+    // PROPRIÉTÉS — RE-MATCH
+    // =========================================================
+    public $rematch_rdv_id      = null;
+    public $rematch_rdv         = null;
+    public $nouveau_participant  = '';
 
     // =========================================================
     // PROPRIÉTÉS — FILTRES
@@ -51,28 +51,18 @@ class GestionRendezVous extends Component
 
     // =========================================================
     // CALCUL AUTOMATIQUE DU RÉSUMÉ
-    // Déclenché quand l'événement ou la durée change
     // =========================================================
 
-    /**
-     * Recalcule le résumé quand l'événement change.
-     */
     public function updatedIdEvenement()
     {
         $this->calculerResume();
     }
 
-    /**
-     * Recalcule le résumé quand la durée change.
-     */
     public function updatedDureeRdv()
     {
         $this->calculerResume();
     }
 
-    /**
-     * Calcule et affiche le résumé du planning avant génération.
-     */
     public function calculerResume()
     {
         if (!$this->id_evenement) {
@@ -88,11 +78,10 @@ class GestionRendezVous extends Component
 
         $this->evenement_selectionne = $evenement;
 
-        // Calcule le nombre de créneaux
-        $debut        = strtotime($evenement->heure_debut);
-        $fin          = strtotime($evenement->heure_fin);
-        $duree        = $this->duree_rdv * 60;
-        $nb_creneaux  = 0;
+        $debut       = strtotime($evenement->heure_debut);
+        $fin         = strtotime($evenement->heure_fin);
+        $duree       = $this->duree_rdv * 60;
+        $nb_creneaux = 0;
 
         while ($debut + $duree <= $fin) {
             $nb_creneaux++;
@@ -100,11 +89,8 @@ class GestionRendezVous extends Component
         }
 
         $this->nb_creneaux = $nb_creneaux;
+        $this->nb_stands   = Stand::where('id_evenement', $this->id_evenement)->count();
 
-        // Nombre de stands disponibles
-        $this->nb_stands = Stand::where('id_evenement', $this->id_evenement)->count();
-
-        // Nombre de paires uniques à planifier
         $participants    = Participant::where('id_evenement', $this->id_evenement)->pluck('id');
         $souhaitsTraites = [];
         $nb_paires       = 0;
@@ -193,6 +179,62 @@ class GestionRendezVous extends Component
     }
 
     // =========================================================
+    // GESTION DU RE-MATCH
+    // =========================================================
+
+    public function ouvrirRematch($id)
+    {
+        $this->rematch_rdv_id      = $id;
+        $this->nouveau_participant  = '';
+        $this->rematch_rdv         = RendezVous::with([
+            'participant1',
+            'participant1.entreprise',
+            'participant2',
+            'participant2.entreprise',
+            'participantAbsent',
+            'stand',
+        ])->findOrFail($id);
+        $this->showRematchModal = true;
+    }
+
+    public function fermerRematch()
+    {
+        $this->showRematchModal    = false;
+        $this->rematch_rdv_id      = null;
+        $this->rematch_rdv         = null;
+        $this->nouveau_participant  = '';
+    }
+
+    public function effectuerRematch()
+    {
+        $this->validate([
+            'nouveau_participant' => 'required',
+        ]);
+
+        $rdv = RendezVous::findOrFail($this->rematch_rdv_id);
+
+        // Détermine quel participant remplacer
+        if ($rdv->absent_participant_id == $rdv->id_participant1) {
+            // Participant 1 est absent → on le remplace
+            $rdv->update([
+                'id_participant1'       => $this->nouveau_participant,
+                'statut'                => 'planifie',
+                'absent_participant_id' => null,
+            ]);
+        } else {
+            // Participant 2 est absent → on le remplace
+            $rdv->update([
+                'id_participant2'       => $this->nouveau_participant,
+                'statut'                => 'planifie',
+                'absent_participant_id' => null,
+            ]);
+        }
+
+        session()->flash('success', 'Re-match effectué ! Le RDV est rétabli.');
+        $this->fermerRematch();
+    }
+
+    // =========================================================
     // ACTIONS SUR LES RENDEZ-VOUS
     // =========================================================
 
@@ -241,7 +283,6 @@ class GestionRendezVous extends Component
             return;
         }
 
-        // Calcule les créneaux depuis les heures de l'événement
         $creneaux = [];
         $debut    = strtotime($evenement->heure_debut);
         $fin      = strtotime($evenement->heure_fin);
@@ -255,13 +296,11 @@ class GestionRendezVous extends Component
             $debut += $duree;
         }
 
-        // Supprime les anciens RDV
         $participantIds = $participants->pluck('id')->toArray();
         RendezVous::whereIn('id_participant1', $participantIds)
                   ->orWhereIn('id_participant2', $participantIds)
                   ->delete();
 
-        // Construit le planning
         $souhaitsTraites = [];
         $planning        = [];
 
@@ -286,7 +325,6 @@ class GestionRendezVous extends Component
             }
         }
 
-        // Assigne créneaux et stands
         $standIndex   = 0;
         $creneauIndex = 0;
         $date         = $evenement->date_debut;
@@ -346,11 +384,23 @@ class GestionRendezVous extends Component
             });
         }
 
+        // Participants disponibles pour re-match
+        $participantsDisponibles = collect();
+        if ($this->rematch_rdv) {
+            $participantsDisponibles = Participant::with('entreprise')
+                ->where('id_evenement', $this->rematch_rdv->participant1->id_evenement ?? null)
+                ->where('id', '!=', $this->rematch_rdv->id_participant1)
+                ->where('id', '!=', $this->rematch_rdv->id_participant2)
+                ->orderBy('nom')
+                ->get();
+        }
+
         return view('livewire.admin.gestion-rendez-vous', [
             'rendezVous' => RendezVous::with([
                     'participant1', 'participant1.entreprise',
                     'participant2', 'participant2.entreprise',
                     'stand', 'traducteur',
+                    'participantAbsent',
                 ])
                 ->when($this->filtre_statut, fn($q) => $q->where('statut', $this->filtre_statut))
                 ->when($this->search, fn($q) =>
@@ -363,8 +413,9 @@ class GestionRendezVous extends Component
                     )
                 )
                 ->latest()->get(),
-            'evenements'  => Evenement::orderBy('nom')->get(),
-            'traducteurs' => $traducteurs,
+            'evenements'              => Evenement::orderBy('nom')->get(),
+            'traducteurs'             => $traducteurs,
+            'participantsDisponibles' => $participantsDisponibles,
         ])->layout('layouts.admin', ['title' => 'Gestion des Rendez-vous']);
     }
 }

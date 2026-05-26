@@ -77,6 +77,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/inscriptions', \App\Livewire\Cdd\GestionInscriptions::class)->name('cdd.inscriptions');
         Route::get('/souhaits',     \App\Livewire\Cdd\GestionSouhaits::class)->name('cdd.souhaits');
         Route::get('/catalogue',    \App\Livewire\Cdd\Catalogue::class)->name('cdd.catalogue');
+        Route::get('/statistiques-souhaits', \App\Livewire\Cdd\StatistiquesSouhaits::class)->name('cdd.statistiques-souhaits');
     });
 
     
@@ -103,6 +104,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/rendez-vous',  \App\Livewire\Participant\MesRendezVous::class)->name('participant.rendez-vous');
         Route::get('/badge',        \App\Livewire\Participant\MonBadge::class)->name('participant.badge');
         Route::get('/catalogue',    \App\Livewire\Participant\Catalogue::class)->name('participant.catalogue');
+        Route::get('/planning', \App\Livewire\Participant\MonPlanning::class)->name('participant.planning');
     });
 
     
@@ -115,5 +117,8 @@ Route::middleware(['auth'])->group(function () {
     });
 
 });
+// Inscription publique
+Route::get('/inscription-participant', \App\Livewire\Auth\InscriptionParticipant::class)->name('inscription.participant');
+Route::get('/inscription-entreprise', \App\Livewire\Auth\InscriptionEntreprise::class)->name('inscription.entreprise');
 
 require __DIR__.'/auth.php';

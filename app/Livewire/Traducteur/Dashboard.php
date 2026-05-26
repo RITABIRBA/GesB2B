@@ -10,8 +10,10 @@ class Dashboard extends Component
 {
     public function render()
     {
-        // Récupère le traducteur lié à l'utilisateur connecté
-        $traducteur = Traducteur::first();
+        // Liaison par email ou nom
+        $traducteur = Traducteur::where('email', auth()->user()->email)
+            ->orWhere('nom', auth()->user()->name)
+            ->first();
 
         $totalRdv = $traducteur
             ? RendezVous::where('id_traducteur', $traducteur->id)->count()
@@ -34,10 +36,10 @@ class Dashboard extends Component
             : collect();
 
         return view('livewire.traducteur.dashboard', [
-            'traducteur'   => $traducteur,
-            'totalRdv'     => $totalRdv,
+            'traducteur'    => $traducteur,
+            'totalRdv'      => $totalRdv,
             'rdvAujourdhui' => $rdvAujourdhui,
-            'prochainRdv'  => $prochainRdv,
+            'prochainRdv'   => $prochainRdv,
         ])->layout('layouts.traducteur', ['title' => 'Dashboard Traducteur']);
     }
 }

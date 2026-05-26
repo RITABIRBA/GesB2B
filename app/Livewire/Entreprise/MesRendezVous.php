@@ -14,7 +14,7 @@ class MesRendezVous extends Component
 
     public function render()
     {
-        $entreprise     = Entreprise::first();
+        $entreprise = Entreprise::where('nom', auth()->user()->name)->first();
         $participantIds = Participant::where('id_entreprise', $entreprise->id)->pluck('id');
 
         return view('livewire.entreprise.mes-rendez-vous', [

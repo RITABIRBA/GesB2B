@@ -10,7 +10,9 @@ class MonBadge extends Component
 {
     public function render()
     {
-        $participant = Participant::first();
+        // Liaison par email
+        $participant = Participant::where('email', auth()->user()->email)->first();
+
         $badge = $participant
             ? Badge::with('typeBadge')->where('id_participant', $participant->id)->first()
             : null;

@@ -2,12 +2,6 @@
     Vue Blade — Gestion des Rendez-vous
     Composant : App\Livewire\Admin\GestionRendezVous
     Layout : layouts/admin.blade.php
-
-    Fonctionnalités :
-    - Planning des rendez-vous B2B
-    - Génération automatique par match-making
-    - Assignation des traducteurs avec disponibilités
-    - Filtres par statut et recherche
 --}}
 <div>
 
@@ -129,7 +123,8 @@
             </thead>
             <tbody>
                 @forelse($rendezVous as $rdv)
-                <tr class="border-b hover:bg-gray-50 transition">
+                <tr class="border-b hover:bg-gray-50 transition
+                    {{ $rdv->statut == 'annule' ? 'bg-red-50' : '' }}">
 
                     {{-- Participant 1 --}}
                     <td class="px-6 py-4">
@@ -158,7 +153,8 @@
                                 {{ strtoupper(substr($rdv->participant2->prenom ?? 'X', 0, 1)) }}
                             </div>
                             <div>
-                                <p class="font-semibold text-gray-800 text-sm">
+                                <p class="font-semibold text-gray-800 text-sm
+                                    {{ $rdv->statut == 'annule' ? 'line-through text-red-400' : '' }}">
                                     {{ $rdv->participant2->nom ?? '-' }}
                                     {{ $rdv->participant2->prenom ?? '' }}
                                 </p>
@@ -225,11 +221,24 @@
                     {{-- Actions --}}
                     <td class="px-6 py-4">
                         <div class="flex gap-1.5 flex-wrap">
+
+                            {{-- Assigner traducteur --}}
                             <button wire:click="ouvrirModalTraducteur({{ $rdv->id }})"
                                 class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-purple-600 transition hover:bg-purple-700"
                                 title="Assigner un traducteur">
                                 <i class="fa-solid fa-language"></i>
                             </button>
+
+                            {{-- Re-match pour RDV annulés --}}
+                            @if($rdv->statut == 'annule')
+                            <button wire:click="ouvrirRematch({{ $rdv->id }})"
+                                class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-orange-500 transition hover:bg-orange-600"
+                                title="Re-match">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                            @endif
+
+                            {{-- Confirmer --}}
                             @if($rdv->statut == 'planifie')
                             <button wire:click="confirmer({{ $rdv->id }})"
                                 class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90"
@@ -249,12 +258,15 @@
                                 <i class="fa-solid fa-flag-checkered"></i>
                             </button>
                             @endif
+
+                            {{-- Supprimer --}}
                             <button wire:click="supprimer({{ $rdv->id }})"
                                 wire:confirm="Supprimer ce rendez-vous ?"
                                 class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700"
                                 title="Supprimer">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
+
                         </div>
                     </td>
 
@@ -283,7 +295,6 @@
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
 
-            {{-- Header --}}
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
@@ -296,7 +307,6 @@
 
             <div class="p-8">
 
-                {{-- Info --}}
                 <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-5 text-sm text-blue-700 flex items-start gap-2">
                     <i class="fa-solid fa-circle-info mt-0.5"></i>
                     Les heures sont prises automatiquement depuis l'événement choisi.
@@ -319,7 +329,7 @@
                         @enderror
                     </div>
 
-                    {{-- Infos de l'événement sélectionné --}}
+                    {{-- Infos événement --}}
                     @if($evenement_selectionne)
                     <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
                         <p class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
@@ -358,7 +368,7 @@
                         </div>
                     </div>
 
-                    {{-- Résumé automatique --}}
+                    {{-- Résumé --}}
                     @if($evenement_selectionne && $nb_creneaux > 0)
                     <div class="bg-green-50 border border-green-200 rounded-xl p-4">
                         <p class="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2">
@@ -395,7 +405,6 @@
 
                 </div>
 
-                {{-- Boutons --}}
                 <div class="flex justify-end gap-3 mt-7">
                     <button wire:click="closeGenerateModal"
                         class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
@@ -419,7 +428,6 @@
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
 
-            {{-- Header --}}
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
@@ -432,7 +440,6 @@
 
             <div class="p-8">
 
-                {{-- Infos du RDV --}}
                 @if($rdv_courant)
                 <div class="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
                     <p class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -441,7 +448,7 @@
                     </p>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
                                 style="background-color: #C8102E;">
                                 {{ strtoupper(substr($rdv_courant->participant1->prenom ?? 'X', 0, 1)) }}
                             </div>
@@ -463,7 +470,7 @@
                             </span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
                                 style="background-color: #007A3D;">
                                 {{ strtoupper(substr($rdv_courant->participant2->prenom ?? 'X', 0, 1)) }}
                             </div>
@@ -481,7 +488,6 @@
                 </div>
                 @endif
 
-                {{-- Liste traducteurs avec disponibilités --}}
                 <div>
                     <label class="block text-gray-600 text-sm font-medium mb-3">
                         Choisir un traducteur
@@ -507,7 +513,7 @@
                                     ? 'hover:bg-gray-50 border-gray-200 peer-checked:border-red-400 peer-checked:bg-red-50'
                                     : 'border-gray-100 bg-gray-50' }}">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
                                         style="background-color: {{ $traducteur->disponible ? '#007A3D' : '#9ca3af' }}">
                                         {{ strtoupper(substr($traducteur->prenom, 0, 1)) }}
                                     </div>
@@ -523,11 +529,11 @@
                                     </div>
                                 </div>
                                 @if($traducteur->disponible)
-                                <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium flex items-center gap-1 flex-shrink-0">
+                                <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium flex items-center gap-1">
                                     <i class="fa-solid fa-circle-check"></i> Disponible
                                 </span>
                                 @else
-                                <span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-600 font-medium flex items-center gap-1 flex-shrink-0">
+                                <span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-600 font-medium flex items-center gap-1">
                                     <i class="fa-solid fa-clock"></i> Occupé
                                 </span>
                                 @endif
@@ -544,7 +550,6 @@
                     @enderror
                 </div>
 
-                {{-- Boutons --}}
                 <div class="flex justify-end gap-3 mt-7">
                     <button wire:click="fermerModalTraducteur"
                         class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
@@ -554,6 +559,95 @@
                         class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
                         style="background-color: #C8102E;">
                         <i class="fa-solid fa-check mr-1"></i> Assigner
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ================================================
+        MODAL — RE-MATCH
+    ================================================ --}}
+    @if($showRematchModal && $rematch_rdv)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-rotate"></i>
+                    Re-match — Reprogrammer le RDV
+                </h3>
+                <button wire:click="fermerRematch"
+                    class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+
+            <div class="p-8">
+
+                {{-- Info RDV annulé --}}
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5">
+                    <p class="text-sm font-semibold text-red-700 mb-2">
+                        <i class="fa-solid fa-circle-xmark mr-1"></i>
+                        RDV annulé à reprogrammer
+                    </p>
+                    <div class="flex items-center gap-3 text-sm text-gray-600">
+                        <span>
+                            <i class="fa-solid fa-user mr-1"></i>
+                            {{ $rematch_rdv->participant1->nom ?? '-' }}
+                            {{ $rematch_rdv->participant1->prenom ?? '' }}
+                        </span>
+                        <i class="fa-solid fa-arrows-left-right text-gray-400"></i>
+                        <span class="line-through text-red-500">
+                            {{ $rematch_rdv->participant2->nom ?? '-' }}
+                            {{ $rematch_rdv->participant2->prenom ?? '' }}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        <span><i class="fa-solid fa-calendar mr-1"></i>{{ $rematch_rdv->date }}</span>
+                        <span><i class="fa-solid fa-clock mr-1"></i>{{ $rematch_rdv->heure_debut }} - {{ $rematch_rdv->heure_fin }}</span>
+                        <span><i class="fa-solid fa-store mr-1"></i>Stand {{ $rematch_rdv->stand->numero_stand ?? '-' }}</span>
+                    </div>
+                </div>
+
+                {{-- Choisir nouveau participant --}}
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-2">
+                        Choisir un nouveau participant *
+                    </label>
+                    <select wire:model="nouveau_participant"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm">
+                        <option value="">-- Choisir un participant --</option>
+                        @foreach($participantsDisponibles as $participant)
+                        <option value="{{ $participant->id }}">
+                            {{ $participant->nom }} {{ $participant->prenom }}
+                            {{ $participant->entreprise ? '('.$participant->entreprise->nom.')' : '(Indépendant)' }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('nouveau_participant')
+                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- Info --}}
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-4 text-xs text-blue-700 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-info mt-0.5"></i>
+                    Le nouveau participant remplacera le participant absent.
+                    Le RDV sera rétabli avec le même créneau et le même stand.
+                </div>
+
+                {{-- Boutons --}}
+                <div class="flex justify-end gap-3 mt-6">
+                    <button wire:click="fermerRematch"
+                        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
+                        <i class="fa-solid fa-xmark mr-1"></i> Annuler
+                    </button>
+                    <button wire:click="effectuerRematch"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
+                        style="background-color: #8b5cf6;">
+                        <i class="fa-solid fa-rotate mr-1"></i> Effectuer le re-match
                     </button>
                 </div>
 

@@ -8,15 +8,16 @@ class Entreprise extends Model
 {
     protected $table = 'entreprises';
 
-    protected $fillable = [
-        'nom',
-        'secteur_activite',
-        'sous_secteur',
-        'pays',
-        'ville',
-        'contact',
-        'statut_validation',
-    ];
+   protected $fillable = [
+    'id_cdd',
+    'nom',
+    'secteur_activite',
+    'sous_secteur',
+    'pays',
+    'ville',
+    'contact',
+    'statut_validation',
+];
 
     public function participants()
     {

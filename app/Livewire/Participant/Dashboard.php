@@ -7,13 +7,14 @@ use App\Models\Participant;
 use App\Models\Souhait;
 use App\Models\RendezVous;
 use App\Models\Badge;
+use App\Models\Inscription;
 
 class Dashboard extends Component
 {
     public function render()
     {
-        // Récupère le participant lié à l'utilisateur connecté
-        $participant = Participant::first();
+        // Liaison par email
+        $participant = Participant::where('email', auth()->user()->email)->first();
 
         $totalSouhaits = $participant
             ? Souhait::where('id_participant', $participant->id)->count()
@@ -42,12 +43,32 @@ class Dashboard extends Component
                 ->get()
             : collect();
 
+        // Notifications — inscriptions validées par CDD
+        $inscriptionsValidees = $participant
+            ? Inscription::with('evenement')
+                ->where('id_participant', $participant->id)
+                ->where('statut_presence', 'present')
+                ->where('statut_paiement', 'en_attente')
+                ->whereDoesntHave('paiement')
+                ->get()
+            : collect();
+
+        // Inscriptions dont le paiement a été validé
+        $paiementsValides = $participant
+            ? Inscription::with(['evenement', 'paiement'])
+                ->where('id_participant', $participant->id)
+                ->where('statut_paiement', 'paye')
+                ->get()
+            : collect();
+
         return view('livewire.participant.dashboard', [
-            'participant'    => $participant,
-            'totalSouhaits'  => $totalSouhaits,
-            'totalRdv'       => $totalRdv,
-            'badge'          => $badge,
-            'prochainRdv'    => $prochainRdv,
+            'participant'          => $participant,
+            'totalSouhaits'        => $totalSouhaits,
+            'totalRdv'             => $totalRdv,
+            'badge'                => $badge,
+            'prochainRdv'          => $prochainRdv,
+            'inscriptionsValidees' => $inscriptionsValidees,
+            'paiementsValides'     => $paiementsValides,
         ])->layout('layouts.participant', ['title' => 'Mon Dashboard']);
     }
 }

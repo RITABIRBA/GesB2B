@@ -31,7 +31,9 @@ class MonProfil extends Component
 
     public function mount()
     {
-        $entreprise = Entreprise::first();
+        // Liaison par nom
+        $entreprise = Entreprise::where('nom', auth()->user()->name)->first();
+
         if ($entreprise) {
             $this->entreprise_id    = $entreprise->id;
             $this->nom              = $entreprise->nom;
@@ -41,6 +43,15 @@ class MonProfil extends Component
             $this->ville            = $entreprise->ville;
             $this->contact          = $entreprise->contact;
         }
+    }
+
+    public function activer() { $this->isEditing = true; }
+
+    public function annuler()
+    {
+        $this->isEditing = false;
+        $this->mount();
+        $this->resetErrorBag();
     }
 
     public function sauvegarder()
@@ -61,6 +72,9 @@ class MonProfil extends Component
             'ville'            => $this->ville,
             'contact'          => $this->contact,
         ]);
+
+        // Met à jour aussi le nom du user
+        auth()->user()->update(['name' => $this->nom]);
 
         $this->isEditing = false;
         session()->flash('success', 'Profil mis à jour avec succès.');

@@ -17,6 +17,7 @@ class RendezVous extends Model
         'heure_debut',
         'heure_fin',
         'statut',
+        'absent_participant_id',
     ];
 
     public function participant1()
@@ -37,5 +38,10 @@ class RendezVous extends Model
     public function stand()
     {
         return $this->belongsTo(Stand::class, 'id_stand');
+    }
+
+    public function participantAbsent()
+    {
+        return $this->belongsTo(Participant::class, 'absent_participant_id');
     }
 }

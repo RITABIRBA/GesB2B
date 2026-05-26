@@ -109,15 +109,17 @@ class GestionEntreprises extends Component
     }
 
     public function render()
-    {
-        return view('livewire.cdd.gestion-entreprises', [
-            'entreprises' => Entreprise::when($this->search, fn($q) =>
-                    $q->where('nom', 'like', '%'.$this->search.'%')
-                      ->orWhere('pays', 'like', '%'.$this->search.'%')
-                      ->orWhere('ville', 'like', '%'.$this->search.'%')
-                )
-                ->latest()
-                ->get(),
-        ])->layout('layouts.cdd', ['title' => 'Mes Entreprises']);
-    }
+{
+    $cddId = auth()->id();
+
+    return view('livewire.cdd.gestion-entreprises', [
+        'entreprises' => Entreprise::with('participants')
+            ->where('id_cdd', $cddId) // ← FILTRE PAR CDD
+            ->when($this->search, fn($q) =>
+                $q->where('nom', 'like', '%'.$this->search.'%')
+            )
+            ->latest()
+            ->get(),
+    ])->layout('layouts.cdd', ['title' => 'Mes Entreprises']);
+}
 }

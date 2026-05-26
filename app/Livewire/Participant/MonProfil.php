@@ -17,7 +17,9 @@ class MonProfil extends Component
 
     public function mount()
     {
-        $participant = Participant::first();
+        // Liaison par email
+        $participant = Participant::where('email', auth()->user()->email)->first();
+
         if ($participant) {
             $this->participant_id   = $participant->id;
             $this->nom              = $participant->nom;
@@ -51,6 +53,9 @@ class MonProfil extends Component
             'email'            => $this->email,
             'secteur_activite' => $this->secteur_activite,
         ]);
+
+        // Met à jour aussi le user
+        auth()->user()->update(['email' => $this->email]);
 
         $this->isEditing = false;
         session()->flash('success', 'Profil mis à jour.');

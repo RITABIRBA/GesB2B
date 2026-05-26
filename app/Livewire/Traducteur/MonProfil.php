@@ -23,7 +23,11 @@ class MonProfil extends Component
 
     public function mount()
     {
-        $traducteur = Traducteur::first();
+        // Liaison par email ou nom
+        $traducteur = Traducteur::where('email', auth()->user()->email)
+            ->orWhere('nom', auth()->user()->name)
+            ->first();
+
         if ($traducteur) {
             $this->traducteur_id = $traducteur->id;
             $this->nom           = $traducteur->nom;
@@ -59,6 +63,12 @@ class MonProfil extends Component
             'telephone' => $this->telephone,
             'email'     => $this->email ?: null,
             'langue'    => $this->langue,
+        ]);
+
+        // Met à jour aussi le user
+        auth()->user()->update([
+            'name'  => $this->nom,
+            'email' => $this->email ?: auth()->user()->email,
         ]);
 
         $this->isEditing = false;

@@ -19,50 +19,34 @@ use App\Models\Evenement;
  */
 class MonInscription extends Component
 {
-    
+    // =========================================================
     // PROPRIÉTÉS — MODAL INSCRIPTION
-    
+    // =========================================================
 
-    /** @var string Identifiant de l'événement choisi */
     public $id_evenement = '';
-
-    /** @var float Montant à payer */
     public $montant_paye = 0;
-
-    /** @var bool Affichage du modal inscription */
     public $showModalInscription = false;
 
-    
+    // =========================================================
     // PROPRIÉTÉS — MODAL PAIEMENT
-    
+    // =========================================================
 
-    /** @var string Mode de paiement choisi */
     public $mode_paiement = 'especes';
-
-    /** @var float Montant du paiement */
     public $montant_paiement = 0;
-
-    /** @var bool Affichage du modal paiement */
     public $showModalPaiement = false;
-
-    /** @var int|null Identifiant de l'inscription à payer */
     public $inscription_id;
 
-    
+    // =========================================================
     // PROPRIÉTÉS — MODAL REÇU
-    
+    // =========================================================
 
-    /** @var bool Affichage du modal reçu */
     public $showModalRecu = false;
-
-    /** @var object|null Données de l'inscription avec reçu */
     public $recu_courant = null;
 
-    
+    // =========================================================
     // DONNÉES STATIQUES
-    
+    // =========================================================
 
-    /** @var array Modes de paiement disponibles */
     public $modes_paiement = [
         'especes'      => 'Espèces',
         'virement'     => 'Virement bancaire',
@@ -70,14 +54,14 @@ class MonInscription extends Component
         'carte'        => 'Carte bancaire',
     ];
 
-    
+    // =========================================================
     // GESTION DU MODAL INSCRIPTION
-    
+    // =========================================================
 
     public function openModalInscription()
     {
-        $this->id_evenement  = '';
-        $this->montant_paye  = 0;
+        $this->id_evenement         = '';
+        $this->montant_paye         = 0;
         $this->showModalInscription = true;
         $this->resetErrorBag();
     }
@@ -87,15 +71,17 @@ class MonInscription extends Component
         $this->showModalInscription = false;
     }
 
-    
+    // =========================================================
     // GESTION DU MODAL PAIEMENT
-    
+    // =========================================================
 
     public function openModalPaiement($id)
     {
+        $inscription = Inscription::findOrFail($id);
+
         $this->inscription_id    = $id;
         $this->mode_paiement     = 'especes';
-        $this->montant_paiement  = 0;
+        $this->montant_paiement  = $inscription->montant_paye; // Pré-rempli !
         $this->showModalPaiement = true;
         $this->resetErrorBag();
     }
@@ -105,9 +91,9 @@ class MonInscription extends Component
         $this->showModalPaiement = false;
     }
 
-    
+    // =========================================================
     // GESTION DU MODAL REÇU
-    
+    // =========================================================
 
     public function voirRecu($inscription_id)
     {
@@ -127,9 +113,9 @@ class MonInscription extends Component
         $this->recu_courant  = null;
     }
 
-    
+    // =========================================================
     // ACTIONS
-    
+    // =========================================================
 
     /**
      * Inscrit le participant à un événement.
@@ -141,7 +127,14 @@ class MonInscription extends Component
             'montant_paye' => 'required|numeric|min:0',
         ]);
 
-        $participant = Participant::first();
+        // Liaison par email ✅
+        $participant = Participant::where('email', auth()->user()->email)->first();
+
+        if (!$participant) {
+            session()->flash('error', 'Profil participant non trouvé. Contactez votre CDD.');
+            $this->closeModalInscription();
+            return;
+        }
 
         // Vérifie si déjà inscrit
         $existe = Inscription::where('id_participant', $participant->id)
@@ -155,15 +148,15 @@ class MonInscription extends Component
         }
 
         Inscription::create([
-            'id_participant'   => $participant->id,
-            'id_evenement'     => $this->id_evenement,
-            'date_inscription' => now()->toDateString(),
-            'montant_paye'     => $this->montant_paye,
-            'statut_paiement'  => 'en_attente',
-            'statut_presence'  => 'absent',
+            'id_participant'    => $participant->id,
+            'id_evenement'      => $this->id_evenement,
+            'date_inscription'  => now()->toDateString(),
+            'montant_paye'      => $this->montant_paye,
+            'statut_paiement'   => 'en_attente',
+            'statut_presence'   => 'absent',
         ]);
 
-        session()->flash('success', 'Inscription effectuée avec succès !');
+        session()->flash('success', 'Préinscription envoyée ! En attente de validation par votre CDD.');
         $this->closeModalInscription();
     }
 
@@ -185,28 +178,32 @@ class MonInscription extends Component
             'statut'         => 'en_attente',
         ]);
 
-        session()->flash('success', 'Paiement soumis. En attente de validation.');
+        session()->flash('success', 'Paiement soumis. En attente de confirmation CDD.');
         $this->closeModalPaiement();
     }
 
-
+    // =========================================================
     // RENDU
-
+    // =========================================================
 
     public function render()
     {
-        $participant = Participant::first();
+        // Liaison par email ✅
+        $participant = Participant::where('email', auth()->user()->email)->first();
 
         return view('livewire.participant.mon-inscription', [
-            'inscriptions' => Inscription::with([
-                    'evenement',
-                    'paiement',
-                    'paiement.recu',
-                ])
-                ->where('id_participant', $participant?->id)
-                ->latest()
-                ->get(),
-            'evenements' => Evenement::orderBy('nom')->get(),
+            'inscriptions' => $participant
+                ? Inscription::with([
+                        'evenement',
+                        'paiement',
+                        'paiement.recu',
+                    ])
+                    ->where('id_participant', $participant->id)
+                    ->latest()
+                    ->get()
+                : collect(),
+            'evenements'  => Evenement::orderBy('nom')->get(),
+            'participant' => $participant,
         ])->layout('layouts.participant', ['title' => 'Mes Inscriptions']);
     }
 }

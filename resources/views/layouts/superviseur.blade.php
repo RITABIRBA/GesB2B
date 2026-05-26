@@ -20,8 +20,8 @@
         {{-- Logo --}}
         <div class="p-6 text-center border-b border-green-800">
             <div class="flex items-center justify-center gap-2 mb-1">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                    style="background-color: #C8102E;">S</div>
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-8 h-8 object-contain rounded-lg">
                 <h1 class="text-xl font-bold text-white">GesB2B</h1>
             </div>
             <p class="text-xs text-green-300 mt-1">Espace Superviseur</p>
@@ -30,18 +30,18 @@
         {{-- Navigation --}}
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
-$navItems = [
-    ['route' => 'superviseur.dashboard',    'icon' => 'fa-gauge',           'label' => 'Dashboard'],
-    ['route' => 'superviseur.evenements',   'icon' => 'fa-calendar',        'label' => 'Événements'],
-    ['route' => 'superviseur.entreprises',  'icon' => 'fa-building',        'label' => 'Entreprises'],
-    ['route' => 'superviseur.participants', 'icon' => 'fa-users',           'label' => 'Participants'],
-    ['route' => 'superviseur.inscriptions', 'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions'],
-    ['route' => 'superviseur.paiements',    'icon' => 'fa-money-bill',      'label' => 'Paiements'],
-    ['route' => 'superviseur.rendez-vous',  'icon' => 'fa-handshake',       'label' => 'Rendez-vous'],
-    ['route' => 'superviseur.badges',       'icon' => 'fa-id-badge',        'label' => 'Badges'],
-    ['route' => 'superviseur.gestion-acces','icon' => 'fa-users-gear',      'label' => 'Gestion des Accès'],
-];
-@endphp
+            $navItems = [
+                ['route' => 'superviseur.dashboard',    'icon' => 'fa-gauge',           'label' => 'Dashboard'],
+                ['route' => 'superviseur.evenements',   'icon' => 'fa-calendar',        'label' => 'Événements'],
+                ['route' => 'superviseur.entreprises',  'icon' => 'fa-building',        'label' => 'Entreprises'],
+                ['route' => 'superviseur.participants', 'icon' => 'fa-users',           'label' => 'Participants'],
+                ['route' => 'superviseur.inscriptions', 'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions'],
+                ['route' => 'superviseur.paiements',    'icon' => 'fa-money-bill',      'label' => 'Paiements'],
+                ['route' => 'superviseur.rendez-vous',  'icon' => 'fa-handshake',       'label' => 'Rendez-vous'],
+                ['route' => 'superviseur.badges',       'icon' => 'fa-id-badge',        'label' => 'Badges'],
+                ['route' => 'superviseur.gestion-acces','icon' => 'fa-users-gear',      'label' => 'Gestion des Accès'],
+            ];
+            @endphp
 
             @foreach($navItems as $item)
             <a href="{{ route($item['route']) }}"
@@ -91,6 +91,8 @@ $navItems = [
         {{-- Header --}}
         <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center flex-shrink-0">
             <div class="flex items-center gap-3">
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-8 h-8 object-contain">
                 <span class="text-2xl font-bold" style="color: #C8102E;">CCI-BF</span>
                 <span class="text-gray-300">|</span>
                 <h2 class="text-lg font-semibold text-gray-700">{{ $title ?? 'Dashboard' }}</h2>

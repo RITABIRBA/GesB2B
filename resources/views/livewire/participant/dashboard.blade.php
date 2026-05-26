@@ -1,6 +1,62 @@
 <div>
 
-    {{-- Info participant --}}
+    {{-- 
+        NOTIFICATIONS
+     --}}
+
+    {{-- Inscription validée par CDD → Peut payer --}}
+    @foreach($inscriptionsValidees as $inscription)
+    <div class="bg-green-50 border border-green-300 rounded-xl px-6 py-4 mb-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                style="background-color: #007A3D;">
+                <i class="fa-solid fa-circle-check text-white text-lg"></i>
+            </div>
+            <div>
+                <p class="font-semibold text-green-800">
+                    🎉 Préinscription validée !
+                </p>
+                <p class="text-sm text-green-600">
+                    Votre préinscription à <strong>{{ $inscription->evenement->nom ?? '-' }}</strong>
+                    a été validée par votre CDD. Vous pouvez maintenant payer.
+                </p>
+            </div>
+        </div>
+        <a href="{{ route('participant.inscription') }}"
+            class="px-4 py-2 rounded-xl text-white text-sm font-medium transition hover:opacity-90 flex-shrink-0"
+            style="background-color: #C8102E;">
+            <i class="fa-solid fa-credit-card mr-1"></i> Payer maintenant
+        </a>
+    </div>
+    @endforeach
+
+    {{-- Paiement validé par CDD --}}
+    @foreach($paiementsValides as $inscription)
+    <div class="bg-blue-50 border border-blue-300 rounded-xl px-6 py-4 mb-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600">
+                <i class="fa-solid fa-receipt text-white text-lg"></i>
+            </div>
+            <div>
+                <p class="font-semibold text-blue-800">
+                    ✅ Paiement confirmé !
+                </p>
+                <p class="text-sm text-blue-600">
+                    Votre paiement pour <strong>{{ $inscription->evenement->nom ?? '-' }}</strong>
+                    a été confirmé. Votre inscription est complète !
+                </p>
+            </div>
+        </div>
+        <a href="{{ route('participant.inscription') }}"
+            class="px-4 py-2 rounded-xl text-white text-sm font-medium transition hover:opacity-90 flex-shrink-0 bg-blue-600">
+            <i class="fa-solid fa-receipt mr-1"></i> Voir le reçu
+        </a>
+    </div>
+    @endforeach
+
+    {{-- ================================================
+        INFO PARTICIPANT
+    ================================================ --}}
     @if($participant)
     <div class="bg-white rounded-xl shadow p-6 mb-6 flex items-center gap-6">
         <div class="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold flex-shrink-0"
@@ -37,7 +93,9 @@
     </div>
     @endif
 
-    {{-- Cartes statistiques --}}
+    {{-- ================================================
+        CARTES STATISTIQUES
+    ================================================ --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
         <div class="bg-white rounded-xl shadow p-6 flex items-center gap-4 border-l-4 hover:shadow-lg transition"
@@ -91,7 +149,9 @@
 
     </div>
 
-    {{-- Prochains rendez-vous --}}
+    {{-- ================================================
+        PROCHAINS RENDEZ-VOUS
+    ================================================ --}}
     <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-700 flex items-center gap-2">

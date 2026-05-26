@@ -12,17 +12,38 @@ class Dashboard extends Component
 {
     public function render()
     {
-        // Récupère l'entreprise liée à l'utilisateur connecté
-        // Pour l'instant on prend la première entreprise
-        // (on affinera avec la liaison user-entreprise plus tard)
-        $entreprise = Entreprise::first();
+        // Liaison par nom de l'utilisateur connecté
+        $entreprise = Entreprise::where('nom', auth()->user()->name)->first();
+
+        $totalParticipants = $entreprise
+            ? Participant::where('id_entreprise', $entreprise->id)->count()
+            : 0;
+
+        $totalStands = $entreprise
+            ? Stand::where('id_entreprise', $entreprise->id)->count()
+            : 0;
+
+        $participantIds = $entreprise
+            ? Participant::where('id_entreprise', $entreprise->id)->pluck('id')
+            : collect();
+
+        $totalRdv = $participantIds->isNotEmpty()
+            ? RendezVous::where(function($q) use ($participantIds) {
+                $q->whereIn('id_participant1', $participantIds)
+                  ->orWhereIn('id_participant2', $participantIds);
+            })->count()
+            : 0;
+
+        $derniersParticipants = $entreprise
+            ? Participant::where('id_entreprise', $entreprise->id)->latest()->take(5)->get()
+            : collect();
 
         return view('livewire.entreprise.dashboard', [
-            'entreprise'        => $entreprise,
-            'totalParticipants' => $entreprise ? Participant::where('id_entreprise', $entreprise->id)->count() : 0,
-            'totalStands'       => $entreprise ? Stand::where('id_entreprise', $entreprise->id)->count() : 0,
-            'totalRdv'          => $entreprise ? RendezVous::whereHas('participant1', fn($q) => $q->where('id_entreprise', $entreprise->id))->count() : 0,
-            'derniersParticipants' => $entreprise ? Participant::where('id_entreprise', $entreprise->id)->latest()->take(5)->get() : collect(),
+            'entreprise'           => $entreprise,
+            'totalParticipants'    => $totalParticipants,
+            'totalStands'          => $totalStands,
+            'totalRdv'             => $totalRdv,
+            'derniersParticipants' => $derniersParticipants,
         ])->layout('layouts.entreprise', ['title' => 'Dashboard Entreprise']);
     }
 }

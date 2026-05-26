@@ -2,18 +2,12 @@
     Vue Blade — Mon Inscription (Espace Participant)
     Composant : App\Livewire\Participant\MonInscription
     Layout : layouts/participant.blade.php
-
-    Fonctionnalités :
-    - Liste des inscriptions du participant
-    - Modal d'inscription à un événement
-    - Modal de paiement
-    - Modal de visualisation du reçu
 --}}
 <div>
 
-    {{-- 
+    {{-- ================================================
         MESSAGES
-     --}}
+    ================================================ --}}
     @if(session('success'))
     <div class="bg-green-100 border border-green-300 text-green-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
         <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
@@ -28,8 +22,9 @@
     </div>
     @endif
 
-    {{-- 
-        EN-TÊTE--}}
+    {{-- ================================================
+        EN-TÊTE
+    ================================================ --}}
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
             <h3 class="text-xl font-bold text-gray-700">Mes Inscriptions</h3>
@@ -46,9 +41,36 @@
         </button>
     </div>
 
-    {{-- 
+    {{-- ================================================
+        EXPLICATION DU FLUX
+    ================================================ --}}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl px-6 py-4 mb-6 text-sm text-blue-700">
+        <p class="font-semibold mb-2">
+            <i class="fa-solid fa-circle-info mr-1"></i>
+            Comment ça marche ?
+        </p>
+        <div class="flex items-center gap-3 flex-wrap">
+            <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+                1. Préinscription
+            </span>
+            <i class="fa-solid fa-arrow-right text-gray-400"></i>
+            <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                2. Validation CDD
+            </span>
+            <i class="fa-solid fa-arrow-right text-gray-400"></i>
+            <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+                3. Paiement
+            </span>
+            <i class="fa-solid fa-arrow-right text-gray-400"></i>
+            <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
+                4. Confirmation CDD
+            </span>
+        </div>
+    </div>
+
+    {{-- ================================================
         LISTE DES INSCRIPTIONS
-     --}}
+    ================================================ --}}
     <div class="grid grid-cols-1 gap-4">
         @forelse($inscriptions as $inscription)
         <div class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
@@ -72,37 +94,53 @@
                 </div>
 
                 {{-- Actions à droite --}}
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 flex-wrap justify-end">
 
-                    {{-- Badge statut paiement --}}
-                    @if($inscription->statut_paiement == 'paye')
-                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium"
-                            style="background-color: #007A3D;">
-                            <i class="fa-solid fa-circle-check mr-1"></i> Payé
-                        </span>
-                    @elseif($inscription->statut_paiement == 'annule')
-                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
-                            <i class="fa-solid fa-circle-xmark mr-1"></i> Annulé
-                        </span>
-                    @else
-                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-yellow-500">
-                            <i class="fa-solid fa-clock mr-1"></i> En attente
-                        </span>
+                    {{-- ÉTAPE 1 : Préinscription en attente de validation --}}
+                    @if($inscription->statut_presence == 'absent' && $inscription->statut_paiement == 'en_attente')
+                    <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-yellow-500">
+                        <i class="fa-solid fa-clock mr-1"></i> En attente validation CDD
+                    </span>
                     @endif
 
-                    {{-- Bouton Payer si pas encore payé --}}
-                    @if($inscription->statut_paiement == 'en_attente' && !$inscription->paiement)
+                    {{-- ÉTAPE 2 : Validée par CDD, peut payer --}}
+                    @if($inscription->statut_presence == 'present' && $inscription->statut_paiement == 'en_attente' && !$inscription->paiement)
+                    <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Validée par CDD
+                    </span>
                     <button wire:click="openModalPaiement({{ $inscription->id }})"
                         class="px-4 py-2 rounded-xl text-white text-sm font-medium transition hover:opacity-90"
                         style="background-color: #C8102E;">
-                        <i class="fa-solid fa-credit-card mr-1"></i> Payer
+                        <i class="fa-solid fa-credit-card mr-1"></i> Payer maintenant
                     </button>
                     @endif
 
-                    {{-- Bouton Voir le reçu si disponible --}}
+                    {{-- Paiement soumis en attente de confirmation CDD --}}
+                    @if($inscription->paiement && $inscription->paiement->statut == 'en_attente')
+                    <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-orange-500">
+                        <i class="fa-solid fa-clock mr-1"></i> Paiement en attente confirmation CDD
+                    </span>
+                    @endif
+
+                    {{-- Paiement validé --}}
+                    @if($inscription->statut_paiement == 'paye')
+                    <span class="px-3 py-1 rounded-full text-xs text-white font-medium"
+                        style="background-color: #007A3D;">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Payé
+                    </span>
+                    @endif
+
+                    {{-- Annulé --}}
+                    @if($inscription->statut_paiement == 'annule')
+                    <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
+                        <i class="fa-solid fa-circle-xmark mr-1"></i> Annulée
+                    </span>
+                    @endif
+
+                    {{-- Bouton Voir le reçu --}}
                     @if($inscription->paiement && $inscription->paiement->recu)
                     <button wire:click="voirRecu({{ $inscription->id }})"
-                        class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600 transition hover:bg-blue-700 cursor-pointer">
+                        class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600 transition hover:bg-blue-700">
                         <i class="fa-solid fa-receipt mr-1"></i> Voir le reçu
                     </button>
                     @endif
@@ -128,12 +166,16 @@
                         {{ $inscription->paiement->date_paiement }}
                     </span>
                     @if($inscription->paiement->statut == 'en_attente')
-                    <span class="text-yellow-600 font-medium">
-                        <i class="fa-solid fa-clock mr-1"></i> En attente de validation
+                    <span class="text-orange-600 font-medium">
+                        <i class="fa-solid fa-clock mr-1"></i> En attente de confirmation CDD
                     </span>
                     @elseif($inscription->paiement->statut == 'valide')
                     <span class="text-green-600 font-medium">
-                        <i class="fa-solid fa-circle-check mr-1"></i> Validé
+                        <i class="fa-solid fa-circle-check mr-1"></i> Confirmé par CDD
+                    </span>
+                    @elseif($inscription->paiement->statut == 'rejete')
+                    <span class="text-red-600 font-medium">
+                        <i class="fa-solid fa-circle-xmark mr-1"></i> Rejeté par CDD
                     </span>
                     @endif
                 </div>
@@ -154,25 +196,35 @@
         @endforelse
     </div>
 
-    {{-- 
+    {{-- ================================================
         MODAL — NOUVELLE INSCRIPTION
-     --}}
+    ================================================ --}}
     @if($showModalInscription)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
 
-            {{-- Header --}}
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-clipboard-list"></i>
-                    Nouvelle Inscription
+                    Nouvelle Préinscription
                 </h3>
                 <button wire:click="closeModalInscription"
                     class="text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
 
             <div class="p-8">
+
+                {{-- Info --}}
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 mb-5 text-sm text-yellow-700 flex items-start gap-2">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                    <div>
+                        Votre préinscription sera soumise à votre
+                        <strong>Chef de Délégation (CDD)</strong> pour validation.
+                        Vous pourrez payer après sa validation.
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 gap-5">
 
                     {{-- Événement --}}
@@ -209,12 +261,6 @@
                         @enderror
                     </div>
 
-                    {{-- Info --}}
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700 flex items-start gap-2">
-                        <i class="fa-solid fa-circle-info mt-0.5"></i>
-                        Votre inscription sera en attente jusqu'à validation du paiement par l'administrateur.
-                    </div>
-
                 </div>
 
                 <div class="flex justify-end gap-3 mt-7">
@@ -225,7 +271,7 @@
                     <button wire:click="inscrire"
                         class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
                         style="background-color: #C8102E;">
-                        <i class="fa-solid fa-clipboard-check mr-1"></i> S'inscrire
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Envoyer la préinscription
                     </button>
                 </div>
             </div>
@@ -233,13 +279,13 @@
     </div>
     @endif
 
-    {{-- 
-        MODAL — PAIEMENT --}}
+    {{-- ================================================
+        MODAL — PAIEMENT
+    ================================================ --}}
     @if($showModalPaiement)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
 
-            {{-- Header --}}
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #C8102E, #a00d25);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
@@ -254,45 +300,45 @@
                 <div class="grid grid-cols-1 gap-5">
 
                     {{-- Mode de paiement --}}
-<div>
-    <label class="block text-gray-600 text-sm font-medium mb-2">
-        Mode de paiement *
-    </label>
-    <div class="grid grid-cols-2 gap-3">
-        <button type="button"
-            wire:click="$set('mode_paiement', 'especes')"
-            class="border rounded-xl p-3 transition flex items-center gap-2 text-sm font-medium
-                {{ $mode_paiement === 'especes'
-                    ? 'border-red-400 bg-red-50 text-red-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-            <i class="fa-solid fa-money-bill"></i> Espèces
-        </button>
-        <button type="button"
-            wire:click="$set('mode_paiement', 'virement')"
-            class="border rounded-xl p-3 transition flex items-center gap-2 text-sm font-medium
-                {{ $mode_paiement === 'virement'
-                    ? 'border-red-400 bg-red-50 text-red-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-            <i class="fa-solid fa-building-columns"></i> Virement bancaire
-        </button>
-        <button type="button"
-            wire:click="$set('mode_paiement', 'mobile_money')"
-            class="border rounded-xl p-3 transition flex items-center gap-2 text-sm font-medium
-                {{ $mode_paiement === 'mobile_money'
-                    ? 'border-red-400 bg-red-50 text-red-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-            <i class="fa-solid fa-mobile"></i> Mobile Money
-        </button>
-        <button type="button"
-            wire:click="$set('mode_paiement', 'carte')"
-            class="border rounded-xl p-3 transition flex items-center gap-2 text-sm font-medium
-                {{ $mode_paiement === 'carte'
-                    ? 'border-red-400 bg-red-50 text-red-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-            <i class="fa-solid fa-credit-card"></i> Carte bancaire
-        </button>
-    </div>
-</div>
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-2">
+                            Mode de paiement *
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button"
+                                wire:click="$set('mode_paiement', 'especes')"
+                                class="border rounded-xl p-3 transition flex items-center gap-2 text-sm font-medium
+                                    {{ $mode_paiement === 'especes'
+                                        ? 'border-red-400 bg-red-50 text-red-700'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-money-bill"></i> Espèces
+                            </button>
+                            <button type="button"
+                                wire:click="$set('mode_paiement', 'virement')"
+                                class="border rounded-xl p-3 transition flex items-center gap-2 text-sm font-medium
+                                    {{ $mode_paiement === 'virement'
+                                        ? 'border-red-400 bg-red-50 text-red-700'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-building-columns"></i> Virement
+                            </button>
+                            <button type="button"
+                                wire:click="$set('mode_paiement', 'mobile_money')"
+                                class="border rounded-xl p-3 transition flex items-center gap-2 text-sm font-medium
+                                    {{ $mode_paiement === 'mobile_money'
+                                        ? 'border-red-400 bg-red-50 text-red-700'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-mobile"></i> Mobile Money
+                            </button>
+                            <button type="button"
+                                wire:click="$set('mode_paiement', 'carte')"
+                                class="border rounded-xl p-3 transition flex items-center gap-2 text-sm font-medium
+                                    {{ $mode_paiement === 'carte'
+                                        ? 'border-red-400 bg-red-50 text-red-700'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-credit-card"></i> Carte bancaire
+                            </button>
+                        </div>
+                    </div>
 
                     {{-- Montant --}}
                     <div>
@@ -310,8 +356,8 @@
                     {{-- Info --}}
                     <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700 flex items-start gap-2">
                         <i class="fa-solid fa-circle-info mt-0.5"></i>
-                        Votre paiement sera validé par l'administrateur.
-                        Un reçu vous sera généré après validation.
+                        Votre paiement sera confirmé par votre CDD.
+                        Un reçu vous sera généré après confirmation.
                     </div>
 
                 </div>
@@ -332,14 +378,13 @@
     </div>
     @endif
 
-    {{-- 
+    {{-- ================================================
         MODAL — REÇU DE PAIEMENT
-     --}}
+    ================================================ --}}
     @if($showModalRecu && $recu_courant)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]">
 
-            {{-- Header --}}
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
@@ -350,10 +395,7 @@
                     class="text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
 
-            {{-- Corps du reçu --}}
-            
-<div class="p-8" id="recu-print">
-            
+            <div class="p-8" id="recu-print">
 
                 {{-- Logo --}}
                 <div class="text-center mb-6">
@@ -411,18 +453,22 @@
                     <i class="fa-solid fa-shield-halved mr-1"></i>
                     Reçu officiel CCI-BF — GesB2B Platform
                 </div>
-{{-- Boutons --}}
-<div class="flex justify-between gap-3 mt-6 no-print">
-    <button wire:click="closeModalRecu"
-        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
-        <i class="fa-solid fa-xmark mr-1"></i> Fermer
-    </button>
-    <button onclick="window.print()"
-        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
-        style="background-color: #C8102E;">
-        <i class="fa-solid fa-print mr-1"></i> Imprimer
-    </button>
-</div>
+
+                {{-- Boutons --}}
+                <div class="flex justify-between gap-3 mt-6 no-print">
+                    <button wire:click="closeModalRecu"
+                        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
+                        <i class="fa-solid fa-xmark mr-1"></i> Fermer
+                    </button>
+                    <button onclick="window.print()"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
+                        style="background-color: #C8102E;">
+                        <i class="fa-solid fa-print mr-1"></i> Imprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     @endif
 
 </div>

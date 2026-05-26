@@ -7,12 +7,6 @@ use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
 
-/**
- * Composant Superviseur — Gestion des CDD
- *
- * Le superviseur peut créer et gérer les comptes CDD,
- * Entreprises et Participants selon le cahier des charges.
- */
 class GestionCdd extends Component
 {
     public $user_id;
@@ -25,7 +19,10 @@ class GestionCdd extends Component
     public $isEditing = false;
     public $search = '';
 
-    // Rôles que le superviseur peut créer
+    // Modal identifiants après création
+    public $showIdentifiantsModal = false;
+    public $identifiants = [];
+
     public $roles_autorises = ['cdd', 'entreprise', 'participant'];
 
     public function openModal()
@@ -39,6 +36,12 @@ class GestionCdd extends Component
     {
         $this->showModal = false;
         $this->resetFields();
+    }
+
+    public function closeIdentifiantsModal()
+    {
+        $this->showIdentifiantsModal = false;
+        $this->identifiants = [];
     }
 
     public function resetFields()
@@ -79,6 +82,8 @@ class GestionCdd extends Component
             ]);
             $user->syncRoles([$this->role]);
             session()->flash('success', 'Utilisateur modifié avec succès.');
+            $this->closeModal();
+
         } else {
             $this->validate([
                 'name'     => 'required|string|max:255',
@@ -93,10 +98,18 @@ class GestionCdd extends Component
                 'password' => Hash::make($this->password),
             ]);
             $user->assignRole($this->role);
-            session()->flash('success', 'Utilisateur créé avec succès.');
-        }
 
-        $this->closeModal();
+            // Stocke les identifiants pour les afficher
+            $this->identifiants = [
+                'name'     => $this->name,
+                'email'    => $this->email,
+                'password' => $this->password,
+                'role'     => $this->role,
+            ];
+
+            $this->closeModal();
+            $this->showIdentifiantsModal = true;
+        }
     }
 
     public function supprimer($id)
@@ -104,7 +117,6 @@ class GestionCdd extends Component
         $user = User::findOrFail($id);
         $role = $user->getRoleNames()->first();
 
-        // Le superviseur ne peut supprimer que CDD, entreprise, participant
         if (!in_array($role, ['cdd', 'entreprise', 'participant'])) {
             session()->flash('error', 'Vous n\'avez pas le droit de supprimer cet utilisateur.');
             return;
