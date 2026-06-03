@@ -12,23 +12,38 @@ use App\Models\Evenement;
 
 class GestionRendezVous extends Component
 {
-    // =========================================================
+    
     // PROPRIÉTÉS — GÉNÉRATION DU PLANNING
-    // =========================================================
+    
     public $id_evenement = '';
     public $duree_rdv = 30;
 
-    // =========================================================
+    
+    // PROPRIÉTÉS — PAUSES
+    
+    public $pause_cafe_matin       = false;
+    public $pause_cafe_matin_debut = '10:00';
+    public $pause_cafe_matin_fin   = '10:15';
+
+    public $pause_dejeuner         = false;
+    public $pause_dejeuner_debut   = '12:00';
+    public $pause_dejeuner_fin     = '14:00';
+
+    public $pause_cafe_aprem       = false;
+    public $pause_cafe_aprem_debut = '15:30';
+    public $pause_cafe_aprem_fin   = '15:45';
+
+    
     // PROPRIÉTÉS — RÉSUMÉ AUTOMATIQUE
-    // =========================================================
+    
     public $evenement_selectionne = null;
     public $nb_creneaux = 0;
     public $nb_stands = 0;
     public $nb_paires = 0;
 
-    // =========================================================
+    
     // PROPRIÉTÉS — MODALS
-    // =========================================================
+    
     public $showGenerateModal   = false;
     public $showTraducteurModal = false;
     public $showRematchModal    = false;
@@ -36,22 +51,22 @@ class GestionRendezVous extends Component
     public $rdv_courant         = null;
     public $id_traducteur       = '';
 
-    // =========================================================
+    
     // PROPRIÉTÉS — RE-MATCH
-    // =========================================================
+    
     public $rematch_rdv_id      = null;
     public $rematch_rdv         = null;
     public $nouveau_participant  = '';
 
-    // =========================================================
+    
     // PROPRIÉTÉS — FILTRES
-    // =========================================================
+    
     public $search        = '';
     public $filtre_statut = '';
 
-    // =========================================================
+    
     // CALCUL AUTOMATIQUE DU RÉSUMÉ
-    // =========================================================
+    
 
     public function updatedIdEvenement()
     {
@@ -83,15 +98,35 @@ class GestionRendezVous extends Component
         $duree       = $this->duree_rdv * 60;
         $nb_creneaux = 0;
 
+        $pauses = $this->getPauses();
+
         while ($debut + $duree <= $fin) {
-            $nb_creneaux++;
-            $debut += $duree;
+            $creneauDebut = $debut;
+            $creneauFin   = $debut + $duree;
+
+            $dansUnePause = false;
+            foreach ($pauses as $pause) {
+                if ($creneauDebut < $pause['fin'] && $creneauFin > $pause['debut']) {
+                    $dansUnePause = true;
+                    $debut = $pause['fin'];
+                    break;
+                }
+            }
+
+            if (!$dansUnePause) {
+                $nb_creneaux++;
+                $debut += $duree;
+            }
         }
 
         $this->nb_creneaux = $nb_creneaux;
         $this->nb_stands   = Stand::where('id_evenement', $this->id_evenement)->count();
 
-        $participants    = Participant::where('id_evenement', $this->id_evenement)->pluck('id');
+        // ← Filtre participation_rdv = true
+        $participants = Participant::where('id_evenement', $this->id_evenement)
+            ->where('participation_rdv', true)
+            ->pluck('id');
+
         $souhaitsTraites = [];
         $nb_paires       = 0;
 
@@ -117,9 +152,44 @@ class GestionRendezVous extends Component
         $this->nb_paires = $nb_paires;
     }
 
-    // =========================================================
+    
+    // HELPER — PAUSES
+    
+
+    private function getPauses(): array
+    {
+        $pauses = [];
+
+        if ($this->pause_cafe_matin) {
+            $pauses[] = [
+                'debut' => strtotime($this->pause_cafe_matin_debut),
+                'fin'   => strtotime($this->pause_cafe_matin_fin),
+                'label' => 'Pause café matin',
+            ];
+        }
+
+        if ($this->pause_dejeuner) {
+            $pauses[] = [
+                'debut' => strtotime($this->pause_dejeuner_debut),
+                'fin'   => strtotime($this->pause_dejeuner_fin),
+                'label' => 'Pause déjeuner',
+            ];
+        }
+
+        if ($this->pause_cafe_aprem) {
+            $pauses[] = [
+                'debut' => strtotime($this->pause_cafe_aprem_debut),
+                'fin'   => strtotime($this->pause_cafe_aprem_fin),
+                'label' => 'Pause café après-midi',
+            ];
+        }
+
+        return $pauses;
+    }
+
+    
     // GESTION DU MODAL DE GÉNÉRATION
-    // =========================================================
+    
 
     public function openGenerateModal()
     {
@@ -130,6 +200,9 @@ class GestionRendezVous extends Component
         $this->nb_creneaux           = 0;
         $this->nb_stands             = 0;
         $this->nb_paires             = 0;
+        $this->pause_cafe_matin      = false;
+        $this->pause_dejeuner        = false;
+        $this->pause_cafe_aprem      = false;
     }
 
     public function closeGenerateModal()
@@ -141,12 +214,15 @@ class GestionRendezVous extends Component
         $this->nb_creneaux           = 0;
         $this->nb_stands             = 0;
         $this->nb_paires             = 0;
+        $this->pause_cafe_matin      = false;
+        $this->pause_dejeuner        = false;
+        $this->pause_cafe_aprem      = false;
         $this->resetErrorBag();
     }
 
-    // =========================================================
+    
     // GESTION DU MODAL TRADUCTEUR
-    // =========================================================
+    
 
     public function ouvrirModalTraducteur($id)
     {
@@ -178,9 +254,9 @@ class GestionRendezVous extends Component
         session()->flash('success', 'Traducteur assigné avec succès !');
     }
 
-    // =========================================================
+    
     // GESTION DU RE-MATCH
-    // =========================================================
+    
 
     public function ouvrirRematch($id)
     {
@@ -213,16 +289,13 @@ class GestionRendezVous extends Component
 
         $rdv = RendezVous::findOrFail($this->rematch_rdv_id);
 
-        // Détermine quel participant remplacer
         if ($rdv->absent_participant_id == $rdv->id_participant1) {
-            // Participant 1 est absent → on le remplace
             $rdv->update([
                 'id_participant1'       => $this->nouveau_participant,
                 'statut'                => 'planifie',
                 'absent_participant_id' => null,
             ]);
         } else {
-            // Participant 2 est absent → on le remplace
             $rdv->update([
                 'id_participant2'       => $this->nouveau_participant,
                 'statut'                => 'planifie',
@@ -234,9 +307,9 @@ class GestionRendezVous extends Component
         $this->fermerRematch();
     }
 
-    // =========================================================
+    
     // ACTIONS SUR LES RENDEZ-VOUS
-    // =========================================================
+    
 
     public function confirmer($id)
     {
@@ -262,9 +335,9 @@ class GestionRendezVous extends Component
         session()->flash('success', 'Rendez-vous supprimé.');
     }
 
-    // =========================================================
+    
     // GÉNÉRATION DU PLANNING
-    // =========================================================
+    
 
     public function genererPlanning()
     {
@@ -273,9 +346,14 @@ class GestionRendezVous extends Component
             'duree_rdv'    => 'required|integer|min:15|max:120',
         ]);
 
-        $evenement    = Evenement::findOrFail($this->id_evenement);
-        $participants = Participant::where('id_evenement', $this->id_evenement)->get();
-        $stands       = Stand::where('id_evenement', $this->id_evenement)->get();
+        $evenement = Evenement::findOrFail($this->id_evenement);
+
+        // ← Filtre participation_rdv = true
+        $participants = Participant::where('id_evenement', $this->id_evenement)
+            ->where('participation_rdv', true)
+            ->get();
+
+        $stands = Stand::where('id_evenement', $this->id_evenement)->get();
 
         if ($participants->isEmpty() || $stands->isEmpty()) {
             session()->flash('error', 'Pas assez de participants ou de stands !');
@@ -283,26 +361,49 @@ class GestionRendezVous extends Component
             return;
         }
 
+        // Calcule les créneaux en excluant les pauses
         $creneaux = [];
         $debut    = strtotime($evenement->heure_debut);
         $fin      = strtotime($evenement->heure_fin);
         $duree    = $this->duree_rdv * 60;
+        $pauses   = $this->getPauses();
 
         while ($debut + $duree <= $fin) {
-            $creneaux[] = [
-                'debut' => date('H:i', $debut),
-                'fin'   => date('H:i', $debut + $duree),
-            ];
-            $debut += $duree;
+            $creneauDebut = $debut;
+            $creneauFin   = $debut + $duree;
+
+            $dansUnePause = false;
+            foreach ($pauses as $pause) {
+                if ($creneauDebut < $pause['fin'] && $creneauFin > $pause['debut']) {
+                    $dansUnePause = true;
+                    $debut = $pause['fin'];
+                    break;
+                }
+            }
+
+            if (!$dansUnePause) {
+                $creneaux[] = [
+                    'debut' => date('H:i', $creneauDebut),
+                    'fin'   => date('H:i', $creneauFin),
+                ];
+                $debut += $duree;
+            }
         }
 
+        // Supprime les anciens RDV
         $participantIds = $participants->pluck('id')->toArray();
         RendezVous::whereIn('id_participant1', $participantIds)
                   ->orWhereIn('id_participant2', $participantIds)
                   ->delete();
 
+        
+        // ALGORITHME DE MATCH-MAKING
+        // RDV mutuels PRIORITAIRES
+        
+
         $souhaitsTraites = [];
-        $planning        = [];
+        $rdvMutuels      = [];
+        $rdvUnilateraux  = [];
 
         foreach ($participants as $participant) {
             $souhaits = Souhait::where('id_participant', $participant->id)
@@ -318,13 +419,33 @@ class GestionRendezVous extends Component
 
                 if (in_array($cleUnique, $souhaitsTraites)) continue;
                 $souhaitsTraites[] = $cleUnique;
-                $planning[]        = [
-                    'id_participant1' => $souhait->id_participant,
-                    'id_participant2' => $souhait->id_participant_cible,
-                ];
+
+                $estMutuel = Souhait::where('id_participant', $souhait->id_participant_cible)
+                    ->where('id_participant_cible', $souhait->id_participant)
+                    ->exists();
+
+                if ($estMutuel) {
+                    $rdvMutuels[] = [
+                        'id_participant1' => $souhait->id_participant,
+                        'id_participant2' => $souhait->id_participant_cible,
+                        'type'            => 'mutuel',
+                    ];
+                } else {
+                    $rdvUnilateraux[] = [
+                        'id_participant1' => $souhait->id_participant,
+                        'id_participant2' => $souhait->id_participant_cible,
+                        'type'            => 'unilateral',
+                    ];
+                }
             }
         }
 
+        // Mutuels EN PREMIER
+        $planning = array_merge($rdvMutuels, $rdvUnilateraux);
+
+        
+        // ASSIGNE CRÉNEAUX ET STANDS
+        
         $standIndex   = 0;
         $creneauIndex = 0;
         $date         = $evenement->date_debut;
@@ -358,12 +479,17 @@ class GestionRendezVous extends Component
         }
 
         $this->closeGenerateModal();
-        session()->flash('success', 'Planning généré avec succès !');
+
+        $nbMutuels     = count($rdvMutuels);
+        $nbUnilateraux = count($rdvUnilateraux);
+        session()->flash('success',
+            "Planning généré ! {$nbMutuels} RDV mutuels (prioritaires) + {$nbUnilateraux} RDV unilatéraux."
+        );
     }
 
-    // =========================================================
+    
     // RENDU
-    // =========================================================
+    
 
     public function render()
     {
@@ -384,11 +510,17 @@ class GestionRendezVous extends Component
             });
         }
 
-        // Participants disponibles pour re-match
         $participantsDisponibles = collect();
         if ($this->rematch_rdv) {
+            $id_evenement = $this->rematch_rdv->participant1->id_evenement
+                         ?? $this->rematch_rdv->participant2->id_evenement
+                         ?? null;
+
             $participantsDisponibles = Participant::with('entreprise')
-                ->where('id_evenement', $this->rematch_rdv->participant1->id_evenement ?? null)
+                ->when($id_evenement, fn($q) =>
+                    $q->where('id_evenement', $id_evenement)
+                )
+                ->where('participation_rdv', true) // ← Filtre participation_rdv
                 ->where('id', '!=', $this->rematch_rdv->id_participant1)
                 ->where('id', '!=', $this->rematch_rdv->id_participant2)
                 ->orderBy('nom')

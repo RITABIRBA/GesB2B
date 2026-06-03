@@ -44,6 +44,7 @@
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Année</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Date début</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Date fin</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Montant</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
             </thead>
@@ -64,6 +65,11 @@
                     <td class="px-6 py-4 text-gray-600">{{ $evenement->date_debut }}</td>
                     <td class="px-6 py-4 text-gray-600">{{ $evenement->date_fin }}</td>
                     <td class="px-6 py-4">
+                        <span class="font-bold text-sm" style="color: #007A3D;">
+                            {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
                         <div class="flex gap-2">
                             <button wire:click="modifier({{ $evenement->id }})"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
@@ -80,7 +86,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="py-16 text-center text-gray-400">
+                    <td colspan="8" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-calendar-xmark text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun événement pour le moment</p>
                         <button wire:click="openModal"
@@ -100,7 +106,6 @@
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
 
-            {{-- Header modal --}}
             <div class="flex justify-between items-center px-8 py-5 border-b" style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-plus' }}"></i>
@@ -111,7 +116,6 @@
                 </button>
             </div>
 
-            {{-- Body modal --}}
             <div class="p-8">
                 <div class="grid grid-cols-2 gap-5">
 
@@ -227,6 +231,23 @@
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: Palais des Sports de Ouaga 2000">
                         @error('lieu') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Montant inscription --}}
+                    <div class="col-span-2">
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            <i class="fa-solid fa-money-bill mr-1" style="color: #007A3D;"></i>
+                            Montant d'inscription (FCFA) *
+                        </label>
+                        <input wire:model="montant_inscription" type="number" min="0"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                            placeholder="Ex: 50000">
+                        @error('montant_inscription')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                        <p class="text-xs text-gray-400 mt-1">
+                            Ce montant sera automatiquement affiché lors de l'inscription des participants.
+                        </p>
                     </div>
 
                 </div>

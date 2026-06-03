@@ -14,6 +14,8 @@ class GestionParticipants extends Component
     public $id_evenement = '';
     public $nom = '';
     public $prenom = '';
+    public $genre = '';
+    public $fonction = '';
     public $secteur_activite = '';
     public $nouveau_secteur = '';
     public $utiliser_nouveau_secteur = '';
@@ -54,6 +56,8 @@ class GestionParticipants extends Component
         $this->id_evenement             = '';
         $this->nom                      = '';
         $this->prenom                   = '';
+        $this->genre                    = '';
+        $this->fonction                 = '';
         $this->secteur_activite         = '';
         $this->nouveau_secteur          = '';
         $this->utiliser_nouveau_secteur = '';
@@ -72,6 +76,8 @@ class GestionParticipants extends Component
         $this->id_evenement      = $p->id_evenement;
         $this->nom               = $p->nom;
         $this->prenom            = $p->prenom;
+        $this->genre             = $p->genre;
+        $this->fonction          = $p->fonction;
         $this->secteur_activite  = $p->secteur_activite;
         $this->email             = $p->email;
         $this->telephone         = $p->telephone;
@@ -90,6 +96,8 @@ class GestionParticipants extends Component
             'telephone'    => 'required|string|max:20',
             'email'        => 'nullable|email|max:255',
             'role'         => 'required',
+            'genre'        => 'nullable|in:homme,femme',
+            'fonction'     => 'nullable|string|max:255',
         ]);
 
         $secteur = $this->utiliser_nouveau_secteur === '1'
@@ -101,6 +109,8 @@ class GestionParticipants extends Component
             'id_evenement'      => $this->id_evenement,
             'nom'               => $this->nom,
             'prenom'            => $this->prenom,
+            'genre'             => $this->genre ?: null,
+            'fonction'          => $this->fonction ?: null,
             'secteur_activite'  => $secteur,
             'email'             => $this->email ?: null,
             'telephone'         => $this->telephone,

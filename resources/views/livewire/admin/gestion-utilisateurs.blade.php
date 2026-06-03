@@ -168,8 +168,8 @@
 
     {{-- MODAL — CRÉATION / MODIFICATION --}}
     @if($showModal)
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+    <div class="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-auto">
 
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
@@ -203,35 +203,37 @@
                     </div>
 
                     {{-- Rôle --}}
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-2">Rôle *</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            @foreach($roles as $r)
-                            @php
-                                $colors = [
-                                    'admin'       => '#C8102E',
-                                    'superviseur' => '#f59e0b',
-                                    'cdd'         => '#2d5a8e',
-                                    'entreprise'  => '#007A3D',
-                                    'participant' => '#8b5cf6',
-                                    'traducteur'  => '#06b6d4',
-                                ];
-                                $c = $colors[$r->name] ?? '#6b7280';
-                            @endphp
-                            <label class="cursor-pointer">
-                                <input type="radio" wire:model="role"
-                                    value="{{ $r->name }}" class="hidden peer">
-                                <div class="border rounded-xl p-3 transition hover:bg-gray-50 flex items-center gap-2
-                                    {{ $role === $r->name ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
-                                    <div class="w-3 h-3 rounded-full flex-shrink-0"
-                                        style="background-color: {{ $c }}"></div>
-                                    <span class="text-sm font-medium text-gray-700 capitalize">{{ $r->name }}</span>
-                                </div>
-                            </label>
-                            @endforeach
-                        </div>
-                        @error('role') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                    </div>
+<div>
+    <label class="block text-gray-600 text-sm font-medium mb-2">Rôle *</label>
+    <div class="grid grid-cols-2 gap-2">
+        @foreach($roles as $r)
+        @php
+            $colors = [
+                'admin'       => '#C8102E',
+                'superviseur' => '#f59e0b',
+                'cdd'         => '#2d5a8e',
+                'entreprise'  => '#007A3D',
+                'participant' => '#8b5cf6',
+                'traducteur'  => '#06b6d4',
+            ];
+            $c = $colors[$r->name] ?? '#6b7280';
+        @endphp
+        <button type="button"
+            wire:click="$set('role', '{{ $r->name }}')"
+            class="cursor-pointer border rounded-xl p-3 transition flex items-center gap-2 w-full text-left
+                {{ $role === $r->name ? 'border-2 bg-gray-50' : 'border-gray-200 hover:bg-gray-50' }}"
+            style="{{ $role === $r->name ? 'border-color:' . $c . ';' : '' }}">
+            <div class="w-3 h-3 rounded-full flex-shrink-0"
+                style="background-color: {{ $c }}"></div>
+            <span class="text-sm font-medium text-gray-700 capitalize">{{ $r->name }}</span>
+            @if($role === $r->name)
+            <i class="fa-solid fa-check ml-auto text-xs" style="color: {{ $c }}"></i>
+            @endif
+        </button>
+        @endforeach
+    </div>
+    @error('role') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+</div>
 
                     {{-- Mot de passe (seulement en création) --}}
                     @if(!$isEditing)

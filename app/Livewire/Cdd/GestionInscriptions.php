@@ -6,17 +6,11 @@ use Livewire\Component;
 use App\Models\Inscription;
 use App\Models\Paiement;
 use App\Models\Recu;
+use App\Models\Badge;
+use App\Models\TypeBadge;
 use App\Models\Evenement;
+use Illuminate\Support\Str;
 
-/**
- * Gestion des inscriptions par le CDD
- *
- * Flux correct selon le cahier des charges :
- * 1. Participant fait une préinscription
- * 2. CDD valide la préinscription
- * 3. Participant paie
- * 4. CDD confirme le paiement → reçu généré
- */
 class GestionInscriptions extends Component
 {
     public $search = '';
@@ -50,23 +44,78 @@ class GestionInscriptions extends Component
 
     public function validerPaiement($id)
     {
-        $inscription = Inscription::with('paiement')->findOrFail($id);
+        $inscription = Inscription::with([
+            'paiement',
+            'participant',
+            'evenement',
+        ])->findOrFail($id);
 
         if (!$inscription->paiement) {
             session()->flash('error', 'Aucun paiement soumis pour cette inscription.');
             return;
         }
 
+        // 1. Valide le paiement
         $inscription->paiement->update(['statut' => 'valide']);
         $inscription->update(['statut_paiement' => 'paye']);
 
+        // 2. Génère le reçu automatiquement
         Recu::create([
             'id_paiement' => $inscription->paiement->id,
             'date'        => now()->toDateString(),
             'montant'     => $inscription->paiement->montant,
         ]);
 
-        session()->flash('success', 'Paiement validé et reçu généré !');
+        // 3. Génère le badge automatiquement
+        $this->genererBadge($inscription);
+
+        session()->flash('success', 'Paiement validé ! Reçu et badge générés automatiquement !');
+    }
+
+    /**
+     * Génère automatiquement le badge
+     * après validation du paiement
+     */
+    private function genererBadge(Inscription $inscription)
+    {
+        $participant = $inscription->participant;
+
+        if (!$participant) return;
+
+        // Vérifie si badge existe déjà
+        $badgeExiste = Badge::where('id_participant', $participant->id)->exists();
+        if ($badgeExiste) return;
+
+        // Type de badge selon le rôle du participant
+        $libelle = match($participant->role) {
+            'vip'          => 'VIP',
+            'organisateur' => 'Organisateur',
+            'exposant'     => 'Exposant',
+            default        => 'Visiteur',
+        };
+
+        // Trouve ou crée le type de badge
+        $typeBadge = TypeBadge::firstOrCreate(
+            ['libelle' => $libelle],
+            ['description' => 'Badge ' . $libelle]
+        );
+
+        // Génère un QR code unique
+        $qrCode = strtoupper(
+            substr($participant->nom, 0, 2) .
+            substr($participant->prenom ?? 'XX', 0, 2) .
+            '-' .
+            $inscription->id_evenement .
+            '-' .
+            Str::random(6)
+        );
+
+        // Crée le badge
+        Badge::create([
+            'id_participant' => $participant->id,
+            'id_type_badge'  => $typeBadge->id,
+            'qr_code'        => $qrCode,
+        ]);
     }
 
     public function rejeterPaiement($id)
@@ -82,7 +131,6 @@ class GestionInscriptions extends Component
 
     public function render()
     {
-        // Filtre par CDD connecté
         $cddId = auth()->id();
 
         return view('livewire.cdd.gestion-inscriptions', [

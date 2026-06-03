@@ -18,6 +18,7 @@ class Evenement extends Model
         'heure_fin',
         'ville',
         'lieu',
+        'montant_inscription', // ← nouveau
     ];
 
     public function typeEvenement()

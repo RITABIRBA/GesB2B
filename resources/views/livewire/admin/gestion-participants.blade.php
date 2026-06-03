@@ -7,6 +7,13 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="bg-red-100 border border-red-300 text-red-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
+        <i class="fa-solid fa-circle-xmark text-red-500 text-xl"></i>
+        {{ session('error') }}
+    </div>
+    @endif
+
     {{-- En-tête --}}
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
@@ -39,8 +46,9 @@
             <thead style="background-color: #f8f9fa;">
                 <tr class="border-b">
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Nom & Prénom</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Genre</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Fonction</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Téléphone</th>
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Email</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Entreprise</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Événement</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Rôle</th>
@@ -51,42 +59,86 @@
             <tbody>
                 @forelse($participants as $participant)
                 <tr class="border-b hover:bg-gray-50 transition">
+
+                    {{-- Nom & Prénom --}}
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                                style="background-color: #C8102E;">
+                                style="background-color: {{ $participant->genre == 'femme' ? '#C8102E' : '#007A3D' }}">
                                 {{ strtoupper(substr($participant->prenom, 0, 1)) }}
                             </div>
                             <div>
-                                <p class="font-semibold text-gray-800">{{ $participant->nom }} {{ $participant->prenom }}</p>
-                                <p class="text-xs text-gray-400">{{ $participant->secteur_activite ?? '-' }}</p>
+                                <p class="font-semibold text-gray-800">
+                                    {{ $participant->nom }} {{ $participant->prenom }}
+                                </p>
+                                <p class="text-xs text-gray-400">{{ $participant->email ?? '-' }}</p>
                             </div>
                         </div>
                     </td>
+
+                    {{-- Genre --}}
+                    <td class="px-6 py-4 text-sm">
+                        @if($participant->genre == 'homme')
+                            <span class="text-blue-600 flex items-center gap-1">
+                                <i class="fa-solid fa-mars"></i> M.
+                            </span>
+                        @elseif($participant->genre == 'femme')
+                            <span class="text-pink-600 flex items-center gap-1">
+                                <i class="fa-solid fa-venus"></i> Mme
+                            </span>
+                        @else
+                            <span class="text-gray-400">-</span>
+                        @endif
+                    </td>
+
+                    {{-- Fonction --}}
+                    <td class="px-6 py-4 text-gray-600 text-sm">
+                        {{ $participant->fonction ?? '-' }}
+                    </td>
+
+                    {{-- Téléphone --}}
                     <td class="px-6 py-4 text-gray-600 text-sm">
                         <i class="fa-solid fa-phone text-gray-400 mr-1"></i>
                         {{ $participant->telephone }}
                     </td>
-                    <td class="px-6 py-4 text-gray-600 text-sm">{{ $participant->email ?? '-' }}</td>
+
+                    {{-- Entreprise --}}
                     <td class="px-6 py-4 text-sm">
                         <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
                             {{ $participant->entreprise->nom ?? 'Indépendant' }}
                         </span>
                     </td>
+
+                    {{-- Événement --}}
                     <td class="px-6 py-4 text-gray-600 text-sm">
                         {{ $participant->evenement->nom ?? '-' }}
                     </td>
+
+                    {{-- Rôle --}}
                     <td class="px-6 py-4">
+                        @php
+                            $colors = [
+                                'vip'          => '#f59e0b',
+                                'exposant'     => '#007A3D',
+                                'organisateur' => '#6d28d9',
+                                'visiteur'     => '#2d5a8e',
+                            ];
+                            $color = $colors[$participant->role] ?? '#6b7280';
+                        @endphp
                         <span class="text-xs px-3 py-1 rounded-full font-medium text-white"
-                            style="background-color: #007A3D;">
+                            style="background-color: {{ $color }}">
                             {{ ucfirst($participant->role) }}
                         </span>
                     </td>
+
+                    {{-- Code --}}
                     <td class="px-6 py-4">
                         <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded-lg text-gray-700">
                             {{ $participant->code_acces }}
                         </span>
                     </td>
+
+                    {{-- Actions --}}
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
                             <button wire:click="modifier({{ $participant->id }})"
@@ -96,14 +148,15 @@
                             <button wire:click="supprimer({{ $participant->id }})"
                                 wire:confirm="Voulez-vous vraiment supprimer ce participant ?"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700 flex items-center gap-1">
-                                <i class="fa-solid fa-trash"></i> Supprimer
+                                <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
                     </td>
+
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="py-16 text-center text-gray-400">
+                    <td colspan="9" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-users text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun participant pour le moment</p>
                         <button wire:click="openModal"
@@ -120,10 +173,9 @@
 
     {{-- MODAL --}}
     @if($showModal)
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
+    <div class="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-auto">
 
-            {{-- Header modal --}}
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
@@ -135,7 +187,6 @@
                 </button>
             </div>
 
-            {{-- Body modal --}}
             <div class="p-8">
                 <div class="grid grid-cols-2 gap-5">
 
@@ -157,6 +208,37 @@
                         @error('prenom') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- Genre --}}
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Genre</label>
+                        <div class="flex gap-3 mt-1">
+                            <button type="button"
+                                wire:click="$set('genre', 'homme')"
+                                class="flex-1 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition
+                                    {{ $genre === 'homme' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-mars"></i> Homme
+                            </button>
+                            <button type="button"
+                                wire:click="$set('genre', 'femme')"
+                                class="flex-1 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition
+                                    {{ $genre === 'femme' ? 'bg-pink-50 border-pink-400 text-pink-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-venus"></i> Femme
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Fonction --}}
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Fonction / Poste
+                            <span class="text-gray-400 font-normal">(optionnel)</span>
+                        </label>
+                        <input wire:model="fonction" type="text"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                            placeholder="Ex: Directeur Commercial">
+                        @error('fonction') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                    </div>
+
                     {{-- Téléphone --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone *</label>
@@ -169,7 +251,8 @@
                     {{-- Email --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Email <span class="text-gray-400 font-normal">(optionnel)</span>
+                            Email
+                            <span class="text-gray-400 font-normal">(optionnel)</span>
                         </label>
                         <input wire:model="email" type="email"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
@@ -232,7 +315,8 @@
                     {{-- Entreprise --}}
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Entreprise <span class="text-gray-400 font-normal">(optionnel)</span>
+                            Entreprise
+                            <span class="text-gray-400 font-normal">(optionnel)</span>
                         </label>
                         <select wire:model="id_entreprise"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">

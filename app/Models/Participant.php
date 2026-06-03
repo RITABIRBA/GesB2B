@@ -14,6 +14,9 @@ class Participant extends Model
     'id_evenement',
     'nom',
     'prenom',
+    'genre',           // ← nouveau
+    'fonction',        // ← nouveau
+    'participation_rdv', // ← nouveau
     'secteur_activite',
     'email',
     'telephone',

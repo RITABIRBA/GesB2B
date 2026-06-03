@@ -20,6 +20,7 @@ class GestionEvenements extends Component
     public $heure_fin = '';
     public $ville = '';
     public $lieu = '';
+    public $montant_inscription = 0; // ← nouveau
     public $showModal = false;
     public $isEditing = false;
     public $search = '';
@@ -51,6 +52,7 @@ class GestionEvenements extends Component
         $this->heure_fin             = '';
         $this->ville                 = '';
         $this->lieu                  = '';
+        $this->montant_inscription   = 0; // ← nouveau
         $this->resetErrorBag();
     }
 
@@ -67,6 +69,7 @@ class GestionEvenements extends Component
         $this->heure_fin             = $e->heure_fin;
         $this->ville                 = $e->ville;
         $this->lieu                  = $e->lieu;
+        $this->montant_inscription   = $e->montant_inscription; // ← nouveau
         $this->isEditing             = true;
         $this->showModal             = true;
     }
@@ -75,43 +78,46 @@ class GestionEvenements extends Component
     {
         if ($this->utiliser_nouveau_type === '1') {
             $this->validate([
-                'nouveau_type' => 'required|string|max:255',
-                'nom'          => 'required|string|max:255',
-                'annee'        => 'required|integer|min:2000|max:2100',
-                'date_debut'   => 'required|date',
-                'date_fin'     => 'required|date|after_or_equal:date_debut',
-                'heure_debut'  => 'required',
-                'heure_fin'    => 'required',
-                'ville'        => 'required|string|max:255',
-                'lieu'         => 'required|string|max:255',
+                'nouveau_type'         => 'required|string|max:255',
+                'nom'                  => 'required|string|max:255',
+                'annee'                => 'required|integer|min:2000|max:2100',
+                'date_debut'           => 'required|date',
+                'date_fin'             => 'required|date|after_or_equal:date_debut',
+                'heure_debut'          => 'required',
+                'heure_fin'            => 'required',
+                'ville'                => 'required|string|max:255',
+                'lieu'                 => 'required|string|max:255',
+                'montant_inscription'  => 'required|numeric|min:0',
             ]);
             $type    = TypeEvenement::create(['nom' => $this->nouveau_type]);
             $id_type = $type->id;
         } else {
             $this->validate([
-                'id_type_evenement' => 'required',
-                'nom'               => 'required|string|max:255',
-                'annee'             => 'required|integer|min:2000|max:2100',
-                'date_debut'        => 'required|date',
-                'date_fin'          => 'required|date|after_or_equal:date_debut',
-                'heure_debut'       => 'required',
-                'heure_fin'         => 'required',
-                'ville'             => 'required|string|max:255',
-                'lieu'              => 'required|string|max:255',
+                'id_type_evenement'    => 'required',
+                'nom'                  => 'required|string|max:255',
+                'annee'                => 'required|integer|min:2000|max:2100',
+                'date_debut'           => 'required|date',
+                'date_fin'             => 'required|date|after_or_equal:date_debut',
+                'heure_debut'          => 'required',
+                'heure_fin'            => 'required',
+                'ville'                => 'required|string|max:255',
+                'lieu'                 => 'required|string|max:255',
+                'montant_inscription'  => 'required|numeric|min:0',
             ]);
             $id_type = $this->id_type_evenement;
         }
 
         $data = [
-            'id_type_evenement' => $id_type,
-            'nom'               => $this->nom,
-            'annee'             => $this->annee,
-            'date_debut'        => $this->date_debut,
-            'date_fin'          => $this->date_fin,
-            'heure_debut'       => $this->heure_debut,
-            'heure_fin'         => $this->heure_fin,
-            'ville'             => $this->ville,
-            'lieu'              => $this->lieu,
+            'id_type_evenement'   => $id_type,
+            'nom'                 => $this->nom,
+            'annee'               => $this->annee,
+            'date_debut'          => $this->date_debut,
+            'date_fin'            => $this->date_fin,
+            'heure_debut'         => $this->heure_debut,
+            'heure_fin'           => $this->heure_fin,
+            'ville'               => $this->ville,
+            'lieu'                => $this->lieu,
+            'montant_inscription' => $this->montant_inscription, // ← nouveau
         ];
 
         if ($this->isEditing) {

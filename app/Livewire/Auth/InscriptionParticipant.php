@@ -10,17 +10,26 @@ use Illuminate\Support\Facades\Hash;
 
 class InscriptionParticipant extends Component
 {
+    // Infos personnelles
     public $nom = '';
     public $prenom = '';
+    public $genre = '';
+    public $fonction = '';
     public $email = '';
     public $telephone = '';
     public $secteur_activite = '';
+    public $participation_rdv = true;
+
+    // Rôle et événement
     public $role = 'visiteur';
-    public $password = '';
-    public $password_confirmation = '';
     public $id_evenement = '';
     public $id_cdd = '';
 
+    // Mot de passe
+    public $password = '';
+    public $password_confirmation = '';
+
+    // Modal succès
     public $showSuccessModal = false;
     public $code_acces_genere = '';
 
@@ -38,6 +47,7 @@ class InscriptionParticipant extends Component
         $this->validate([
             'nom'          => 'required|string|max:255',
             'prenom'       => 'required|string|max:255',
+            'genre'        => 'required|string',
             'email'        => 'required|email|unique:users,email',
             'telephone'    => 'required|string|max:20',
             'password'     => 'required|min:8|confirmed',
@@ -59,16 +69,19 @@ class InscriptionParticipant extends Component
 
         // Crée le PARTICIPANT
         Participant::create([
-            'id_cdd'           => $this->id_cdd,
-            'id_evenement'     => $this->id_evenement,
-            'id_entreprise'    => null,
-            'nom'              => $this->nom,
-            'prenom'           => $this->prenom,
-            'email'            => $this->email,
-            'telephone'        => $this->telephone,
-            'secteur_activite' => $this->secteur_activite,
-            'role'             => $this->role,
-            'code_acces'       => $code,
+            'id_cdd'            => $this->id_cdd,
+            'id_evenement'      => $this->id_evenement,
+            'id_entreprise'     => null,
+            'nom'               => $this->nom,
+            'prenom'            => $this->prenom,
+            'genre'             => $this->genre,
+            'fonction'          => $this->fonction,
+            'email'             => $this->email,
+            'telephone'         => $this->telephone,
+            'secteur_activite'  => $this->secteur_activite,
+            'participation_rdv' => $this->participation_rdv,
+            'role'              => $this->role,
+            'code_acces'        => $code,
             'statut_historique' => 'actif',
         ]);
 

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->foreignId('id_inscription')->constrained('inscriptions')->onDelete('cascade');
             $table->decimal('montant', 10, 2);
             $table->date('date_paiement');
-            $table->enum('mode_paiement', ['especes', 'virement', 'mobile_money', 'carte'])->default('especes');
+            $table->enum('mode_paiement', ['especes', 'virement', 'mobile_money', 'orange_money', 'moov_money', 'carte'])->default('especes');
             $table->enum('statut', ['en_attente', 'valide', 'rejete'])->default('en_attente');
             $table->timestamps();
         });

@@ -4,299 +4,497 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GesB2B — CCI-BF</title>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #004d27 0%, #007A3D 40%, #005a2d 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: rgba(200, 16, 46, 0.08);
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .stat-num {
+            background: linear-gradient(135deg, #ffffff, #e0f0e8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #f0f0f0;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: #007A3D;
+            box-shadow: 0 25px 50px rgba(0, 122, 61, 0.12);
+        }
+
+        .feature-card:hover .feature-icon {
+            background-color: #007A3D !important;
+        }
+
+        .feature-card:hover .feature-icon i {
+            color: white !important;
+        }
+
+        .btn-primary {
+            background: #C8102E;
+            color: white;
+            padding: 16px 36px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background: #a00d25;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(200, 16, 46, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            padding: 16px 36px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid rgba(255,255,255,0.4);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+        }
+
+        .divider {
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #C8102E, #007A3D);
+            border-radius: 2px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .float { animation: float 4s ease-in-out infinite; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-up { animation: fadeUp 0.9s ease forwards; }
+        .delay-1 { animation-delay: 0.2s; opacity: 0; }
+        .delay-2 { animation-delay: 0.4s; opacity: 0; }
+        .delay-3 { animation-delay: 0.6s; opacity: 0; }
+
+        .role-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .role-card:hover {
+            border-color: #007A3D;
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(0,122,61,0.1);
+        }
+
+        .section-tag {
+            display: inline-block;
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+    </style>
 </head>
-<body class="font-sans antialiased">
+<body class="antialiased bg-white">
 
-    {{-- 
-        NAVBAR
-     --}}
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+    {{-- NAVBAR --}}
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-
-            {{-- Logo --}}
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
-                    style="background-color: #C8102E;">B</div>
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-11 h-11 object-contain">
                 <div>
-                    <h1 class="text-xl font-bold text-gray-800">GesB2B</h1>
-                    <p class="text-xs text-gray-400 -mt-1">CCI-BF Platform</p>
+                    <h1 class="text-lg font-bold text-gray-900 leading-none">GesB2B</h1>
+                    <p class="text-xs mt-0.5" style="color: #007A3D;">CCI-BF Platform</p>
                 </div>
             </div>
 
-            {{-- Bouton connexion --}}
             @if(Route::has('login'))
             <div class="flex items-center gap-3">
                 @auth
                 <a href="{{ url('/dashboard') }}"
-                    class="px-5 py-2.5 rounded-xl text-white font-medium text-sm transition hover:opacity-90"
+                    class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 flex items-center gap-2"
                     style="background-color: #007A3D;">
-                    <i class="fa-solid fa-gauge mr-1"></i> Mon espace
+                    <i class="fa-solid fa-gauge text-xs"></i> Mon espace
                 </a>
                 @else
+                <a href="{{ route('inscription.participant') }}"
+                    class="px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 border-2"
+                    style="color: #007A3D; border-color: #007A3D;">
+                    <i class="fa-solid fa-user-plus text-xs"></i> S'inscrire
+                </a>
                 <a href="{{ route('login') }}"
-                    class="px-5 py-2.5 rounded-xl text-white font-medium text-sm transition hover:opacity-90"
+                    class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 flex items-center gap-2"
                     style="background-color: #C8102E;">
-                    <i class="fa-solid fa-right-to-bracket mr-1"></i> Se connecter
+                    <i class="fa-solid fa-right-to-bracket text-xs"></i> Se connecter
                 </a>
                 @endauth
             </div>
             @endif
-
         </div>
     </nav>
 
-    {{-- 
-        HERO SECTION
-     --}}
-    <section class="min-h-screen flex items-center pt-20"
-    style="background-image: linear-gradient(135deg, rgba(0, 107, 52, 0.82) 0%, rgba(0, 122, 61, 0.72) 60%, rgba(0, 90, 45, 0.82) 100%), url('/images/hero-bg.jpg');
-           background-size: cover;
-           background-position: center top;
-           background-repeat: no-repeat;
-           background-attachment: fixed;">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    {{-- HERO --}}
+    <section class="hero flex items-center pt-20">
+        <div class="max-w-7xl mx-auto px-6 w-full py-24 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
 
-                {{-- Texte --}}
-                <div class="text-white">
-                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6"
-                        style="background-color: rgba(200, 16, 46, 0.3);">
-                        <i class="fa-solid fa-star text-yellow-400"></i>
+                {{-- Contenu gauche --}}
+                <div class="text-white fade-up">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold mb-8 uppercase tracking-wider"
+                        style="background: rgba(200,16,46,0.25); border: 1px solid rgba(200,16,46,0.4);">
+                        <span class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
                         Plateforme officielle CCI-BF
                     </div>
-                    <h1 class="text-5xl font-bold leading-tight mb-6">
-                        Gestion des<br>
-                        <span style="color: #fbbf24;">Rencontres B2B</span>
+
+                    <h1 class="text-6xl font-extrabold leading-none mb-6 tracking-tight">
+                        Rencontres<br>
+                        <span style="color: rgba(255,255,255,0.6);">B2B</span>
+                        <span style="color: #C8102E;"> .</span>
                     </h1>
-                    <p class="text-green-100 text-lg mb-8 leading-relaxed">
-                        La plateforme digitale de la Chambre de Commerce et d'Industrie
-                        du Burkina Faso pour organiser et gérer les forums économiques
-                        et les rendez-vous d'affaires.
+
+                    <p class="text-white/70 text-xl mb-10 leading-relaxed max-w-lg">
+                        La Chambre de Commerce et d'Industrie du Burkina Faso
+                        digitalise et automatise l'organisation de ses forums
+                        économiques internationaux.
                     </p>
-                    <div class="flex items-center gap-4">
+
+                    <div class="flex items-center gap-4 flex-wrap">
                         @auth
-                        <a href="{{ url('/dashboard') }}"
-                            class="px-8 py-4 rounded-xl text-white font-semibold text-lg transition hover:opacity-90 shadow-xl flex items-center gap-2"
-                            style="background-color: #C8102E;">
-                            <i class="fa-solid fa-gauge"></i>
-                            Mon espace
+                        <a href="{{ url('/dashboard') }}" class="btn-primary">
+                            <i class="fa-solid fa-gauge"></i> Mon espace
                         </a>
                         @else
-                        <a href="{{ route('login') }}"
-                            class="px-8 py-4 rounded-xl text-white font-semibold text-lg transition hover:opacity-90 shadow-xl flex items-center gap-2"
-                            style="background-color: #C8102E;">
-                            <i class="fa-solid fa-right-to-bracket"></i>
-                            Se connecter
+                        <a href="{{ route('login') }}" class="btn-primary">
+                            <i class="fa-solid fa-right-to-bracket"></i> Accéder à la plateforme
+                        </a>
+                        <a href="#fonctionnalites" class="btn-outline">
+                            Découvrir <i class="fa-solid fa-arrow-down"></i>
                         </a>
                         @endauth
-                        <a href="#features"
-                            class="px-8 py-4 rounded-xl font-semibold text-lg transition border-2 border-white/30 text-white hover:bg-white/10 flex items-center gap-2">
-                            <i class="fa-solid fa-circle-info"></i>
-                            En savoir plus
-                        </a>
                     </div>
                 </div>
 
-                {{-- Cartes stats --}}
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-6 text-white border border-white/20">
-                        <i class="fa-solid fa-building text-3xl mb-3" style="color: #fbbf24;"></i>
-                        <p class="text-3xl font-bold">{{ \App\Models\Entreprise::count() }}+</p>
-                        <p class="text-green-200 text-sm mt-1">Entreprises inscrites</p>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-6 text-white border border-white/20">
-                        <i class="fa-solid fa-users text-3xl mb-3" style="color: #fbbf24;"></i>
-                        <p class="text-3xl font-bold">{{ \App\Models\Participant::count() }}+</p>
-                        <p class="text-green-200 text-sm mt-1">Participants enregistrés</p>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-6 text-white border border-white/20">
-                        <i class="fa-solid fa-handshake text-3xl mb-3" style="color: #fbbf24;"></i>
-                        <p class="text-3xl font-bold">{{ \App\Models\RendezVous::count() }}+</p>
-                        <p class="text-green-200 text-sm mt-1">Rendez-vous planifiés</p>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-6 text-white border border-white/20">
-                        <i class="fa-solid fa-calendar text-3xl mb-3" style="color: #fbbf24;"></i>
-                        <p class="text-3xl font-bold">{{ \App\Models\Evenement::count() }}+</p>
-                        <p class="text-green-200 text-sm mt-1">Événements organisés</p>
-                    </div>
-                </div>
+                {{-- Stats droite --}}
+                <div class="grid grid-cols-2 gap-5 fade-up delay-1">
 
+                    <div class="glass rounded-2xl p-7 float">
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+                            style="background: rgba(200,16,46,0.2);">
+                            <i class="fa-solid fa-building text-white text-lg"></i>
+                        </div>
+                        <p class="text-5xl font-extrabold stat-num mb-1">
+                            {{ \App\Models\Entreprise::count() }}
+                        </p>
+                        <p class="text-white/50 text-sm font-medium">Entreprises</p>
+                    </div>
+
+                    <div class="glass rounded-2xl p-7" style="animation: float 4s ease-in-out 1s infinite;">
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+                            style="background: rgba(200,16,46,0.2);">
+                            <i class="fa-solid fa-users text-white text-lg"></i>
+                        </div>
+                        <p class="text-5xl font-extrabold stat-num mb-1">
+                            {{ \App\Models\Participant::count() }}
+                        </p>
+                        <p class="text-white/50 text-sm font-medium">Participants</p>
+                    </div>
+
+                    <div class="glass rounded-2xl p-7" style="animation: float 4s ease-in-out 0.5s infinite;">
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+                            style="background: rgba(200,16,46,0.2);">
+                            <i class="fa-solid fa-handshake text-white text-lg"></i>
+                        </div>
+                        <p class="text-5xl font-extrabold stat-num mb-1">
+                            {{ \App\Models\RendezVous::count() }}
+                        </p>
+                        <p class="text-white/50 text-sm font-medium">Rendez-vous</p>
+                    </div>
+
+                    <div class="glass rounded-2xl p-7" style="animation: float 4s ease-in-out 1.5s infinite;">
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+                            style="background: rgba(200,16,46,0.2);">
+                            <i class="fa-solid fa-calendar-star text-white text-lg"></i>
+                        </div>
+                        <p class="text-5xl font-extrabold stat-num mb-1">
+                            {{ \App\Models\Evenement::count() }}
+                        </p>
+                        <p class="text-white/50 text-sm font-medium">Événements</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        {{-- Scroll indicator --}}
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/40 text-xs flex flex-col items-center gap-2">
+            <span>Défiler</span>
+            <i class="fa-solid fa-chevron-down animate-bounce"></i>
+        </div>
+    </section>
+
+    {{-- FLUX --}}
+    <section class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+
+            <div class="text-center mb-16">
+                <div class="section-tag text-white" style="background-color: #C8102E;">
+                    Processus
+                </div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Comment ça fonctionne
+                </h2>
+                <div class="divider mx-auto mb-4"></div>
+                <p class="text-gray-500 text-lg max-w-xl mx-auto">
+                    Un processus fluide et entièrement automatisé
+                    de l'inscription au rendez-vous
+                </p>
+            </div>
+
+            <div class="relative">
+                {{-- Ligne de connexion --}}
+                <div class="hidden lg:block absolute top-10 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gray-200 to-transparent mx-32"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                    @php
+                    $etapes = [
+                        ['num' => '01', 'icon' => 'fa-user-plus',      'color' => '#007A3D', 'label' => 'Préinscription',  'desc' => 'Le participant s\'inscrit en ligne et choisit son chef de délégation'],
+                        ['num' => '02', 'icon' => 'fa-user-check',     'color' => '#2d5a8e', 'label' => 'Validation CDD',  'desc' => 'Le chef de délégation valide les informations du participant'],
+                        ['num' => '03', 'icon' => 'fa-credit-card',    'color' => '#C8102E', 'label' => 'Paiement',        'desc' => 'Paiement sécurisé via Orange Money, Moov Money ou carte bancaire'],
+                        ['num' => '04', 'icon' => 'fa-heart',          'color' => '#8b5cf6', 'label' => 'Souhaits RDV',    'desc' => 'Le participant émet ses souhaits de rencontre par ordre de priorité'],
+                        ['num' => '05', 'icon' => 'fa-calendar-check', 'color' => '#007A3D', 'label' => 'Planning généré', 'desc' => 'Le système génère automatiquement le planning optimisé des RDV'],
+                    ];
+                    @endphp
+
+                    @foreach($etapes as $etape)
+                    <div class="text-center relative">
+                        <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-5 shadow-lg relative z-10"
+                            style="background-color: {{ $etape['color'] }}">
+                            <i class="fa-solid {{ $etape['icon'] }}"></i>
+                        </div>
+                        <span class="text-xs font-bold text-gray-300 tracking-widest">{{ $etape['num'] }}</span>
+                        <h4 class="font-bold text-gray-900 mt-1 mb-2">{{ $etape['label'] }}</h4>
+                        <p class="text-gray-400 text-xs leading-relaxed">{{ $etape['desc'] }}</p>
+                    </div>
+                    @endforeach
+                </div>
             </div>
         </div>
     </section>
 
-    {{-- 
-        FEATURES SECTION
-     --}}
-    <section id="features" class="py-20 bg-gray-50">
+    {{-- FONCTIONNALITÉS --}}
+    <section id="fonctionnalites" class="py-24" style="background-color: #f8faf9;">
         <div class="max-w-7xl mx-auto px-6">
 
-            {{-- Titre --}}
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-800 mb-4">
-                    Une plateforme complète
+                <div class="section-tag text-white" style="background-color: #007A3D;">
+                    Fonctionnalités
+                </div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Tout ce dont vous avez besoin
                 </h2>
-                <p class="text-gray-500 text-lg max-w-2xl mx-auto">
-                    Tous les outils nécessaires pour organiser et gérer
-                    vos forums économiques B2B
+                <div class="divider mx-auto mb-4"></div>
+                <p class="text-gray-500 text-lg max-w-xl mx-auto">
+                    Une solution complète pour gérer vos forums
+                    économiques de bout en bout
                 </p>
             </div>
 
-            {{-- Cards features --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @php
                 $features = [
-                    [
-                        'icon'  => 'fa-handshake',
-                        'color' => '#007A3D',
-                        'bg'    => '#e6f4ed',
-                        'title' => 'Match-making B2B',
-                        'desc'  => 'Génération automatique du planning des rendez-vous basée sur les souhaits des participants.',
-                    ],
-                    [
-                        'icon'  => 'fa-building',
-                        'color' => '#C8102E',
-                        'bg'    => '#fde8ec',
-                        'title' => 'Gestion des Entreprises',
-                        'desc'  => 'Inscrivez et gérez les entreprises participantes avec validation et suivi en temps réel.',
-                    ],
-                    [
-                        'icon'  => 'fa-id-badge',
-                        'color' => '#2d5a8e',
-                        'bg'    => '#e8f0fb',
-                        'title' => 'Badges & QR Codes',
-                        'desc'  => 'Génération automatique des badges avec QR codes pour chaque participant.',
-                    ],
-                    [
-                        'icon'  => 'fa-money-bill',
-                        'color' => '#007A3D',
-                        'bg'    => '#e6f4ed',
-                        'title' => 'Paiements & Reçus',
-                        'desc'  => 'Gestion des inscriptions et paiements avec génération automatique des reçus.',
-                    ],
-                    [
-                        'icon'  => 'fa-language',
-                        'color' => '#8b5cf6',
-                        'bg'    => '#f3e8ff',
-                        'title' => 'Traducteurs',
-                        'desc'  => 'Assignation des traducteurs aux rendez-vous selon leurs disponibilités.',
-                    ],
-                    [
-                        'icon'  => 'fa-users-gear',
-                        'color' => '#f59e0b',
-                        'bg'    => '#fef3c7',
-                        'title' => 'Multi-rôles',
-                        'desc'  => 'Admin, Superviseur, CDD, Entreprise, Participant et Traducteur avec des droits adaptés.',
-                    ],
+                    ['icon' => 'fa-wand-magic-sparkles', 'color' => '#007A3D', 'title' => 'Match-making intelligent',   'desc' => 'Le système génère automatiquement le planning optimal en priorisant les rendez-vous mutuels.'],
+                    ['icon' => 'fa-mobile-screen',       'color' => '#C8102E', 'title' => 'Paiement Mobile Money',      'desc' => 'Paiement Orange Money et Moov Money avec confirmation OTP. Carte bancaire acceptée.'],
+                    ['icon' => 'fa-id-badge',            'color' => '#2d5a8e', 'title' => 'Badges automatiques',        'desc' => 'Génération automatique des badges officiels avec QR code après validation du paiement.'],
+                    ['icon' => 'fa-rotate',              'color' => '#8b5cf6', 'title' => 'Gestion des absences',       'desc' => 'Signalement des absences et re-match automatique pour remplacer les participants absents.'],
+                    ['icon' => 'fa-book-open',           'color' => '#007A3D', 'title' => 'Catalogue en ligne',         'desc' => 'Moteur de recherche des entreprises et participants visible après clôture des inscriptions.'],
+                    ['icon' => 'fa-shield-halved',       'color' => '#C8102E', 'title' => 'Multi-rôles sécurisé',       'desc' => 'Six rôles distincts avec des droits d\'accès adaptés à chaque acteur du forum.'],
                 ];
                 @endphp
 
                 @foreach($features as $feature)
-                <div class="bg-white rounded-2xl shadow p-8 hover:shadow-lg transition">
-                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4"
-                        style="background-color: {{ $feature['bg'] }}">
-                        <i class="fa-solid {{ $feature['icon'] }}"
+                <div class="feature-card bg-white rounded-2xl p-8">
+                    <div class="feature-icon w-14 h-14 rounded-xl flex items-center justify-center mb-6 transition-all duration-300"
+                        style="background-color: {{ $feature['color'] }}15;">
+                        <i class="fa-solid {{ $feature['icon'] }} text-xl transition-all duration-300"
                             style="color: {{ $feature['color'] }}"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">{{ $feature['title'] }}</h3>
-                    <p class="text-gray-500 text-sm leading-relaxed">{{ $feature['desc'] }}</p>
+                    <h3 class="text-lg font-bold text-gray-900 mb-3">{{ $feature['title'] }}</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">{{ $feature['desc'] }}</p>
                 </div>
                 @endforeach
-
             </div>
         </div>
     </section>
 
-    {{-- 
-        ESPACES SECTION
-     --}}
-    <section class="py-20 bg-white">
+    {{-- RÔLES --}}
+    <section class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-6">
 
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-800 mb-4">
-                    Des espaces dédiés à chaque acteur
+                <div class="section-tag text-white" style="background-color: #C8102E;">
+                    Les acteurs
+                </div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Un espace pour chaque acteur
                 </h2>
-                <p class="text-gray-500 text-lg">
-                    Chaque utilisateur dispose d'un espace personnalisé selon son rôle
+                <div class="divider mx-auto mb-4"></div>
+                <p class="text-gray-500 text-lg max-w-xl mx-auto">
+                    Chaque utilisateur accède à un espace personnalisé
+                    adapté à son rôle dans le forum
                 </p>
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 @php
-                $espaces = [
-                    ['label' => 'Admin',       'icon' => 'fa-shield-halved', 'color' => '#C8102E', 'desc' => 'Gestion complète'],
-                    ['label' => 'Superviseur', 'icon' => 'fa-eye',           'color' => '#f59e0b', 'desc' => 'Vue globale'],
-                    ['label' => 'CDD',         'icon' => 'fa-user-tie',      'color' => '#2d5a8e', 'desc' => 'Sa délégation'],
-                    ['label' => 'Entreprise',  'icon' => 'fa-building',      'color' => '#007A3D', 'desc' => 'Ses participants'],
-                    ['label' => 'Participant', 'icon' => 'fa-user',          'color' => '#8b5cf6', 'desc' => 'Ses RDV'],
-                    ['label' => 'Traducteur',  'icon' => 'fa-language',      'color' => '#06b6d4', 'desc' => 'Ses missions'],
+                $roles = [
+                    ['label' => 'Administrateur', 'icon' => 'fa-shield-halved', 'color' => '#C8102E', 'desc' => 'Gestion complète'],
+                    ['label' => 'Superviseur',    'icon' => 'fa-eye',           'color' => '#2d5a8e', 'desc' => 'Vue globale'],
+                    ['label' => 'CDD',            'icon' => 'fa-user-tie',      'color' => '#007A3D', 'desc' => 'Sa délégation'],
+                    ['label' => 'Entreprise',     'icon' => 'fa-building',      'color' => '#8b5cf6', 'desc' => 'Ses participants'],
+                    ['label' => 'Participant',    'icon' => 'fa-user',          'color' => '#007A3D', 'desc' => 'Ses rendez-vous'],
+                    ['label' => 'Traducteur',     'icon' => 'fa-language',      'color' => '#C8102E', 'desc' => 'Ses missions'],
                 ];
                 @endphp
 
-                @foreach($espaces as $espace)
-                <div class="text-center p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition hover:border-gray-200">
-                    <div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl mx-auto mb-3"
-                        style="background-color: {{ $espace['color'] }}">
-                        <i class="fa-solid {{ $espace['icon'] }}"></i>
+                @foreach($roles as $role)
+                <div class="role-card bg-gray-50 rounded-2xl p-6 text-center cursor-default">
+                    <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl mx-auto mb-4"
+                        style="background-color: {{ $role['color'] }}">
+                        <i class="fa-solid {{ $role['icon'] }}"></i>
                     </div>
-                    <h4 class="font-bold text-gray-800 text-sm">{{ $espace['label'] }}</h4>
-                    <p class="text-gray-400 text-xs mt-1">{{ $espace['desc'] }}</p>
+                    <h4 class="font-bold text-gray-900 text-sm mb-1">{{ $role['label'] }}</h4>
+                    <p class="text-gray-400 text-xs">{{ $role['desc'] }}</p>
                 </div>
                 @endforeach
             </div>
-
         </div>
     </section>
 
-    {{-- 
-        CTA SECTION
-     --}}
-    <section class="py-20" style="background: linear-gradient(135deg, #C8102E 0%, #a00d25 100%);">
-        <div class="max-w-4xl mx-auto px-6 text-center">
-            <h2 class="text-4xl font-bold text-white mb-4">
-                Prêt à commencer ?
+    {{-- CTA FINAL --}}
+    <section class="py-24 relative overflow-hidden"
+        style="background: linear-gradient(135deg, #007A3D 0%, #004d27 50%, #007A3D 100%);">
+
+        {{-- Cercles décoratifs --}}
+        <div class="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10"
+            style="background: #C8102E; transform: translate(30%, -30%);"></div>
+        <div class="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10"
+            style="background: white; transform: translate(-30%, 30%);"></div>
+
+        <div class="max-w-3xl mx-auto px-6 text-center relative z-10">
+            <img src="{{ asset('images/logo-ccibf.png') }}"
+                alt="CCI-BF" class="w-16 h-16 object-contain mx-auto mb-8 opacity-90">
+            <h2 class="text-5xl font-extrabold text-white mb-6 leading-tight">
+                Rejoignez la plateforme
             </h2>
-            <p class="text-red-200 text-lg mb-8">
-                Connectez-vous à votre espace et gérez vos rencontres B2B
+            <p class="text-white/60 text-xl mb-10 leading-relaxed">
+                Gérez vos rencontres B2B de manière professionnelle,
+                efficace et entièrement digitalisée.
             </p>
-            @auth
-            <a href="{{ url('/dashboard') }}"
-                class="px-10 py-4 rounded-xl bg-white font-bold text-lg transition hover:bg-gray-100 inline-flex items-center gap-2"
-                style="color: #C8102E;">
-                <i class="fa-solid fa-gauge"></i>
-                Accéder à mon espace
-            </a>
-            @else
-            <a href="{{ route('login') }}"
-                class="px-10 py-4 rounded-xl bg-white font-bold text-lg transition hover:bg-gray-100 inline-flex items-center gap-2"
-                style="color: #C8102E;">
-                <i class="fa-solid fa-right-to-bracket"></i>
-                Se connecter maintenant
-            </a>
-            @endauth
+            <div class="flex items-center justify-center gap-5 flex-wrap">
+                @auth
+                <a href="{{ url('/dashboard') }}"
+                    class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
+                    style="color: #007A3D;">
+                    <i class="fa-solid fa-gauge"></i> Mon espace
+                </a>
+                @else
+                <a href="{{ route('login') }}" class="btn-primary shadow-2xl">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    Se connecter
+                </a>
+                <a href="{{ route('inscription.participant') }}"
+                    class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
+                    style="color: #007A3D;">
+                    <i class="fa-solid fa-user-plus"></i>
+                    S'inscrire
+                </a>
+                @endauth
+            </div>
         </div>
     </section>
 
-    {{-- 
-        FOOTER
-     --}}
-    <footer class="py-8 text-center text-sm text-gray-500 bg-gray-50 border-t">
-        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                    style="background-color: #C8102E;">B</div>
-                <span class="font-semibold text-gray-700">GesB2B — CCI-BF</span>
-            </div>
-            <p>© {{ date('Y') }} Chambre de Commerce et d'Industrie du Burkina Faso. Tous droits réservés.</p>
-            <div class="flex items-center gap-4 text-gray-400">
-                <span>Laravel {{ app()->version() }}</span>
-                <span>•</span>
-                <span>PHP {{ PHP_VERSION }}</span>
+    {{-- FOOTER --}}
+    <footer style="background-color: #0d1f16;" class="py-10 text-white/40">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <img src="{{ asset('images/logo-ccibf.png') }}"
+                        alt="CCI-BF" class="w-10 h-10 object-contain opacity-80">
+                    <div>
+                        <p class="font-bold text-white text-sm">GesB2B</p>
+                        <p class="text-xs">Chambre de Commerce et d'Industrie du Burkina Faso</p>
+                    </div>
+                </div>
+                <p class="text-sm text-center">
+                    © {{ date('Y') }} CCI-BF — Tous droits réservés
+                </p>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                    <span>Plateforme opérationnelle</span>
+                </div>
             </div>
         </div>
     </footer>

@@ -5,8 +5,8 @@
         style="background: linear-gradient(135deg, #006B34 0%, #007A3D 50%, #005a2d 100%);">
 
         <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-xl"
-                style="background-color: #C8102E;">B</div>
+            <img src="{{ asset('images/logo-ccibf.png') }}"
+                alt="CCI-BF" class="w-12 h-12 object-contain rounded-xl">
             <div>
                 <h1 class="text-2xl font-bold">GesB2B</h1>
                 <p class="text-green-300 text-sm">CCI-BF Platform</p>
@@ -56,8 +56,8 @@
 
             {{-- Logo mobile --}}
             <div class="lg:hidden flex items-center gap-3 mb-8 justify-center">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-xl"
-                    style="background-color: #C8102E;">B</div>
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-12 h-12 object-contain rounded-xl">
                 <h1 class="text-2xl font-bold text-gray-800">GesB2B</h1>
             </div>
 
@@ -68,7 +68,7 @@
 
             <div class="space-y-4">
 
-                {{-- Nom --}}
+                {{-- Nom + Prénom --}}
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
@@ -84,6 +84,35 @@
                             placeholder="Votre prénom">
                         @error('prenom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
+                </div>
+
+                {{-- Genre --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Genre *</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" wire:click="$set('genre', 'homme')"
+                            class="border rounded-xl p-2.5 text-center text-sm transition flex items-center justify-center gap-2
+                                {{ $genre === 'homme' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                            <i class="fa-solid fa-mars"></i> Homme
+                        </button>
+                        <button type="button" wire:click="$set('genre', 'femme')"
+                            class="border rounded-xl p-2.5 text-center text-sm transition flex items-center justify-center gap-2
+                                {{ $genre === 'femme' ? 'border-pink-400 bg-pink-50 text-pink-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                            <i class="fa-solid fa-venus"></i> Femme
+                        </button>
+                    </div>
+                    @error('genre') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Fonction --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Fonction / Poste
+                        <span class="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
+                    <input wire:model="fonction" type="text"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        placeholder="Ex: Directeur Commercial, PDG...">
                 </div>
 
                 {{-- Email --}}
@@ -116,32 +145,49 @@
                     </select>
                 </div>
 
+                {{-- Participation aux RDV --}}
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" wire:model="participation_rdv"
+                            class="rounded border-gray-300 w-5 h-5 text-green-600">
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">
+                                Je souhaite participer aux rendez-vous d'affaire
+                            </p>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                Cochez si vous voulez être inclus dans le match-making B2B
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
                 {{-- Rôle --}}
-<div>
-    <label class="block text-sm font-medium text-gray-700 mb-2">Rôle *</label>
-    <div class="grid grid-cols-2 gap-2">
-        <button type="button" wire:click="$set('role', 'exposant')"
-            class="border rounded-xl p-2 text-center text-sm transition
-                {{ $role === 'exposant' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-            <i class="fa-solid fa-store mr-1"></i> Exposant
-        </button>
-        <button type="button" wire:click="$set('role', 'visiteur')"
-            class="border rounded-xl p-2 text-center text-sm transition
-                {{ $role === 'visiteur' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-            <i class="fa-solid fa-user mr-1"></i> Visiteur
-        </button>
-        <button type="button" wire:click="$set('role', 'vip')"
-            class="border rounded-xl p-2 text-center text-sm transition
-                {{ $role === 'vip' ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-            <i class="fa-solid fa-star mr-1"></i> VIP
-        </button>
-        <button type="button" wire:click="$set('role', 'organisateur')"
-            class="border rounded-xl p-2 text-center text-sm transition
-                {{ $role === 'organisateur' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-            <i class="fa-solid fa-crown mr-1"></i> Organisateur
-        </button>
-    </div>
-</div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Rôle *</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" wire:click="$set('role', 'exposant')"
+                            class="border rounded-xl p-2 text-center text-sm transition
+                                {{ $role === 'exposant' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                            <i class="fa-solid fa-store mr-1"></i> Exposant
+                        </button>
+                        <button type="button" wire:click="$set('role', 'visiteur')"
+                            class="border rounded-xl p-2 text-center text-sm transition
+                                {{ $role === 'visiteur' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                            <i class="fa-solid fa-user mr-1"></i> Visiteur
+                        </button>
+                        <button type="button" wire:click="$set('role', 'vip')"
+                            class="border rounded-xl p-2 text-center text-sm transition
+                                {{ $role === 'vip' ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                            <i class="fa-solid fa-star mr-1"></i> VIP
+                        </button>
+                        <button type="button" wire:click="$set('role', 'organisateur')"
+                            class="border rounded-xl p-2 text-center text-sm transition
+                                {{ $role === 'organisateur' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                            <i class="fa-solid fa-crown mr-1"></i> Organisateur
+                        </button>
+                    </div>
+                </div>
+
                 {{-- Événement --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Événement *</label>
@@ -156,21 +202,19 @@
                 </div>
 
                 {{-- CDD --}}
-<div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">
-        Chef de Délégation (CDD) *
-    </label>
-    <select wire:model="id_cdd"
-        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-        <option value="">-- Choisir votre CDD --</option>
-        @foreach($cdds as $cdd)
-        <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
-        @endforeach
-    </select>
-    @error('id_cdd')
-        <span class="text-red-500 text-xs">{{ $message }}</span>
-    @enderror
-</div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Chef de Délégation (CDD) *
+                    </label>
+                    <select wire:model="id_cdd"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                        <option value="">-- Choisir votre CDD --</option>
+                        @foreach($cdds as $cdd)
+                        <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('id_cdd') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
 
                 {{-- Mot de passe --}}
                 <div>
@@ -203,7 +247,7 @@
                     Créer mon compte
                 </button>
 
-                {{-- Lien connexion --}}
+                {{-- Liens --}}
                 <p class="text-center text-sm text-gray-500">
                     Déjà inscrit ?
                     <a href="{{ route('login') }}" class="font-medium hover:underline"
@@ -211,8 +255,6 @@
                         Se connecter
                     </a>
                 </p>
-
-                {{-- Lien entreprise --}}
                 <p class="text-center text-sm text-gray-500">
                     Vous représentez une entreprise ?
                     <a href="{{ route('inscription.entreprise') }}" class="font-medium hover:underline"
@@ -243,7 +285,6 @@
             </div>
 
             <div class="p-8">
-
                 <div class="space-y-3 mb-6">
 
                     {{-- Code d'accès --}}

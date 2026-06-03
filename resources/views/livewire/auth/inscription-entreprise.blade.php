@@ -5,8 +5,8 @@
         style="background: linear-gradient(135deg, #006B34 0%, #007A3D 50%, #005a2d 100%);">
 
         <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-xl"
-                style="background-color: #C8102E;">B</div>
+            <img src="{{ asset('images/logo-ccibf.png') }}"
+                alt="CCI-BF" class="w-12 h-12 object-contain rounded-xl">
             <div>
                 <h1 class="text-2xl font-bold">GesB2B</h1>
                 <p class="text-green-300 text-sm">CCI-BF Platform</p>
@@ -54,6 +54,13 @@
     <div class="w-full lg:w-1/2 flex items-center justify-center p-8 overflow-y-auto">
         <div class="w-full max-w-md">
 
+            {{-- Logo mobile --}}
+            <div class="lg:hidden flex items-center gap-3 mb-8 justify-center">
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-12 h-12 object-contain rounded-xl">
+                <h1 class="text-2xl font-bold text-gray-800">GesB2B</h1>
+            </div>
+
             <div class="mb-6">
                 <h2 class="text-3xl font-bold text-gray-800">Inscrire mon entreprise</h2>
                 <p class="text-gray-500 mt-1">Créez votre compte entreprise</p>
@@ -91,10 +98,33 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Sous-secteur
+                        <span class="text-gray-400 font-normal">(optionnel)</span>
                     </label>
                     <input wire:model="sous_secteur" type="text"
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Ex: Informatique">
+                        placeholder="Ex: Informatique, Agro-alimentaire...">
+                </div>
+
+                {{-- Description des activités --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Description des activités *
+                    </label>
+                    <textarea wire:model="description_activites" rows="3"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
+                        placeholder="Décrivez brièvement les activités de votre entreprise..."></textarea>
+                    @error('description_activites') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Principaux produits --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Principaux produits / Savoir-faire
+                        <span class="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
+                    <textarea wire:model="principaux_produits" rows="2"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
+                        placeholder="Ex: Logiciels de gestion, Conseil en stratégie..."></textarea>
                 </div>
 
                 {{-- Pays et Ville --}}
@@ -129,21 +159,19 @@
                 </div>
 
                 {{-- CDD --}}
-<div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">
-        Chef de Délégation (CDD) *
-    </label>
-    <select wire:model="id_cdd"
-        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-        <option value="">-- Choisir votre CDD --</option>
-        @foreach($cdds as $cdd)
-        <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
-        @endforeach
-    </select>
-    @error('id_cdd')
-        <span class="text-red-500 text-xs">{{ $message }}</span>
-    @enderror
-</div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Chef de Délégation (CDD) *
+                    </label>
+                    <select wire:model="id_cdd"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                        <option value="">-- Choisir votre CDD --</option>
+                        @foreach($cdds as $cdd)
+                        <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('id_cdd') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
 
                 {{-- Email --}}
                 <div>

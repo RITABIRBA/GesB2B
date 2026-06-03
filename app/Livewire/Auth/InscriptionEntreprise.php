@@ -9,12 +9,17 @@ use Illuminate\Support\Facades\Hash;
 
 class InscriptionEntreprise extends Component
 {
+    // Infos entreprise
     public $nom = '';
     public $secteur_activite = '';
     public $sous_secteur = '';
+    public $description_activites = '';
+    public $principaux_produits = '';
     public $pays = '';
     public $ville = '';
     public $contact = '';
+
+    // Compte
     public $email = '';
     public $password = '';
     public $password_confirmation = '';
@@ -38,14 +43,15 @@ class InscriptionEntreprise extends Component
     public function sinscrire()
     {
         $this->validate([
-            'nom'              => 'required|string|max:255',
-            'secteur_activite' => 'required|string|max:255',
-            'pays'             => 'required|string|max:255',
-            'ville'            => 'required|string|max:255',
-            'contact'          => 'required|string|max:255',
-            'email'            => 'required|email|unique:users,email',
-            'password'         => 'required|min:8|confirmed',
-            'id_cdd'           => 'required',
+            'nom'                   => 'required|string|max:255',
+            'secteur_activite'      => 'required|string|max:255',
+            'description_activites' => 'required|string',
+            'pays'                  => 'required|string|max:255',
+            'ville'                 => 'required|string|max:255',
+            'contact'               => 'required|string|max:255',
+            'email'                 => 'required|email|unique:users,email',
+            'password'              => 'required|min:8|confirmed',
+            'id_cdd'                => 'required',
         ]);
 
         // Crée le compte USER
@@ -58,14 +64,16 @@ class InscriptionEntreprise extends Component
 
         // Crée l'ENTREPRISE
         Entreprise::create([
-            'id_cdd'           => $this->id_cdd,
-            'nom'              => $this->nom,
-            'secteur_activite' => $this->secteur_activite,
-            'sous_secteur'     => $this->sous_secteur,
-            'pays'             => $this->pays,
-            'ville'            => $this->ville,
-            'contact'          => $this->email,
-            'statut_validation' => 'en_attente',
+            'id_cdd'                => $this->id_cdd,
+            'nom'                   => $this->nom,
+            'secteur_activite'      => $this->secteur_activite,
+            'description_activites' => $this->description_activites,
+            'principaux_produits'   => $this->principaux_produits,
+            'sous_secteur'          => $this->sous_secteur,
+            'pays'                  => $this->pays,
+            'ville'                 => $this->ville,
+            'contact'               => $this->email,
+            'statut_validation'     => 'en_attente',
         ]);
 
         $this->showSuccessModal = true;

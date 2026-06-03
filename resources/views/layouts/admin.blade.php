@@ -126,6 +126,22 @@
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 </div>
             </div>
+            
+<style>
+    @media print {
+        body * { visibility: hidden; }
+        #planning-global, #planning-global * { visibility: visible; }
+        #planning-global {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 20px;
+        }
+        .no-print { display: none !important; }
+        .print-header { display: block !important; }
+    }
+</style>
         </header>
 
         {{-- Contenu --}}

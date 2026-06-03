@@ -6,6 +6,8 @@ use Livewire\Component;
 use App\Models\Participant;
 use App\Models\Entreprise;
 use App\Models\Evenement;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class MesParticipants extends Component
 {
@@ -13,6 +15,8 @@ class MesParticipants extends Component
     public $id_evenement = '';
     public $nom = '';
     public $prenom = '';
+    public $genre = '';
+    public $fonction = '';
     public $email = '';
     public $telephone = '';
     public $role = 'exposant';
@@ -20,7 +24,7 @@ class MesParticipants extends Component
     public $isEditing = false;
     public $search = '';
 
-    public $roles = ['exposant', 'visiteur'];
+    public $roles = ['exposant', 'visiteur', 'vip', 'organisateur'];
 
     public function openModal()
     {
@@ -41,6 +45,8 @@ class MesParticipants extends Component
         $this->id_evenement   = '';
         $this->nom            = '';
         $this->prenom         = '';
+        $this->genre          = '';
+        $this->fonction       = '';
         $this->email          = '';
         $this->telephone      = '';
         $this->role           = 'exposant';
@@ -54,6 +60,8 @@ class MesParticipants extends Component
         $this->id_evenement   = $p->id_evenement;
         $this->nom            = $p->nom;
         $this->prenom         = $p->prenom;
+        $this->genre          = $p->genre;
+        $this->fonction       = $p->fonction;
         $this->email          = $p->email;
         $this->telephone      = $p->telephone;
         $this->role           = $p->role;
@@ -72,26 +80,55 @@ class MesParticipants extends Component
             'role'         => 'required',
         ]);
 
-        $entreprise = Entreprise::first();
+        // Liaison par nom ✅
+        $entreprise = Entreprise::where('nom', auth()->user()->name)->first();
+
+        if (!$entreprise) {
+            session()->flash('error', 'Entreprise non trouvée.');
+            return;
+        }
+
+        $code = strtoupper(substr($this->nom, 0, 3) . rand(1000, 9999));
 
         $data = [
-            'id_entreprise' => $entreprise->id,
-            'id_evenement'  => $this->id_evenement,
-            'nom'           => $this->nom,
-            'prenom'        => $this->prenom,
-            'email'         => $this->email,
-            'telephone'     => $this->telephone,
-            'role'          => $this->role,
+            'id_entreprise'    => $entreprise->id,
+            'id_cdd'           => $entreprise->id_cdd,
+            'id_evenement'     => $this->id_evenement,
+            'nom'              => $this->nom,
+            'prenom'           => $this->prenom,
+            'genre'            => $this->genre,
+            'fonction'         => $this->fonction,
+            'email'            => $this->email,
+            'telephone'        => $this->telephone,
+            'role'             => $this->role,
+            'secteur_activite' => $entreprise->secteur_activite,
+            'statut_historique' => 'actif',
         ];
 
         if ($this->isEditing) {
             Participant::findOrFail($this->participant_id)->update($data);
             session()->flash('success', 'Participant modifié.');
         } else {
-            $data['code_acces']      = strtoupper(substr($this->nom, 0, 3) . rand(1000, 9999));
-            $data['secteur_activite'] = $entreprise->secteur_activite;
+            // Génère le code d'accès
+            $data['code_acces'] = $code;
+
+            // Crée le participant
             Participant::create($data);
-            session()->flash('success', 'Participant ajouté.');
+
+            // Crée aussi un compte USER si email fourni
+            if ($this->email) {
+                $userExiste = User::where('email', $this->email)->exists();
+                if (!$userExiste) {
+                    $user = User::create([
+                        'name'     => $this->nom . ' ' . $this->prenom,
+                        'email'    => $this->email,
+                        'password' => Hash::make($code), // Mot de passe = code d'accès
+                    ]);
+                    $user->assignRole('participant');
+                }
+            }
+
+            session()->flash('success', "Participant ajouté ! Code d'accès : {$code}");
         }
 
         $this->closeModal();
@@ -105,16 +142,21 @@ class MesParticipants extends Component
 
     public function render()
     {
-       $entreprise = Entreprise::where('nom', auth()->user()->name)->first();
+        // Liaison par nom ✅
+        $entreprise = Entreprise::where('nom', auth()->user()->name)->first();
 
         return view('livewire.entreprise.mes-participants', [
-            'participants' => Participant::where('id_entreprise', $entreprise->id)
-                ->when($this->search, fn($q) =>
-                    $q->where('nom', 'like', '%'.$this->search.'%')
-                      ->orWhere('prenom', 'like', '%'.$this->search.'%')
-                )
-                ->latest()->get(),
-            'evenements' => Evenement::orderBy('nom')->get(),
+            'participants' => $entreprise
+                ? Participant::where('id_entreprise', $entreprise->id)
+                    ->when($this->search, fn($q) =>
+                        $q->where('nom', 'like', '%'.$this->search.'%')
+                          ->orWhere('prenom', 'like', '%'.$this->search.'%')
+                    )
+                    ->latest()
+                    ->get()
+                : collect(),
+            'evenements'  => Evenement::orderBy('nom')->get(),
+            'entreprise'  => $entreprise,
         ])->layout('layouts.entreprise', ['title' => 'Mes Participants']);
     }
 }

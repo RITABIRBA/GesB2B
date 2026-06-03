@@ -8,10 +8,12 @@ class Entreprise extends Model
 {
     protected $table = 'entreprises';
 
-   protected $fillable = [
+  protected $fillable = [
     'id_cdd',
     'nom',
     'secteur_activite',
+    'description_activites', // ← nouveau
+    'principaux_produits',   // ← nouveau
     'sous_secteur',
     'pays',
     'ville',
