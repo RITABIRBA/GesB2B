@@ -23,9 +23,33 @@ class GestionInscriptions extends Component
 
     public function validerInscription($id)
     {
-        Inscription::findOrFail($id)->update([
+        $inscription = Inscription::with([
+            'evenement',
+            'participant',
+        ])->findOrFail($id);
+
+        // Vérifie si l'événement est gratuit
+        $evenement = $inscription->evenement;
+
+        if ($evenement && $evenement->type_paiement === 'gratuit') {
+            // Événement gratuit → valider directement sans paiement
+            $inscription->update([
+                'statut_presence'  => 'present',
+                'statut_paiement'  => 'paye',
+            ]);
+
+            // Génère le badge automatiquement
+            $this->genererBadge($inscription);
+
+            session()->flash('success', 'Inscription validée ! Événement gratuit — Badge généré automatiquement.');
+            return;
+        }
+
+        // Événement payant → attendre le paiement
+        $inscription->update([
             'statut_presence' => 'present',
         ]);
+
         session()->flash('success', 'Préinscription validée ! Le participant peut maintenant payer.');
     }
 
@@ -33,7 +57,7 @@ class GestionInscriptions extends Component
     {
         Inscription::findOrFail($id)->update([
             'statut_paiement' => 'annule',
-            'statut_presence'  => 'absent',
+            'statut_presence' => 'absent',
         ]);
         session()->flash('success', 'Inscription rejetée.');
     }
@@ -74,7 +98,6 @@ class GestionInscriptions extends Component
 
     /**
      * Génère automatiquement le badge
-     * après validation du paiement
      */
     private function genererBadge(Inscription $inscription)
     {
@@ -86,7 +109,7 @@ class GestionInscriptions extends Component
         $badgeExiste = Badge::where('id_participant', $participant->id)->exists();
         if ($badgeExiste) return;
 
-        // Type de badge selon le rôle du participant
+        // Type de badge selon le rôle
         $libelle = match($participant->role) {
             'vip'          => 'VIP',
             'organisateur' => 'Organisateur',
@@ -94,13 +117,11 @@ class GestionInscriptions extends Component
             default        => 'Visiteur',
         };
 
-        // Trouve ou crée le type de badge
         $typeBadge = TypeBadge::firstOrCreate(
             ['libelle' => $libelle],
             ['description' => 'Badge ' . $libelle]
         );
 
-        // Génère un QR code unique
         $qrCode = strtoupper(
             substr($participant->nom, 0, 2) .
             substr($participant->prenom ?? 'XX', 0, 2) .
@@ -110,7 +131,6 @@ class GestionInscriptions extends Component
             Str::random(6)
         );
 
-        // Crée le badge
         Badge::create([
             'id_participant' => $participant->id,
             'id_type_badge'  => $typeBadge->id,

@@ -28,7 +28,7 @@
         <div class="relative w-full md:w-1/3">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
             <input wire:model.live="search" type="text"
-                placeholder="Rechercher par nom, pays ou ville..."
+                placeholder="Rechercher par nom, pays, ville ou IFU..."
                 class="w-full border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
         </div>
     </div>
@@ -39,6 +39,7 @@
             <thead style="background-color: #f8f9fa;">
                 <tr class="border-b">
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Nom</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">IFU</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Secteur</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Pays</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Ville</th>
@@ -50,6 +51,15 @@
                 @forelse($entreprises as $entreprise)
                 <tr class="border-b hover:bg-gray-50 transition">
                     <td class="px-6 py-4 font-semibold text-gray-800">{{ $entreprise->nom }}</td>
+                    <td class="px-6 py-4">
+                        @if($entreprise->ifu)
+                        <span class="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg">
+                            {{ $entreprise->ifu }}
+                        </span>
+                        @else
+                        <span class="text-gray-300 text-xs">—</span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4">
                         <span class="text-xs px-3 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
                             {{ $entreprise->secteur_activite }}
@@ -105,7 +115,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="py-16 text-center text-gray-400">
+                    <td colspan="7" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-building text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucune entreprise pour le moment</p>
                         <button wire:click="openModal"
@@ -125,8 +135,8 @@
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
 
-            {{-- Header modal --}}
-            <div class="flex justify-between items-center px-8 py-5 border-b" style="background: linear-gradient(135deg, #007A3D, #005a2d);">
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-plus' }}"></i>
                     {{ $isEditing ? 'Modifier l\'entreprise' : 'Nouvelle entreprise' }}
@@ -136,17 +146,41 @@
                 </button>
             </div>
 
-            {{-- Body modal --}}
             <div class="p-8">
                 <div class="grid grid-cols-2 gap-5">
 
                     {{-- Nom --}}
                     <div class="col-span-2">
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom de l'entreprise *</label>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Nom de l'entreprise *
+                        </label>
                         <input wire:model="nom" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: Société Burkinabè de Commerce">
-                        @error('nom') <span class="text-red-500 text-xs mt-1 flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span> @enderror
+                        @error('nom')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    {{-- IFU --}}
+                    <div class="col-span-2">
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Numéro IFU
+                            <span class="text-gray-400 font-normal">(optionnel — unique par entreprise)</span>
+                        </label>
+                        <input wire:model="ifu" type="text"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm font-mono"
+                            placeholder="Ex: BF123456789">
+                        @error('ifu')
+                            <span class="text-red-500 text-xs mt-1">
+                                <i class="fa-solid fa-circle-exclamation mr-1"></i>
+                                {{ $message }}
+                            </span>
+                        @enderror
+                        <p class="text-xs text-gray-400 mt-1">
+                            <i class="fa-solid fa-circle-info mr-1"></i>
+                            Les participants qui saisissent cet IFU seront automatiquement liés à cette entreprise.
+                        </p>
                     </div>
 
                     {{-- Secteur --}}
@@ -159,7 +193,9 @@
                             <option value="{{ $secteur }}">{{ $secteur }}</option>
                             @endforeach
                         </select>
-                        @error('secteur_activite') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('secteur_activite')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     {{-- Sous-secteur --}}
@@ -182,7 +218,9 @@
                             <option value="{{ $p }}">{{ $p }}</option>
                             @endforeach
                         </select>
-                        @error('pays') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('pays')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     {{-- Ville --}}
@@ -191,7 +229,9 @@
                         <input wire:model="ville" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: Ouagadougou">
-                        @error('ville') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('ville')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     {{-- Téléphone --}}
@@ -200,7 +240,9 @@
                         <input wire:model="telephone" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: +226 70 00 00 00">
-                        @error('telephone') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('telephone')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     {{-- Email --}}
@@ -211,7 +253,9 @@
                         <input wire:model="email" type="email"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: contact@entreprise.com">
-                        @error('email') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('email')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
 
                 </div>
@@ -223,10 +267,18 @@
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="sauvegarder"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
                         style="background-color: #C8102E;">
-                        <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
-                        {{ $isEditing ? 'Modifier' : 'Enregistrer' }}
+                        <span wire:loading.remove>
+                            <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
+                            {{ $isEditing ? 'Modifier' : 'Enregistrer' }}
+                        </span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            Enregistrement...
+                        </span>
                     </button>
                 </div>
             </div>

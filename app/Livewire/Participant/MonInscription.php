@@ -31,7 +31,7 @@ class MonInscription extends Component
     public $telephone_paiement   = '';
     public $otp_code             = '';
     public $otp_saisi            = '';
-    public $etape_paiement       = 1; // 1=choix, 2=telephone, 3=otp, 4=carte
+    public $etape_paiement       = 1;
     public $showOtpInput         = false;
 
     // Carte bleue
@@ -52,7 +52,7 @@ class MonInscription extends Component
     public function updatedIdEvenement($value)
     {
         if ($value) {
-            $evenement          = Evenement::find($value);
+            $evenement = Evenement::find($value);
             $this->montant_paye = $evenement?->montant_inscription ?? 0;
         } else {
             $this->montant_paye = 0;
@@ -80,18 +80,18 @@ class MonInscription extends Component
     // =========================================================
     public function openModalPaiement($id)
     {
-        $inscription             = Inscription::findOrFail($id);
-        $this->inscription_id   = $id;
-        $this->mode_paiement    = 'orange_money';
-        $this->montant_paiement = $inscription->montant_paye;
-        $this->etape_paiement   = 1;
+        $inscription              = Inscription::findOrFail($id);
+        $this->inscription_id    = $id;
+        $this->mode_paiement     = 'orange_money';
+        $this->montant_paiement  = $inscription->montant_paye;
+        $this->etape_paiement    = 1;
         $this->telephone_paiement = '';
-        $this->otp_saisi        = '';
-        $this->otp_code         = '';
-        $this->carte_numero     = '';
-        $this->carte_nom        = '';
-        $this->carte_expiration = '';
-        $this->carte_cvv        = '';
+        $this->otp_saisi         = '';
+        $this->otp_code          = '';
+        $this->carte_numero      = '';
+        $this->carte_nom         = '';
+        $this->carte_expiration  = '';
+        $this->carte_cvv         = '';
         $this->showModalPaiement = true;
         $this->resetErrorBag();
     }
@@ -105,27 +105,16 @@ class MonInscription extends Component
     // =========================================================
     // SIMULATION PAIEMENT MOBILE MONEY
     // =========================================================
-
-    /**
-     * Étape 2 — Participant saisit son numéro
-     * → On génère un code OTP simulé
-     */
     public function envoyerOtp()
     {
         $this->validate([
             'telephone_paiement' => 'required|string|min:8|max:15',
         ]);
 
-        // Génère un code OTP simulé (6 chiffres)
-        $this->otp_code     = rand(100000, 999999);
+        $this->otp_code       = rand(100000, 999999);
         $this->etape_paiement = 3;
-
-        session()->flash('info', "Code OTP envoyé au {$this->telephone_paiement} : {$this->otp_code}");
     }
 
-    /**
-     * Étape 3 — Participant saisit le code OTP
-     */
     public function confirmerOtp()
     {
         $this->validate([
@@ -140,9 +129,6 @@ class MonInscription extends Component
         $this->enregistrerPaiement();
     }
 
-    /**
-     * Paiement par carte bleue
-     */
     public function payerCarte()
     {
         $this->validate([
@@ -155,11 +141,19 @@ class MonInscription extends Component
         $this->enregistrerPaiement();
     }
 
-    /**
-     * Enregistre le paiement en BDD
-     */
     private function enregistrerPaiement()
     {
+        // ← Point 6 : Événement gratuit → valider directement
+        $inscription = Inscription::with('evenement')->findOrFail($this->inscription_id);
+
+        if ($inscription->montant_paye == 0) {
+            // Événement gratuit → pas de paiement requis
+            $inscription->update(['statut_paiement' => 'paye']);
+            $this->closeModalPaiement();
+            session()->flash('success', 'Inscription confirmée ! Événement gratuit.');
+            return;
+        }
+
         Paiement::create([
             'id_inscription' => $this->inscription_id,
             'montant'        => $this->montant_paiement,
@@ -251,7 +245,12 @@ class MonInscription extends Component
                     ->latest()
                     ->get()
                 : collect(),
-            'evenements'  => Evenement::orderBy('nom')->get(),
+
+            // ← Point 5 : Événements non expirés seulement
+            'evenements' => Evenement::where('date_fin', '>=', now()->toDateString())
+                ->orderBy('nom')
+                ->get(),
+
             'participant' => $participant,
         ])->layout('layouts.participant', ['title' => 'Mes Inscriptions']);
     }

@@ -314,7 +314,6 @@
             </div>
 
             <div class="relative">
-                {{-- Ligne de connexion --}}
                 <div class="hidden lg:block absolute top-10 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gray-200 to-transparent mx-32"></div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -352,8 +351,10 @@
                 <div class="section-tag text-white" style="background-color: #007A3D;">
                     Fonctionnalités
                 </div>
+
+                {{-- ← Titre modifié --}}
                 <h2 class="text-4xl font-bold text-gray-900 mb-4">
-                    Tout ce dont vous avez besoin
+                    Une solution complète et digitalisée
                 </h2>
                 <div class="divider mx-auto mb-4"></div>
                 <p class="text-gray-500 text-lg max-w-xl mx-auto">
@@ -367,7 +368,10 @@
                 $features = [
                     ['icon' => 'fa-wand-magic-sparkles', 'color' => '#007A3D', 'title' => 'Match-making intelligent',   'desc' => 'Le système génère automatiquement le planning optimal en priorisant les rendez-vous mutuels.'],
                     ['icon' => 'fa-mobile-screen',       'color' => '#C8102E', 'title' => 'Paiement Mobile Money',      'desc' => 'Paiement Orange Money et Moov Money avec confirmation OTP. Carte bancaire acceptée.'],
-                    ['icon' => 'fa-id-badge',            'color' => '#2d5a8e', 'title' => 'Badges automatiques',        'desc' => 'Génération automatique des badges officiels avec QR code après validation du paiement.'],
+
+                    {{-- ← Badge électronique --}}
+                    ['icon' => 'fa-id-badge',            'color' => '#2d5a8e', 'title' => 'Badge électronique',         'desc' => 'Génération automatique de badges électroniques avec QR code scannable après validation du paiement.'],
+
                     ['icon' => 'fa-rotate',              'color' => '#8b5cf6', 'title' => 'Gestion des absences',       'desc' => 'Signalement des absences et re-match automatique pour remplacer les participants absents.'],
                     ['icon' => 'fa-book-open',           'color' => '#007A3D', 'title' => 'Catalogue en ligne',         'desc' => 'Moteur de recherche des entreprises et participants visible après clôture des inscriptions.'],
                     ['icon' => 'fa-shield-halved',       'color' => '#C8102E', 'title' => 'Multi-rôles sécurisé',       'desc' => 'Six rôles distincts avec des droits d\'accès adaptés à chaque acteur du forum.'],
@@ -437,7 +441,6 @@
     <section class="py-24 relative overflow-hidden"
         style="background: linear-gradient(135deg, #007A3D 0%, #004d27 50%, #007A3D 100%);">
 
-        {{-- Cercles décoratifs --}}
         <div class="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10"
             style="background: #C8102E; transform: translate(30%, -30%);"></div>
         <div class="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10"

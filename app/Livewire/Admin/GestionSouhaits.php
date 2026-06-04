@@ -17,6 +17,9 @@ class GestionSouhaits extends Component
     public $isEditing = false;
     public $search = '';
 
+    // ← Participants cibles filtrés par événement
+    public $participantsCibles = [];
+
     public function openModal()
     {
         $this->resetFields();
@@ -37,7 +40,28 @@ class GestionSouhaits extends Component
         $this->id_participant_cible = '';
         $this->priorite             = '';
         $this->type                 = 'envoye';
+        $this->participantsCibles   = [];
         $this->resetErrorBag();
+    }
+
+    // ← Quand le participant change → filtre les cibles
+    public function updatedIdParticipant($value)
+    {
+        if ($value) {
+            $participant = Participant::find($value);
+            if ($participant) {
+                $this->participantsCibles = Participant::with('entreprise')
+                    ->where('id_evenement', $participant->id_evenement)
+                    ->where('id', '!=', $value)
+                    ->where('participation_rdv', true)
+                    ->orderBy('nom')
+                    ->get()
+                    ->toArray();
+            }
+        } else {
+            $this->participantsCibles = [];
+        }
+        $this->id_participant_cible = '';
     }
 
     public function modifier($id)
@@ -50,6 +74,9 @@ class GestionSouhaits extends Component
         $this->type                 = $s->type;
         $this->isEditing            = true;
         $this->showModal            = true;
+
+        // Charge les cibles pour ce participant
+        $this->updatedIdParticipant($s->id_participant);
     }
 
     public function sauvegarder()
@@ -87,7 +114,12 @@ class GestionSouhaits extends Component
     public function render()
     {
         return view('livewire.admin.gestion-souhaits', [
-            'souhaits' => Souhait::with(['participant', 'participantCible'])
+            'souhaits' => Souhait::with([
+                    'participant',
+                    'participant.entreprise',
+                    'participantCible',
+                    'participantCible.entreprise',
+                ])
                 ->when($this->search, fn($q) =>
                     $q->whereHas('participant', fn($q) =>
                         $q->where('nom', 'like', '%'.$this->search.'%')
@@ -96,7 +128,11 @@ class GestionSouhaits extends Component
                 )
                 ->orderBy('priorite')
                 ->get(),
-            'participants' => Participant::orderBy('nom')->get(),
+
+            // Tous les participants pour la liste du demandeur
+            'participants' => Participant::with('entreprise')
+                ->orderBy('nom')
+                ->get(),
         ])->layout('layouts.admin', ['title' => 'Gestion des Souhaits RDV']);
     }
 }

@@ -68,149 +68,237 @@
 
             <div class="space-y-4">
 
-                {{-- Nom entreprise --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Nom de l'entreprise *
-                    </label>
-                    <input wire:model="nom" type="text"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Ex: IsaTech SARL">
-                    @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+                {{-- SECTION RESPONSABLE --}}
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                    <h3 class="text-sm font-bold text-blue-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-user-tie"></i>
+                        Informations du responsable
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
 
-                {{-- Secteur --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Secteur d'activité *
-                    </label>
-                    <select wire:model="secteur_activite"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-                        <option value="">-- Choisir --</option>
-                        @foreach($secteurs as $s)
-                        <option value="{{ $s }}">{{ $s }}</option>
-                        @endforeach
-                    </select>
-                    @error('secteur_activite') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+                        {{-- Nom responsable --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                            <input wire:model="nom_responsable" type="text"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                                placeholder="Votre nom">
+                            @error('nom_responsable')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+                        </div>
 
-                {{-- Sous-secteur --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Sous-secteur
-                        <span class="text-gray-400 font-normal">(optionnel)</span>
-                    </label>
-                    <input wire:model="sous_secteur" type="text"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Ex: Informatique, Agro-alimentaire...">
-                </div>
+                        {{-- Prénom responsable --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+                            <input wire:model="prenom_responsable" type="text"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                                placeholder="Votre prénom">
+                            @error('prenom_responsable')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+                        </div>
 
-                {{-- Description des activités --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Description des activités *
-                    </label>
-                    <textarea wire:model="description_activites" rows="3"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
-                        placeholder="Décrivez brièvement les activités de votre entreprise..."></textarea>
-                    @error('description_activites') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+                        {{-- Fonction responsable --}}
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Fonction / Poste
+                                <span class="text-gray-400 font-normal">(optionnel)</span>
+                            </label>
+                            <input wire:model="fonction_responsable" type="text"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                                placeholder="Ex: Directeur Général, PDG, Gérant...">
+                        </div>
 
-                {{-- Principaux produits --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Principaux produits / Savoir-faire
-                        <span class="text-gray-400 font-normal">(optionnel)</span>
-                    </label>
-                    <textarea wire:model="principaux_produits" rows="2"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
-                        placeholder="Ex: Logiciels de gestion, Conseil en stratégie..."></textarea>
-                </div>
-
-                {{-- Pays et Ville --}}
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
-                        <select wire:model="pays"
-                            class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-                            <option value="">-- Choisir --</option>
-                            @foreach($pays_liste as $p)
-                            <option value="{{ $p }}">{{ $p }}</option>
-                            @endforeach
-                        </select>
-                        @error('pays') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Ville *</label>
-                        <input wire:model="ville" type="text"
-                            class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                            placeholder="Ex: Ouagadougou">
-                        @error('ville') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
-                {{-- Contact --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
-                    <input wire:model="contact" type="text"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Ex: 70000000">
-                    @error('contact') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                {{-- SECTION ENTREPRISE --}}
+                <div class="bg-green-50 border border-green-200 rounded-xl p-5">
+                    <h3 class="text-sm font-bold text-green-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-building"></i>
+                        Informations de l'entreprise
+                    </h3>
+                    <div class="space-y-4">
+
+                        {{-- Nom entreprise --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Nom de l'entreprise *
+                            </label>
+                            <input wire:model="nom" type="text"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                placeholder="Ex: IsaTech SARL">
+                            @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        {{-- IFU --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Numéro IFU
+                                <span class="text-gray-400 font-normal">(optionnel — unique)</span>
+                            </label>
+                            <input wire:model="ifu" type="text"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm font-mono"
+                                placeholder="Ex: BF123456789">
+                            @error('ifu') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        {{-- Secteur --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Secteur d'activité *
+                            </label>
+                            <select wire:model="secteur_activite"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                <option value="">-- Choisir --</option>
+                                @foreach($secteurs as $s)
+                                <option value="{{ $s }}">{{ $s }}</option>
+                                @endforeach
+                            </select>
+                            @error('secteur_activite') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        {{-- Sous-secteur --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Sous-secteur
+                                <span class="text-gray-400 font-normal">(optionnel)</span>
+                            </label>
+                            <input wire:model="sous_secteur" type="text"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                placeholder="Ex: Informatique, Agro-alimentaire...">
+                        </div>
+
+                        {{-- Description --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Description des activités *
+                            </label>
+                            <textarea wire:model="description_activites" rows="3"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
+                                placeholder="Décrivez brièvement les activités..."></textarea>
+                            @error('description_activites') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        {{-- Produits --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Principaux produits / Savoir-faire
+                                <span class="text-gray-400 font-normal">(optionnel)</span>
+                            </label>
+                            <textarea wire:model="principaux_produits" rows="2"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
+                                placeholder="Ex: Logiciels de gestion..."></textarea>
+                        </div>
+
+                        {{-- Pays et Ville --}}
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
+                                <select wire:model="pays"
+                                    class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                    <option value="">-- Choisir --</option>
+                                    @foreach($pays_liste as $p)
+                                    <option value="{{ $p }}">{{ $p }}</option>
+                                    @endforeach
+                                </select>
+                                @error('pays') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Ville *</label>
+                                <input wire:model="ville" type="text"
+                                    class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                    placeholder="Ex: Ouagadougou">
+                                @error('ville') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        {{-- Contact --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Contact (téléphone) *
+                            </label>
+                            <input wire:model="contact" type="text"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                placeholder="Ex: +226 70 00 00 00">
+                            @error('contact') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                    </div>
                 </div>
 
-                {{-- CDD --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Chef de Délégation (CDD) *
-                    </label>
-                    <select wire:model="id_cdd"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-                        <option value="">-- Choisir votre CDD --</option>
-                        @foreach($cdds as $cdd)
-                        <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('id_cdd') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+                {{-- SECTION COMPTE --}}
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                    <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-lock"></i>
+                        Informations de connexion
+                    </h3>
+                    <div class="space-y-4">
 
-                {{-- Email --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                    <input wire:model="email" type="email"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="contact@entreprise.com">
-                    @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+                        {{-- CDD --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Chef de Délégation (CDD) *
+                            </label>
+                            <select wire:model="id_cdd"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                <option value="">-- Choisir votre CDD --</option>
+                                @foreach($cdds as $cdd)
+                                <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('id_cdd') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
 
-                {{-- Mot de passe --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
-                    <input wire:model="password" type="password"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Minimum 8 caractères">
-                    @error('password') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+                        {{-- Email --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            <input wire:model="email" type="email"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                placeholder="contact@entreprise.com">
+                            @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirmer *</label>
-                    <input wire:model="password_confirmation" type="password"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Répéter le mot de passe">
+                        {{-- Mot de passe --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
+                            <input wire:model="password" type="password"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                placeholder="Minimum 8 caractères">
+                            @error('password') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Confirmer *</label>
+                            <input wire:model="password_confirmation" type="password"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                placeholder="Répéter le mot de passe">
+                        </div>
+
+                    </div>
                 </div>
 
                 {{-- Info --}}
                 <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-start gap-2">
                     <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
                     Votre entreprise sera soumise à validation par un
-                    <strong>Chef de Délégation (CDD)</strong> avant d'être visible dans le catalogue.
+                    <strong>Chef de Délégation (CDD)</strong> avant d'être visible.
                 </div>
 
                 {{-- Bouton --}}
                 <button wire:click="sinscrire"
-                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg"
+                    wire:loading.attr="disabled"
+                    wire:loading.class="opacity-70 cursor-not-allowed"
+                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg flex items-center justify-center gap-2"
                     style="background-color: #C8102E;">
-                    <i class="fa-solid fa-building mr-1"></i>
-                    Inscrire mon entreprise
+                    <span wire:loading.remove>
+                        <i class="fa-solid fa-building mr-1"></i>
+                        Inscrire mon entreprise
+                    </span>
+                    <span wire:loading>
+                        <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                        Inscription en cours...
+                    </span>
                 </button>
 
                 {{-- Liens --}}
@@ -242,10 +330,25 @@
                 <i class="fa-solid fa-circle-check text-4xl" style="color: #007A3D;"></i>
             </div>
             <h3 class="text-xl font-bold text-gray-800 mb-2">Entreprise inscrite !</h3>
+
+            {{-- Infos responsable --}}
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700 mb-4 text-left">
+                <p class="font-semibold mb-1">
+                    <i class="fa-solid fa-user-tie mr-1"></i>
+                    Responsable enregistré :
+                </p>
+                <p class="text-xs">
+                    {{ $nom_responsable }} {{ $prenom_responsable }}
+                    @if($fonction_responsable)
+                    — {{ $fonction_responsable }}
+                    @endif
+                </p>
+            </div>
+
             <p class="text-gray-500 text-sm mb-6">
                 Votre entreprise est en attente de validation par un CDD.
-                Vous pouvez vous connecter dès maintenant.
             </p>
+
             <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-700 mb-6 text-left">
                 <p class="font-semibold mb-1">Prochaines étapes :</p>
                 <ol class="space-y-1 text-xs">
@@ -255,6 +358,7 @@
                     <li>4. Émettez vos souhaits de RDV</li>
                 </ol>
             </div>
+
             <a href="{{ route('login') }}"
                 class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow flex items-center justify-center gap-2"
                 style="background-color: #C8102E;">

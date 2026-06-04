@@ -15,6 +15,13 @@ class MesSouhaits extends Component
     public $showModal = false;
     public $search = '';
 
+    // ← Liaison par email
+    private function getEntreprise()
+    {
+        return Entreprise::where('email_responsable', auth()->user()->email)->first()
+            ?? Entreprise::where('nom', auth()->user()->name)->first();
+    }
+
     public function openModal()
     {
         $this->resetFields();
@@ -62,16 +69,46 @@ class MesSouhaits extends Component
 
     public function render()
     {
-        $entreprise = Entreprise::where('nom', auth()->user()->name)->first();
-        $participants = Participant::where('id_entreprise', $entreprise->id)->pluck('id');
+        $entreprise = $this->getEntreprise();
+
+        // ← Si entreprise non trouvée → liste vide
+        if (!$entreprise) {
+            return view('livewire.entreprise.mes-souhaits', [
+                'souhaits'         => collect(),
+                'mesParticipants'  => collect(),
+                'tousParticipants' => collect(),
+            ])->layout('layouts.entreprise', ['title' => 'Souhaits RDV']);
+        }
+
+        $participantIds = Participant::where('id_entreprise', $entreprise->id)
+            ->pluck('id');
+
+        // ← Participants du même événement que les participants de l'entreprise
+        $id_evenements = Participant::where('id_entreprise', $entreprise->id)
+            ->pluck('id_evenement')
+            ->unique();
 
         return view('livewire.entreprise.mes-souhaits', [
-            'souhaits' => Souhait::with(['participant', 'participantCible'])
-                ->whereIn('id_participant', $participants)
+            'souhaits' => Souhait::with([
+                    'participant',
+                    'participantCible',
+                    'participantCible.entreprise',
+                ])
+                ->whereIn('id_participant', $participantIds)
                 ->orderBy('priorite')
                 ->get(),
-            'mesParticipants' => Participant::where('id_entreprise', $entreprise->id)->get(),
-            'tousParticipants' => Participant::where('id_entreprise', '!=', $entreprise->id)->get(),
+
+            'mesParticipants' => Participant::where('id_entreprise', $entreprise->id)
+                ->orderBy('nom')
+                ->get(),
+
+            // ← Seulement les participants du même événement
+            'tousParticipants' => Participant::with('entreprise')
+                ->whereIn('id_evenement', $id_evenements)
+                ->where('id_entreprise', '!=', $entreprise->id)
+                ->where('participation_rdv', true)
+                ->orderBy('nom')
+                ->get(),
         ])->layout('layouts.entreprise', ['title' => 'Souhaits RDV']);
     }
 }

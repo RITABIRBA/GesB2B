@@ -30,14 +30,22 @@
         </button>
     </div>
 
-    {{-- Recherche --}}
-    <div class="mb-5">
+    {{-- Filtres --}}
+    <div class="flex gap-4 mb-5">
         <div class="relative w-full md:w-1/3">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
             <input wire:model.live="search" type="text"
                 placeholder="Rechercher par nom, prénom ou email..."
                 class="w-full border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
         </div>
+
+        {{-- Filtre statut --}}
+        <select wire:model.live="filtre_statut"
+            class="border rounded-xl px-4 py-2.5 focus:outline-none text-sm text-gray-600">
+            <option value="">Tous les statuts</option>
+            <option value="actif">Actif seulement</option>
+            <option value="inactif">Inactif seulement</option>
+        </select>
     </div>
 
     {{-- Tableau --}}
@@ -52,13 +60,15 @@
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Entreprise</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Événement</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Rôle</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Statut</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Code</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($participants as $participant)
-                <tr class="border-b hover:bg-gray-50 transition">
+                <tr class="border-b hover:bg-gray-50 transition
+                    {{ $participant->statut_historique == 'inactif' ? 'opacity-60' : '' }}">
 
                     {{-- Nom & Prénom --}}
                     <td class="px-6 py-4">
@@ -118,16 +128,29 @@
                     <td class="px-6 py-4">
                         @php
                             $colors = [
-                                'vip'          => '#f59e0b',
-                                'exposant'     => '#007A3D',
-                                'organisateur' => '#6d28d9',
-                                'visiteur'     => '#2d5a8e',
+                                'exposant'    => '#007A3D',
+                                'participant' => '#2d5a8e',
                             ];
                             $color = $colors[$participant->role] ?? '#6b7280';
                         @endphp
                         <span class="text-xs px-3 py-1 rounded-full font-medium text-white"
                             style="background-color: {{ $color }}">
                             {{ ucfirst($participant->role) }}
+                        </span>
+                    </td>
+
+                    {{-- Statut actif/inactif --}}
+                    <td class="px-6 py-4">
+                        <button wire:click="toggleStatut({{ $participant->id }})"
+                            wire:confirm="{{ $participant->statut_historique == 'actif' ? 'Désactiver ce participant ?' : 'Activer ce participant ?' }}"
+                            class="relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none"
+                            style="background-color: {{ $participant->statut_historique == 'actif' ? '#007A3D' : '#d1d5db' }}">
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-300
+                                {{ $participant->statut_historique == 'actif' ? 'translate-x-7' : 'translate-x-1' }}">
+                            </span>
+                        </button>
+                        <span class="text-xs ml-1 {{ $participant->statut_historique == 'actif' ? 'text-green-600' : 'text-gray-400' }}">
+                            {{ $participant->statut_historique == 'actif' ? 'Actif' : 'Inactif' }}
                         </span>
                     </td>
 
@@ -156,7 +179,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="py-16 text-center text-gray-400">
+                    <td colspan="10" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-users text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun participant pour le moment</p>
                         <button wire:click="openModal"
@@ -211,20 +234,13 @@
                     {{-- Genre --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Genre</label>
-                        <div class="flex gap-3 mt-1">
-                            <button type="button"
-                                wire:click="$set('genre', 'homme')"
-                                class="flex-1 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition
-                                    {{ $genre === 'homme' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                                <i class="fa-solid fa-mars"></i> Homme
-                            </button>
-                            <button type="button"
-                                wire:click="$set('genre', 'femme')"
-                                class="flex-1 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition
-                                    {{ $genre === 'femme' ? 'bg-pink-50 border-pink-400 text-pink-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                                <i class="fa-solid fa-venus"></i> Femme
-                            </button>
-                        </div>
+                        <select wire:model="genre"
+                            class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                            <option value="">-- Choisir le genre --</option>
+                            <option value="homme">Homme</option>
+                            <option value="femme">Femme</option>
+                        </select>
+                        @error('genre') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     {{-- Fonction --}}
@@ -236,7 +252,6 @@
                         <input wire:model="fonction" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: Directeur Commercial">
-                        @error('fonction') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     {{-- Téléphone --}}
@@ -251,8 +266,7 @@
                     {{-- Email --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Email
-                            <span class="text-gray-400 font-normal">(optionnel)</span>
+                            Email <span class="text-gray-400 font-normal">(optionnel)</span>
                         </label>
                         <input wire:model="email" type="email"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
@@ -315,8 +329,7 @@
                     {{-- Entreprise --}}
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Entreprise
-                            <span class="text-gray-400 font-normal">(optionnel)</span>
+                            Entreprise <span class="text-gray-400 font-normal">(optionnel)</span>
                         </label>
                         <select wire:model="id_entreprise"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
@@ -325,6 +338,29 @@
                             <option value="{{ $entreprise->id }}">{{ $entreprise->nom }}</option>
                             @endforeach
                         </select>
+                    </div>
+
+                    {{-- Statut --}}
+                    <div class="col-span-2">
+                        <label class="block text-gray-600 text-sm font-medium mb-2">Statut</label>
+                        <div class="flex gap-4">
+                            <button type="button"
+                                wire:click="$set('statut_historique', 'actif')"
+                                class="flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition flex items-center justify-center gap-2
+                                    {{ $statut_historique === 'actif'
+                                        ? 'border-green-400 bg-green-50 text-green-700'
+                                        : 'border-gray-200 text-gray-500 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-circle-check"></i> Actif
+                            </button>
+                            <button type="button"
+                                wire:click="$set('statut_historique', 'inactif')"
+                                class="flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition flex items-center justify-center gap-2
+                                    {{ $statut_historique === 'inactif'
+                                        ? 'border-red-400 bg-red-50 text-red-700'
+                                        : 'border-gray-200 text-gray-500 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-circle-xmark"></i> Inactif
+                            </button>
+                        </div>
                     </div>
 
                 </div>
@@ -336,10 +372,18 @@
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="sauvegarder"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
                         style="background-color: #C8102E;">
-                        <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
-                        {{ $isEditing ? 'Modifier' : 'Enregistrer' }}
+                        <span wire:loading.remove>
+                            <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
+                            {{ $isEditing ? 'Modifier' : 'Enregistrer' }}
+                        </span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            Enregistrement...
+                        </span>
                     </button>
                 </div>
             </div>

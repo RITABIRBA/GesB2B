@@ -1,8 +1,3 @@
-{{--
-    Vue Blade — Gestion des Rendez-vous
-    Composant : App\Livewire\Admin\GestionRendezVous
-    Layout : layouts/admin.blade.php
---}}
 <div>
 
     {{-- MESSAGES --}}
@@ -34,7 +29,7 @@
                 class="px-5 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow no-print"
                 style="background-color: #2d5a8e;">
                 <i class="fa-solid fa-print"></i>
-                Imprimer le planning
+                Imprimer
             </button>
             <button wire:click="openGenerateModal"
                 class="px-5 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow no-print"
@@ -63,7 +58,7 @@
         </select>
     </div>
 
-    {{-- STATISTIQUES --}}
+    {{-- STATISTIQUES GLOBALES --}}
     <div class="grid grid-cols-4 gap-4 mb-6 no-print">
         <div class="bg-white rounded-xl shadow p-4 flex items-center gap-3 border-l-4 border-blue-500">
             <i class="fa-solid fa-calendar-check text-blue-500 text-xl"></i>
@@ -95,26 +90,71 @@
         </div>
     </div>
 
-    {{-- TABLEAU --}}
-    <div id="planning-global">
+    {{-- PLANNING PAR ÉVÉNEMENT --}}
+    @if($rendezVous->isEmpty())
+    <div class="bg-white rounded-xl shadow p-16 text-center text-gray-400">
+        <i class="fa-solid fa-handshake text-5xl mb-3 block text-gray-300"></i>
+        <p class="text-lg font-medium">Aucun rendez-vous planifié</p>
+        <button wire:click="openGenerateModal"
+            class="mt-3 px-5 py-2 rounded-xl text-white text-sm font-medium"
+            style="background-color: #C8102E;">
+            Générer le planning
+        </button>
+    </div>
+    @else
 
-        {{-- En-tête impression --}}
-        <div class="print-header mb-6" style="display:none;">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
-                    <img src="{{ asset('images/logo-ccibf.png') }}" alt="CCI-BF" class="w-16 h-16 object-contain">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-800">GesB2B — CCI-BF</h1>
-                        <p class="text-gray-500">Planning global des rendez-vous</p>
-                    </div>
+    {{-- Groupe par événement --}}
+    @php
+        $rdvParEvenement = $rendezVous->groupBy(function($rdv) {
+            return $rdv->participant1->id_evenement ?? $rdv->participant2->id_evenement ?? 0;
+        });
+    @endphp
+
+    @foreach($rdvParEvenement as $id_evenement => $rdvs)
+    @php
+        $evenement = $evenements->find($id_evenement);
+    @endphp
+
+    <div class="mb-8">
+        {{-- Header événement --}}
+        <div class="flex items-center justify-between mb-4 p-4 rounded-xl text-white"
+            style="background: linear-gradient(135deg, #007A3D, #005a2d);">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20">
+                    <i class="fa-solid fa-calendar-star text-white"></i>
                 </div>
-                <div class="text-right">
-                    <p class="text-gray-500 text-sm">Imprimé le {{ now()->format('d/m/Y à H:i') }}</p>
-                    <p class="font-bold text-gray-800">Total : {{ $rendezVous->count() }} RDV</p>
+                <div>
+                    <h4 class="font-bold text-lg">
+                        {{ $evenement->nom ?? 'Événement inconnu' }}
+                    </h4>
+                    @if($evenement)
+                    <p class="text-green-200 text-xs">
+                        <i class="fa-solid fa-location-dot mr-1"></i>
+                        {{ $evenement->ville }}
+                        <span class="mx-2">•</span>
+                        <i class="fa-solid fa-calendar mr-1"></i>
+                        {{ $evenement->date_debut }}
+                        <span class="mx-2">•</span>
+                        <i class="fa-solid fa-clock mr-1"></i>
+                        {{ $evenement->heure_debut }} - {{ $evenement->heure_fin }}
+                    </p>
+                    @endif
                 </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-3 py-1.5 rounded-xl bg-white/20 text-sm font-bold">
+                    {{ $rdvs->count() }} RDV
+                </span>
+                <span class="px-3 py-1.5 rounded-xl bg-white/20 text-sm">
+                    {{ $rdvs->where('statut', 'planifie')->count() }} planifiés
+                </span>
+                <span class="px-3 py-1.5 rounded-xl bg-white/20 text-sm">
+                    {{ $rdvs->where('statut', 'confirme')->count() }} confirmés
+                </span>
             </div>
         </div>
 
+        {{-- Tableau des RDV de cet événement --}}
         <div class="bg-white rounded-xl shadow overflow-hidden">
             <table class="w-full text-left">
                 <thead style="background-color: #f8f9fa;">
@@ -130,7 +170,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($rendezVous as $rdv)
+                    @foreach($rdvs as $rdv)
                     <tr class="border-b hover:bg-gray-50 transition
                         {{ $rdv->statut == 'annule' ? 'bg-red-50' : '' }}">
 
@@ -153,10 +193,6 @@
                                     @if($rdv->absent_participant_id == $rdv->id_participant1)
                                     <span class="text-xs text-red-500 font-medium flex items-center gap-1">
                                         <i class="fa-solid fa-user-slash"></i> Absent
-                                    </span>
-                                    @else
-                                    <span class="text-xs text-green-600 font-medium flex items-center gap-1">
-                                        <i class="fa-solid fa-user-check"></i> Présent
                                     </span>
                                     @endif
                                 </div>
@@ -182,10 +218,6 @@
                                     @if($rdv->absent_participant_id == $rdv->id_participant2)
                                     <span class="text-xs text-red-500 font-medium flex items-center gap-1">
                                         <i class="fa-solid fa-user-slash"></i> Absent
-                                    </span>
-                                    @else
-                                    <span class="text-xs text-green-600 font-medium flex items-center gap-1">
-                                        <i class="fa-solid fa-user-check"></i> Présent
                                     </span>
                                     @endif
                                 </div>
@@ -235,29 +267,9 @@
                                     <i class="fa-solid fa-circle-check mr-1"></i> Confirmé
                                 </span>
                             @elseif($rdv->statut == 'annule')
-                                <div class="space-y-1">
-                                    <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600 block text-center">
-                                        <i class="fa-solid fa-circle-xmark mr-1"></i> Annulé
-                                    </span>
-                                    @if($rdv->absent_participant_id)
-                                    <div class="text-xs text-red-600 font-medium flex items-center gap-1 mt-1">
-                                        <i class="fa-solid fa-user-slash"></i>
-                                        Absent : {{ $rdv->participantAbsent->nom ?? '-' }}
-                                        {{ $rdv->participantAbsent->prenom ?? '' }}
-                                    </div>
-                                    <div class="text-xs text-green-600 font-medium flex items-center gap-1">
-                                        <i class="fa-solid fa-user-check"></i>
-                                        Présent :
-                                        @if($rdv->absent_participant_id == $rdv->id_participant1)
-                                            {{ $rdv->participant2->nom ?? '-' }}
-                                            {{ $rdv->participant2->prenom ?? '' }}
-                                        @else
-                                            {{ $rdv->participant1->nom ?? '-' }}
-                                            {{ $rdv->participant1->prenom ?? '' }}
-                                        @endif
-                                    </div>
-                                    @endif
-                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600 block text-center">
+                                    <i class="fa-solid fa-circle-xmark mr-1"></i> Annulé
+                                </span>
                             @else
                                 <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-gray-500">
                                     <i class="fa-solid fa-flag-checkered mr-1"></i> Terminé
@@ -268,24 +280,20 @@
                         {{-- Actions --}}
                         <td class="px-6 py-4 no-print">
                             <div class="flex gap-1.5 flex-wrap">
-
-                                {{-- Traducteur --}}
                                 <button wire:click="ouvrirModalTraducteur({{ $rdv->id }})"
                                     class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-purple-600 transition hover:bg-purple-700"
-                                    title="Assigner un traducteur">
+                                    title="Traducteur">
                                     <i class="fa-solid fa-language"></i>
                                 </button>
 
-                                {{-- Re-match --}}
                                 @if($rdv->statut == 'annule')
                                 <button wire:click="ouvrirRematch({{ $rdv->id }})"
                                     class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-orange-500 transition hover:bg-orange-600"
                                     title="Re-match">
-                                    <i class="fa-solid fa-rotate"></i> Re-match
+                                    <i class="fa-solid fa-rotate"></i>
                                 </button>
                                 @endif
 
-                                {{-- Confirmer / Annuler --}}
                                 @if($rdv->statut == 'planifie')
                                 <button wire:click="confirmer({{ $rdv->id }})"
                                     class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90"
@@ -306,42 +314,31 @@
                                 </button>
                                 @endif
 
-                                {{-- Supprimer --}}
                                 <button wire:click="supprimer({{ $rdv->id }})"
                                     wire:confirm="Supprimer ce rendez-vous ?"
                                     class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700"
                                     title="Supprimer">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
-
                             </div>
                         </td>
 
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="8" class="py-16 text-center text-gray-400">
-                            <i class="fa-solid fa-handshake text-5xl mb-3 block text-gray-300"></i>
-                            <p class="text-lg font-medium">Aucun rendez-vous planifié</p>
-                            <button wire:click="openGenerateModal"
-                                class="mt-3 px-5 py-2 rounded-xl text-white text-sm font-medium"
-                                style="background-color: #C8102E;">
-                                Générer le planning
-                            </button>
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
     </div>
+    @endforeach
+
+    @endif
 
     {{-- MODAL — GÉNÉRATION DU PLANNING --}}
     @if($showGenerateModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
 
-            <div class="flex justify-between items-center px-8 py-5 border-b sticky top-0 bg-white z-10"
+            <div class="flex justify-between items-center px-8 py-5 border-b sticky top-0 z-10"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -352,7 +349,6 @@
             </div>
 
             <div class="p-8">
-
                 <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-5 text-sm text-blue-700 flex items-start gap-2">
                     <i class="fa-solid fa-circle-info mt-0.5"></i>
                     Les heures sont prises automatiquement depuis l'événement choisi.
@@ -375,7 +371,6 @@
                         @enderror
                     </div>
 
-                    {{-- Infos événement --}}
                     @if($evenement_selectionne)
                     <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
                         <p class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
@@ -404,7 +399,7 @@
                                 wire:click="$set('duree_rdv', {{ $duree }})"
                                 class="border rounded-xl p-2 text-center transition text-sm font-medium
                                     {{ $duree_rdv == $duree
-                                        ? 'border-red-400 bg-red-50 text-red-700 font-semibold'
+                                        ? 'border-red-400 bg-red-50 text-red-700'
                                         : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
                                 {{ $duree }}min
                             </button>
@@ -420,7 +415,6 @@
                         </label>
                         <div class="space-y-2">
 
-                            {{-- Pause café matin --}}
                             <div class="flex items-center gap-3 p-3 border rounded-xl transition
                                 {{ $pause_cafe_matin ? 'border-orange-300 bg-orange-50' : 'border-gray-200' }}">
                                 <input type="checkbox" wire:model.live="pause_cafe_matin"
@@ -432,17 +426,16 @@
                                 @if($pause_cafe_matin)
                                 <div class="flex items-center gap-2">
                                     <input wire:model.live="pause_cafe_matin_debut" type="time"
-                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-orange-300">
+                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
                                     <span class="text-xs text-gray-400">→</span>
                                     <input wire:model.live="pause_cafe_matin_fin" type="time"
-                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-orange-300">
+                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
                                 </div>
                                 @else
                                 <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">10:00 → 10:15</span>
                                 @endif
                             </div>
 
-                            {{-- Pause déjeuner --}}
                             <div class="flex items-center gap-3 p-3 border rounded-xl transition
                                 {{ $pause_dejeuner ? 'border-green-300 bg-green-50' : 'border-gray-200' }}">
                                 <input type="checkbox" wire:model.live="pause_dejeuner"
@@ -454,17 +447,16 @@
                                 @if($pause_dejeuner)
                                 <div class="flex items-center gap-2">
                                     <input wire:model.live="pause_dejeuner_debut" type="time"
-                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-300">
+                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
                                     <span class="text-xs text-gray-400">→</span>
                                     <input wire:model.live="pause_dejeuner_fin" type="time"
-                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-300">
+                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
                                 </div>
                                 @else
                                 <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">12:00 → 14:00</span>
                                 @endif
                             </div>
 
-                            {{-- Pause café après-midi --}}
                             <div class="flex items-center gap-3 p-3 border rounded-xl transition
                                 {{ $pause_cafe_aprem ? 'border-orange-300 bg-orange-50' : 'border-gray-200' }}">
                                 <input type="checkbox" wire:model.live="pause_cafe_aprem"
@@ -476,10 +468,10 @@
                                 @if($pause_cafe_aprem)
                                 <div class="flex items-center gap-2">
                                     <input wire:model.live="pause_cafe_aprem_debut" type="time"
-                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-orange-300">
+                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
                                     <span class="text-xs text-gray-400">→</span>
                                     <input wire:model.live="pause_cafe_aprem_fin" type="time"
-                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-orange-300">
+                                        class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
                                 </div>
                                 @else
                                 <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">15:30 → 15:45</span>
@@ -510,17 +502,6 @@
                                 <p class="text-xs text-gray-500">Paires RDV</p>
                             </div>
                         </div>
-                        @if($nb_paires == 0)
-                        <p class="text-xs text-yellow-600 mt-3 flex items-center gap-1">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            Aucun souhait de RDV trouvé pour cet événement !
-                        </p>
-                        @endif
-                    </div>
-                    @elseif($evenement_selectionne && $nb_creneaux == 0)
-                    <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600 flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        La durée choisie est trop longue pour les heures de cet événement !
                     </div>
                     @endif
 
@@ -532,9 +513,16 @@
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="genererPlanning"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
                         style="background-color: #C8102E;">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Générer
+                        <span wire:loading.remove>
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Générer
+                        </span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i> Génération...
+                        </span>
                     </button>
                 </div>
             </div>
@@ -542,7 +530,7 @@
     </div>
     @endif
 
-    {{-- MODAL — ASSIGNATION TRADUCTEUR --}}
+    {{-- MODAL — TRADUCTEUR --}}
     @if($showTraducteurModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
@@ -558,13 +546,8 @@
             </div>
 
             <div class="p-8">
-
                 @if($rdv_courant)
                 <div class="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
-                    <p class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-handshake" style="color: #C8102E;"></i>
-                        Rendez-vous concerné
-                    </p>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
@@ -574,7 +557,6 @@
                             <div>
                                 <p class="text-sm font-semibold text-gray-800">
                                     {{ $rdv_courant->participant1->nom ?? '-' }}
-                                    {{ $rdv_courant->participant1->prenom ?? '' }}
                                 </p>
                                 <p class="text-xs text-gray-400">
                                     {{ $rdv_courant->participant1->entreprise->nom ?? 'Indépendant' }}
@@ -595,7 +577,6 @@
                             <div>
                                 <p class="text-sm font-semibold text-gray-800">
                                     {{ $rdv_courant->participant2->nom ?? '-' }}
-                                    {{ $rdv_courant->participant2->prenom ?? '' }}
                                 </p>
                                 <p class="text-xs text-gray-400">
                                     {{ $rdv_courant->participant2->entreprise->nom ?? 'Indépendant' }}
@@ -609,7 +590,7 @@
                 <div>
                     <label class="block text-gray-600 text-sm font-medium mb-3">
                         Choisir un traducteur
-                        <span class="text-gray-400 font-normal ml-1">(vert = disponible, rouge = occupé)</span>
+                        <span class="text-gray-400 font-normal ml-1">(vert = disponible)</span>
                     </label>
 
                     @if($traducteurs->isEmpty())
@@ -618,7 +599,7 @@
                         Aucun traducteur enregistré
                     </div>
                     @else
-                    <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
                         @foreach($traducteurs as $traducteur)
                         <label class="{{ !$traducteur->disponible ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' }}">
                             <input type="radio"
@@ -627,9 +608,7 @@
                                 class="hidden peer"
                                 {{ !$traducteur->disponible ? 'disabled' : '' }}>
                             <div class="flex items-center justify-between p-3 border rounded-xl transition
-                                {{ $traducteur->disponible
-                                    ? 'hover:bg-gray-50 border-gray-200 peer-checked:border-red-400 peer-checked:bg-red-50'
-                                    : 'border-gray-100 bg-gray-50' }}">
+                                {{ $traducteur->disponible ? 'hover:bg-gray-50 border-gray-200' : 'border-gray-100 bg-gray-50' }}">
                                 <div class="flex items-center gap-3">
                                     <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
                                         style="background-color: {{ $traducteur->disponible ? '#007A3D' : '#9ca3af' }}">
@@ -647,11 +626,11 @@
                                 </div>
                                 @if($traducteur->disponible)
                                 <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
-                                    <i class="fa-solid fa-circle-check"></i> Disponible
+                                    Disponible
                                 </span>
                                 @else
                                 <span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-600 font-medium">
-                                    <i class="fa-solid fa-clock"></i> Occupé
+                                    Occupé
                                 </span>
                                 @endif
                             </div>
@@ -659,10 +638,6 @@
                         @endforeach
                     </div>
                     @endif
-
-                    @error('id_traducteur')
-                        <span class="text-red-500 text-xs mt-2">{{ $message }}</span>
-                    @enderror
                 </div>
 
                 <div class="flex justify-end gap-3 mt-7">
@@ -697,16 +672,8 @@
             </div>
 
             <div class="p-8">
-
-                {{-- Info RDV annulé --}}
                 <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5">
-                    <p class="text-sm font-semibold text-red-700 mb-3">
-                        <i class="fa-solid fa-circle-xmark mr-1"></i>
-                        RDV annulé — Détails
-                    </p>
-
                     <div class="grid grid-cols-2 gap-3 mb-3">
-                        {{-- Participant absent --}}
                         <div class="bg-red-100 rounded-xl p-3 text-center">
                             <p class="text-xs text-red-500 font-medium mb-1">
                                 <i class="fa-solid fa-user-slash mr-1"></i> Absent
@@ -720,16 +687,7 @@
                                     {{ $rematch_rdv->participant2->prenom ?? '' }}
                                 @endif
                             </p>
-                            <p class="text-xs text-red-400 mt-1">
-                                @if($rematch_rdv->absent_participant_id == $rematch_rdv->id_participant1)
-                                    {{ $rematch_rdv->participant1->entreprise->nom ?? 'Indépendant' }}
-                                @else
-                                    {{ $rematch_rdv->participant2->entreprise->nom ?? 'Indépendant' }}
-                                @endif
-                            </p>
                         </div>
-
-                        {{-- Participant présent --}}
                         <div class="bg-green-100 rounded-xl p-3 text-center">
                             <p class="text-xs text-green-600 font-medium mb-1">
                                 <i class="fa-solid fa-user-check mr-1"></i> Présent
@@ -743,16 +701,8 @@
                                     {{ $rematch_rdv->participant1->prenom ?? '' }}
                                 @endif
                             </p>
-                            <p class="text-xs text-green-500 mt-1">
-                                @if($rematch_rdv->absent_participant_id == $rematch_rdv->id_participant1)
-                                    {{ $rematch_rdv->participant2->entreprise->nom ?? 'Indépendant' }}
-                                @else
-                                    {{ $rematch_rdv->participant1->entreprise->nom ?? 'Indépendant' }}
-                                @endif
-                            </p>
                         </div>
                     </div>
-
                     <div class="flex items-center gap-4 text-xs text-gray-500">
                         <span><i class="fa-solid fa-calendar mr-1"></i>{{ $rematch_rdv->date }}</span>
                         <span><i class="fa-solid fa-clock mr-1"></i>{{ $rematch_rdv->heure_debut }} - {{ $rematch_rdv->heure_fin }}</span>
@@ -760,7 +710,6 @@
                     </div>
                 </div>
 
-                {{-- Choisir nouveau participant --}}
                 <div>
                     <label class="block text-gray-600 text-sm font-medium mb-2">
                         Choisir le remplaçant *
@@ -780,12 +729,6 @@
                     @enderror
                 </div>
 
-                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-4 text-xs text-blue-700 flex items-start gap-2">
-                    <i class="fa-solid fa-circle-info mt-0.5"></i>
-                    Le remplaçant prendra la place du participant absent.
-                    Le RDV sera rétabli avec le même créneau et le même stand.
-                </div>
-
                 <div class="flex justify-end gap-3 mt-6">
                     <button wire:click="fermerRematch"
                         class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
@@ -797,7 +740,6 @@
                         <i class="fa-solid fa-rotate mr-1"></i> Effectuer le re-match
                     </button>
                 </div>
-
             </div>
         </div>
     </div>

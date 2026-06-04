@@ -121,4 +121,7 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/inscription-participant', \App\Livewire\Auth\InscriptionParticipant::class)->name('inscription.participant');
 Route::get('/inscription-entreprise', \App\Livewire\Auth\InscriptionEntreprise::class)->name('inscription.entreprise');
 
+// Route publique badge QR code
+Route::get('/badge/{qr_code}', [App\Http\Controllers\BadgePublicController::class, 'show'])
+    ->name('badge.public');
 require __DIR__.'/auth.php';

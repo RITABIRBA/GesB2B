@@ -18,7 +18,8 @@ class Evenement extends Model
         'heure_fin',
         'ville',
         'lieu',
-        'montant_inscription', // ← nouveau
+        'montant_inscription',
+        'type_paiement',
     ];
 
     public function typeEvenement()
@@ -34,5 +35,11 @@ class Evenement extends Model
     public function stands()
     {
         return $this->hasMany(Stand::class, 'id_evenement');
+    }
+
+    // ← Relation manquante !
+    public function inscriptions()
+    {
+        return $this->hasMany(Inscription::class, 'id_evenement');
     }
 }

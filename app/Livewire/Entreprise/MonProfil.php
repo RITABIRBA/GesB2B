@@ -9,6 +9,10 @@ class MonProfil extends Component
 {
     public $entreprise_id;
     public $nom = '';
+    public $nom_responsable = '';
+    public $prenom_responsable = '';
+    public $fonction_responsable = '';
+    public $ifu = '';
     public $secteur_activite = '';
     public $sous_secteur = '';
     public $pays = '';
@@ -29,19 +33,29 @@ class MonProfil extends Component
         'Nigeria', 'France', 'Allemagne', 'États-Unis', 'Chine', 'Autre',
     ];
 
+    // ← Liaison par email au lieu du nom
+    private function getEntreprise()
+    {
+        return Entreprise::where('email_responsable', auth()->user()->email)->first()
+            ?? Entreprise::where('nom', auth()->user()->name)->first();
+    }
+
     public function mount()
     {
-        // Liaison par nom
-        $entreprise = Entreprise::where('nom', auth()->user()->name)->first();
+        $entreprise = $this->getEntreprise();
 
         if ($entreprise) {
-            $this->entreprise_id    = $entreprise->id;
-            $this->nom              = $entreprise->nom;
-            $this->secteur_activite = $entreprise->secteur_activite;
-            $this->sous_secteur     = $entreprise->sous_secteur;
-            $this->pays             = $entreprise->pays;
-            $this->ville            = $entreprise->ville;
-            $this->contact          = $entreprise->contact;
+            $this->entreprise_id        = $entreprise->id;
+            $this->nom                  = $entreprise->nom;
+            $this->nom_responsable      = $entreprise->nom_responsable ?? '';
+            $this->prenom_responsable   = $entreprise->prenom_responsable ?? '';
+            $this->fonction_responsable = $entreprise->fonction_responsable ?? '';
+            $this->ifu                  = $entreprise->ifu ?? '';
+            $this->secteur_activite     = $entreprise->secteur_activite;
+            $this->sous_secteur         = $entreprise->sous_secteur;
+            $this->pays                 = $entreprise->pays;
+            $this->ville                = $entreprise->ville;
+            $this->contact              = $entreprise->contact;
         }
     }
 
@@ -62,19 +76,21 @@ class MonProfil extends Component
             'pays'             => 'required|string|max:255',
             'ville'            => 'required|string|max:255',
             'contact'          => 'required|string|max:255',
+            'ifu'              => 'nullable|string|max:255',
         ]);
 
         Entreprise::findOrFail($this->entreprise_id)->update([
-            'nom'              => $this->nom,
-            'secteur_activite' => $this->secteur_activite,
-            'sous_secteur'     => $this->sous_secteur,
-            'pays'             => $this->pays,
-            'ville'            => $this->ville,
-            'contact'          => $this->contact,
+            'nom'                   => $this->nom,
+            'nom_responsable'       => $this->nom_responsable,
+            'prenom_responsable'    => $this->prenom_responsable,
+            'fonction_responsable'  => $this->fonction_responsable,
+            'ifu'                   => $this->ifu ?: null,
+            'secteur_activite'      => $this->secteur_activite,
+            'sous_secteur'          => $this->sous_secteur,
+            'pays'                  => $this->pays,
+            'ville'                 => $this->ville,
+            'contact'               => $this->contact,
         ]);
-
-        // Met à jour aussi le nom du user
-        auth()->user()->update(['name' => $this->nom]);
 
         $this->isEditing = false;
         session()->flash('success', 'Profil mis à jour avec succès.');
@@ -82,7 +98,10 @@ class MonProfil extends Component
 
     public function render()
     {
-        return view('livewire.entreprise.mon-profil')
-            ->layout('layouts.entreprise', ['title' => 'Mon Profil']);
+        $entreprise = $this->getEntreprise();
+
+        return view('livewire.entreprise.mon-profil', [
+            'entreprise' => $entreprise,
+        ])->layout('layouts.entreprise', ['title' => 'Mon Profil']);
     }
 }

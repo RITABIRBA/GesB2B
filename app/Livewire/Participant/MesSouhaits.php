@@ -27,7 +27,6 @@ class MesSouhaits extends Component
 
     public function sauvegarder()
     {
-        // Liaison par email
         $participant = Participant::where('email', auth()->user()->email)->first();
 
         if (!$participant) {
@@ -70,7 +69,6 @@ class MesSouhaits extends Component
 
     public function render()
     {
-        // Liaison par email
         $participant = Participant::where('email', auth()->user()->email)->first();
 
         return view('livewire.participant.mes-souhaits', [
@@ -80,8 +78,18 @@ class MesSouhaits extends Component
                     ->orderBy('priorite')
                     ->get()
                 : collect(),
-            'autresParticipants' => Participant::where('id', '!=', $participant?->id)
-                ->orderBy('nom')->get(),
+
+            // ← Point 3 : Filtre même événement
+            // ← Point 4 : Charge entreprise et infos complètes
+            'autresParticipants' => $participant
+                ? Participant::with('entreprise')
+                    ->where('id_evenement', $participant->id_evenement)
+                    ->where('id', '!=', $participant->id)
+                    ->where('participation_rdv', true)
+                    ->orderBy('nom')
+                    ->get()
+                : collect(),
+
             'participant' => $participant,
         ])->layout('layouts.participant', ['title' => 'Mes Souhaits']);
     }

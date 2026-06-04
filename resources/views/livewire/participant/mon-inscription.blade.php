@@ -62,6 +62,9 @@
     {{-- LISTE DES INSCRIPTIONS --}}
     <div class="grid grid-cols-1 gap-4">
         @forelse($inscriptions as $inscription)
+        @php
+            $estGratuit = $inscription->evenement?->type_paiement === 'gratuit';
+        @endphp
         <div class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
             <div class="flex items-center justify-between">
                 <div>
@@ -73,22 +76,43 @@
                             <i class="fa-solid fa-calendar text-gray-400 mr-1"></i>
                             {{ $inscription->date_inscription }}
                         </span>
+
+                        {{-- Affichage montant selon type --}}
+                        @if($estGratuit)
+                        <span class="text-green-600 font-medium">
+                            <i class="fa-solid fa-gift mr-1"></i> Gratuit
+                        </span>
+                        @else
                         <span>
                             <i class="fa-solid fa-money-bill text-gray-400 mr-1"></i>
                             {{ number_format($inscription->montant_paye, 0, ',', ' ') }} FCFA
                         </span>
+                        @endif
+
+                        {{-- Type paiement --}}
+                        @if($inscription->evenement?->type_paiement == 'par_entreprise')
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                            <i class="fa-solid fa-building mr-1"></i> Paiement par entreprise
+                        </span>
+                        @endif
                     </div>
                 </div>
 
                 <div class="flex items-center gap-3 flex-wrap justify-end">
 
+                    {{-- En attente validation CDD --}}
                     @if($inscription->statut_presence == 'absent' && $inscription->statut_paiement == 'en_attente')
                     <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-yellow-500">
                         <i class="fa-solid fa-clock mr-1"></i> En attente validation CDD
                     </span>
                     @endif
 
-                    @if($inscription->statut_presence == 'present' && $inscription->statut_paiement == 'en_attente' && !$inscription->paiement)
+                    {{-- Validée CDD - Peut payer (seulement si payant par participant) --}}
+                    @if($inscription->statut_presence == 'present'
+                        && $inscription->statut_paiement == 'en_attente'
+                        && !$inscription->paiement
+                        && !$estGratuit
+                        && $inscription->evenement?->type_paiement == 'par_participant')
                     <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">
                         <i class="fa-solid fa-circle-check mr-1"></i> Validée par CDD
                     </span>
@@ -99,26 +123,45 @@
                     </button>
                     @endif
 
+                    {{-- Paiement par entreprise en attente --}}
+                    @if($inscription->statut_presence == 'present'
+                        && $inscription->statut_paiement == 'en_attente'
+                        && $inscription->evenement?->type_paiement == 'par_entreprise')
+                    <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-purple-600">
+                        <i class="fa-solid fa-building mr-1"></i> En attente paiement entreprise
+                    </span>
+                    @endif
+
+                    {{-- Paiement soumis en attente confirmation --}}
                     @if($inscription->paiement && $inscription->paiement->statut == 'en_attente')
                     <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-orange-500">
                         <i class="fa-solid fa-clock mr-1"></i> Paiement en attente confirmation
                     </span>
                     @endif
 
+                    {{-- Inscription confirmée --}}
                     @if($inscription->statut_paiement == 'paye')
+                    @if($estGratuit)
+                    <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-green-500">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Inscription confirmée (Gratuit)
+                    </span>
+                    @else
                     <span class="px-3 py-1 rounded-full text-xs text-white font-medium"
                         style="background-color: #007A3D;">
                         <i class="fa-solid fa-circle-check mr-1"></i> Payé
                     </span>
                     @endif
+                    @endif
 
+                    {{-- Annulée --}}
                     @if($inscription->statut_paiement == 'annule')
                     <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
                         <i class="fa-solid fa-circle-xmark mr-1"></i> Annulée
                     </span>
                     @endif
 
-                    @if($inscription->paiement && $inscription->paiement->recu)
+                    {{-- Reçu : seulement si événement payant --}}
+                    @if(!$estGratuit && $inscription->paiement && $inscription->paiement->recu)
                     <button wire:click="voirRecu({{ $inscription->id }})"
                         class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600 transition hover:bg-blue-700">
                         <i class="fa-solid fa-receipt mr-1"></i> Voir le reçu
@@ -128,7 +171,8 @@
                 </div>
             </div>
 
-            @if($inscription->paiement)
+            {{-- Détails paiement : seulement si payant --}}
+            @if(!$estGratuit && $inscription->paiement)
             <div class="mt-4 pt-4 border-t bg-gray-50 rounded-xl p-3">
                 <p class="text-xs text-gray-500 mb-1">Détails du paiement</p>
                 <div class="flex items-center gap-4 text-sm text-gray-600">
@@ -160,6 +204,15 @@
                 </div>
             </div>
             @endif
+
+            {{-- Message événement gratuit --}}
+            @if($estGratuit && $inscription->statut_paiement == 'paye')
+            <div class="mt-4 pt-4 border-t bg-green-50 rounded-xl p-3 text-xs text-green-700 flex items-center gap-2">
+                <i class="fa-solid fa-gift"></i>
+                Cet événement est gratuit. Votre inscription a été confirmée automatiquement.
+            </div>
+            @endif
+
         </div>
         @empty
         <div class="bg-white rounded-xl shadow p-16 text-center text-gray-400">
@@ -213,6 +266,7 @@
                             @foreach($evenements as $evenement)
                             <option value="{{ $evenement->id }}">
                                 {{ $evenement->nom }} — {{ $evenement->date_debut }}
+                                @if($evenement->type_paiement === 'gratuit') (Gratuit) @endif
                             </option>
                             @endforeach
                         </select>
@@ -222,11 +276,26 @@
                     </div>
 
                     {{-- Montant AUTO --}}
-                    @if($id_evenement && $montant_paye > 0)
+                    @if($id_evenement)
+                    @php
+                        $ev = $evenements->find($id_evenement);
+                    @endphp
+                    @if($ev && $ev->type_paiement === 'gratuit')
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                        <i class="fa-solid fa-gift text-green-500 text-2xl mb-2 block"></i>
+                        <p class="font-bold text-green-700">Événement gratuit !</p>
+                        <p class="text-xs text-green-500 mt-1">
+                            Aucun frais d'inscription requis.
+                        </p>
+                    </div>
+                    @elseif($ev && $montant_paye > 0)
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
                             <i class="fa-solid fa-money-bill mr-1" style="color: #C8102E;"></i>
                             Montant à payer
+                            @if($ev->type_paiement === 'par_entreprise')
+                                <span class="text-purple-600">(par entreprise)</span>
+                            @endif
                         </label>
                         <div class="w-full border-2 rounded-xl px-4 py-3 bg-green-50 border-green-300 text-lg font-bold text-center"
                             style="color: #007A3D;">
@@ -237,11 +306,7 @@
                             Montant fixé par l'organisateur
                         </p>
                     </div>
-                    @elseif($id_evenement && $montant_paye == 0)
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-700">
-                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                        Aucun montant défini pour cet événement.
-                    </div>
+                    @endif
                     @endif
 
                 </div>
@@ -252,9 +317,18 @@
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="inscrire"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm flex items-center gap-2"
                         style="background-color: #C8102E;">
-                        <i class="fa-solid fa-paper-plane mr-1"></i> Envoyer la préinscription
+                        <span wire:loading.remove>
+                            <i class="fa-solid fa-paper-plane mr-1"></i>
+                            Envoyer la préinscription
+                        </span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            Envoi en cours...
+                        </span>
                     </button>
                 </div>
             </div>
@@ -287,18 +361,13 @@
                     </p>
                 </div>
 
-                {{-- ÉTAPE 1 — Choisir moyen de paiement --}}
+                {{-- ÉTAPE 1 --}}
                 @if($etape_paiement == 1)
-
                 <p class="text-sm font-semibold text-gray-700 mb-4">
                     Choisissez votre moyen de paiement :
                 </p>
-
                 <div class="space-y-3">
-
-                    {{-- Orange Money --}}
-                    <button type="button"
-                        wire:click="$set('mode_paiement', 'orange_money')"
+                    <button type="button" wire:click="$set('mode_paiement', 'orange_money')"
                         class="w-full border-2 rounded-xl p-4 transition flex items-center gap-4 hover:border-orange-400 hover:bg-orange-50
                             {{ $mode_paiement === 'orange_money' ? 'border-orange-400 bg-orange-50' : 'border-gray-200' }}">
                         <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
@@ -314,9 +383,7 @@
                         @endif
                     </button>
 
-                    {{-- Moov Money --}}
-                    <button type="button"
-                        wire:click="$set('mode_paiement', 'moov_money')"
+                    <button type="button" wire:click="$set('mode_paiement', 'moov_money')"
                         class="w-full border-2 rounded-xl p-4 transition flex items-center gap-4 hover:border-blue-400 hover:bg-blue-50
                             {{ $mode_paiement === 'moov_money' ? 'border-blue-400 bg-blue-50' : 'border-gray-200' }}">
                         <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
@@ -332,9 +399,7 @@
                         @endif
                     </button>
 
-                    {{-- Carte Bancaire --}}
-                    <button type="button"
-                        wire:click="$set('mode_paiement', 'carte')"
+                    <button type="button" wire:click="$set('mode_paiement', 'carte')"
                         class="w-full border-2 rounded-xl p-4 transition flex items-center gap-4 hover:border-purple-400 hover:bg-purple-50
                             {{ $mode_paiement === 'carte' ? 'border-purple-400 bg-purple-50' : 'border-gray-200' }}">
                         <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0"
@@ -351,10 +416,8 @@
                         <i class="fa-solid fa-chevron-right ml-auto text-gray-400"></i>
                         @endif
                     </button>
-
                 </div>
 
-                {{-- Bouton continuer --}}
                 @if($mode_paiement == 'orange_money' || $mode_paiement == 'moov_money')
                 <button wire:click="$set('etape_paiement', 2)"
                     class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg mt-4"
@@ -371,9 +434,8 @@
                 </button>
                 @endif
 
-                {{-- ÉTAPE 2 — Numéro téléphone --}}
+                {{-- ÉTAPE 2 --}}
                 @elseif($etape_paiement == 2)
-
                 <div class="text-center mb-6">
                     @if($mode_paiement == 'orange_money')
                     <div class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-2"
@@ -385,7 +447,6 @@
                     <p class="font-bold text-gray-800">Moov Money</p>
                     @endif
                 </div>
-
                 <div class="space-y-4">
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
@@ -398,7 +459,6 @@
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                     </div>
-
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
                         <i class="fa-solid fa-circle-info mr-1"></i>
                         @if($mode_paiement == 'orange_money')
@@ -410,7 +470,6 @@
                         @endif
                     </div>
                 </div>
-
                 <div class="flex gap-3 mt-6">
                     <button wire:click="$set('etape_paiement', 1)"
                         class="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
@@ -424,9 +483,8 @@
                     </button>
                 </div>
 
-                {{-- ÉTAPE 3 — Code OTP --}}
+                {{-- ÉTAPE 3 --}}
                 @elseif($etape_paiement == 3)
-
                 <div class="text-center mb-6">
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
                         style="background-color: #e6f4ed;">
@@ -437,8 +495,6 @@
                         Code envoyé au <strong>{{ $telephone_paiement }}</strong>
                     </p>
                 </div>
-
-                {{-- Instruction USSD --}}
                 <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4 text-center">
                     <p class="text-xs text-orange-600 font-semibold mb-2">
                         <i class="fa-solid fa-mobile mr-1"></i>
@@ -452,7 +508,6 @@
                         @endif
                     </p>
                 </div>
-
                 <div class="space-y-4">
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
@@ -465,14 +520,12 @@
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                     </div>
-
                     <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center text-xs text-yellow-700">
                         <i class="fa-solid fa-triangle-exclamation mr-1"></i>
                         <strong>Simulation :</strong> Votre code OTP est
                         <span class="font-mono font-bold text-red-600 text-lg ml-1">{{ $otp_code }}</span>
                     </div>
                 </div>
-
                 <div class="flex gap-3 mt-6">
                     <button wire:click="$set('etape_paiement', 2)"
                         class="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
@@ -486,9 +539,8 @@
                     </button>
                 </div>
 
-                {{-- ÉTAPE 4 — Carte Bleue --}}
+                {{-- ÉTAPE 4 — Carte --}}
                 @elseif($etape_paiement == 4)
-
                 <div class="text-center mb-4">
                     <div class="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-2"
                         style="background-color: #6d28d9;">
@@ -496,65 +548,42 @@
                     </div>
                     <p class="font-bold text-gray-800">Paiement par Carte Bancaire</p>
                 </div>
-
                 <div class="space-y-4">
-
                     <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Numéro de carte *
-                        </label>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Numéro de carte *</label>
                         <input wire:model="carte_numero" type="text" maxlength="19"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm font-mono tracking-widest text-center"
                             placeholder="XXXX XXXX XXXX XXXX">
-                        @error('carte_numero')
-                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                        @enderror
+                        @error('carte_numero') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
-
                     <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Nom sur la carte *
-                        </label>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom sur la carte *</label>
                         <input wire:model="carte_nom" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm"
                             placeholder="Ex: TINTO MOUSSA">
-                        @error('carte_nom')
-                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                        @enderror
+                        @error('carte_nom') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
-
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                                Date d'expiration *
-                            </label>
+                            <label class="block text-gray-600 text-sm font-medium mb-1.5">Date d'expiration *</label>
                             <input wire:model="carte_expiration" type="text" maxlength="5"
                                 class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm font-mono text-center"
                                 placeholder="MM/AA">
-                            @error('carte_expiration')
-                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                            @enderror
+                            @error('carte_expiration') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                         </div>
                         <div>
-                            <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                                CVV *
-                            </label>
+                            <label class="block text-gray-600 text-sm font-medium mb-1.5">CVV *</label>
                             <input wire:model="carte_cvv" type="password" maxlength="4"
                                 class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm font-mono text-center"
                                 placeholder="XXX">
-                            @error('carte_cvv')
-                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                            @enderror
+                            @error('carte_cvv') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                         </div>
                     </div>
-
                     <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-xs text-green-700 flex items-center gap-2">
                         <i class="fa-solid fa-shield-halved text-green-500"></i>
                         Paiement sécurisé SSL — Vos données sont protégées
                     </div>
-
                 </div>
-
                 <div class="flex gap-3 mt-6">
                     <button wire:click="$set('etape_paiement', 1)"
                         class="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
@@ -567,7 +596,6 @@
                         Payer {{ number_format($montant_paiement, 0, ',', ' ') }} FCFA
                     </button>
                 </div>
-
                 @endif
 
             </div>
@@ -575,7 +603,7 @@
     </div>
     @endif
 
-    {{-- MODAL — REÇU --}}
+    {{-- MODAL — REÇU (seulement si payant) --}}
     @if($showModalRecu && $recu_courant)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]">
@@ -591,7 +619,6 @@
             </div>
 
             <div class="p-8" id="recu-print">
-
                 <div class="text-center mb-6">
                     <img src="{{ asset('images/logo-ccibf.png') }}"
                         alt="CCI-BF" class="w-16 h-16 object-contain mx-auto mb-2">

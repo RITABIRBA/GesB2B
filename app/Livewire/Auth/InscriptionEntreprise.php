@@ -9,21 +9,27 @@ use Illuminate\Support\Facades\Hash;
 
 class InscriptionEntreprise extends Component
 {
+    // Infos responsable
+    public $nom_responsable      = ''; // ← nouveau
+    public $prenom_responsable   = ''; // ← nouveau
+    public $fonction_responsable = ''; // ← nouveau
+
     // Infos entreprise
-    public $nom = '';
-    public $secteur_activite = '';
-    public $sous_secteur = '';
+    public $nom                  = '';
+    public $ifu                  = '';
+    public $secteur_activite     = '';
+    public $sous_secteur         = '';
     public $description_activites = '';
-    public $principaux_produits = '';
-    public $pays = '';
-    public $ville = '';
-    public $contact = '';
+    public $principaux_produits  = '';
+    public $pays                 = '';
+    public $ville                = '';
+    public $contact              = '';
 
     // Compte
-    public $email = '';
-    public $password = '';
+    public $email                = '';
+    public $password             = '';
     public $password_confirmation = '';
-    public $id_cdd = '';
+    public $id_cdd               = '';
 
     public $showSuccessModal = false;
 
@@ -43,7 +49,11 @@ class InscriptionEntreprise extends Component
     public function sinscrire()
     {
         $this->validate([
+            'nom_responsable'       => 'required|string|max:255',
+            'prenom_responsable'    => 'required|string|max:255',
+            'fonction_responsable'  => 'nullable|string|max:255',
             'nom'                   => 'required|string|max:255',
+            'ifu'                   => 'nullable|string|max:255|unique:entreprises,ifu',
             'secteur_activite'      => 'required|string|max:255',
             'description_activites' => 'required|string',
             'pays'                  => 'required|string|max:255',
@@ -56,7 +66,7 @@ class InscriptionEntreprise extends Component
 
         // Crée le compte USER
         $user = User::create([
-            'name'     => $this->nom,
+            'name'     => $this->nom_responsable . ' ' . $this->prenom_responsable,
             'email'    => $this->email,
             'password' => Hash::make($this->password),
         ]);
@@ -66,13 +76,18 @@ class InscriptionEntreprise extends Component
         Entreprise::create([
             'id_cdd'                => $this->id_cdd,
             'nom'                   => $this->nom,
+            'nom_responsable'       => $this->nom_responsable,       // ← nouveau
+            'prenom_responsable'    => $this->prenom_responsable,    // ← nouveau
+            'fonction_responsable'  => $this->fonction_responsable,  // ← nouveau
+            'email_responsable'     => $this->email,                 // ← nouveau
+            'ifu'                   => $this->ifu ?: null,
             'secteur_activite'      => $this->secteur_activite,
             'description_activites' => $this->description_activites,
             'principaux_produits'   => $this->principaux_produits,
             'sous_secteur'          => $this->sous_secteur,
             'pays'                  => $this->pays,
             'ville'                 => $this->ville,
-            'contact'               => $this->email,
+            'contact'               => $this->contact,
             'statut_validation'     => 'en_attente',
         ]);
 

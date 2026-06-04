@@ -6,6 +6,13 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="bg-red-100 border border-red-300 text-red-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
+        <i class="fa-solid fa-circle-xmark text-red-500 text-xl"></i>
+        {{ session('error') }}
+    </div>
+    @endif
+
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
             <h3 class="text-xl font-bold text-gray-700">Mes Souhaits de RDV</h3>
@@ -15,6 +22,7 @@
             </span>
         </div>
         <button wire:click="openModal"
+            wire:loading.attr="disabled"
             class="px-5 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow"
             style="background-color: #C8102E;">
             <i class="fa-solid fa-plus"></i> Nouveau souhait
@@ -48,6 +56,7 @@
         @endif
     </div>
 
+    {{-- Tableau des souhaits --}}
     <div class="bg-white rounded-xl shadow overflow-hidden">
         <table class="w-full text-left">
             <thead style="background-color: #f8f9fa;">
@@ -68,8 +77,20 @@
                             {{ $souhait->priorite }}
                         </div>
                     </td>
-                    <td class="px-6 py-4 font-semibold text-gray-800">
-                        {{ $souhait->participantCible->nom ?? '-' }} {{ $souhait->participantCible->prenom ?? '' }}
+                    <td class="px-6 py-4">
+                        <div>
+                            <p class="font-semibold text-gray-800">
+                                {{ $souhait->participantCible->nom ?? '-' }}
+                                {{ $souhait->participantCible->prenom ?? '' }}
+                            </p>
+                            {{-- ← Point 4 : Fonction visible --}}
+                            @if($souhait->participantCible?->fonction)
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                <i class="fa-solid fa-briefcase mr-1"></i>
+                                {{ $souhait->participantCible->fonction }}
+                            </p>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-6 py-4">
                         <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
@@ -90,6 +111,7 @@
                     <td class="px-6 py-4">
                         <button wire:click="supprimer({{ $souhait->id }})"
                             wire:confirm="Supprimer ce souhait ?"
+                            wire:loading.attr="disabled"
                             class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700">
                             <i class="fa-solid fa-trash"></i>
                         </button>
@@ -100,7 +122,9 @@
                     <td colspan="5" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-heart text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun souhait émis</p>
-                        <p class="text-sm text-gray-400 mt-1">Émettez au moins 10 souhaits pour participer au match-making</p>
+                        <p class="text-sm text-gray-400 mt-1">
+                            Émettez au moins 10 souhaits pour participer au match-making
+                        </p>
                     </td>
                 </tr>
                 @endforelse
@@ -108,6 +132,7 @@
         </table>
     </div>
 
+    {{-- MODAL --}}
     @if($showModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
@@ -120,39 +145,112 @@
             </div>
             <div class="p-8">
                 <div class="grid grid-cols-1 gap-5">
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Veut rencontrer *</label>
-                        <select wire:model="id_participant_cible"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
-                            <option value="">-- Choisir un participant --</option>
-                            @foreach($autresParticipants as $p)
-                            <option value="{{ $p->id }}">
-                                {{ $p->nom }} {{ $p->prenom }}
-                                {{ $p->entreprise ? '('.$p->entreprise->nom.')' : '' }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('id_participant_cible') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
+
+                    {{-- Participant cible --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Priorité * <span class="text-gray-400 font-normal">(1 = plus important)</span>
+                            Veut rencontrer *
+                        </label>
+
+                        {{-- Info même événement --}}
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 text-xs text-blue-700 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Seuls les participants de votre événement sont affichés.
+                        </div>
+
+                        {{-- Liste des participants --}}
+                        <div class="space-y-2 max-h-60 overflow-y-auto border rounded-xl p-2">
+                            @forelse($autresParticipants as $p)
+                            <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition hover:bg-gray-50
+                                {{ $id_participant_cible == $p->id ? 'bg-green-50 border border-green-300' : 'border border-transparent' }}">
+                                <input type="radio"
+                                    wire:model="id_participant_cible"
+                                    value="{{ $p->id }}"
+                                    class="text-green-600">
+                                <div class="flex items-center gap-3 flex-1">
+                                    {{-- Avatar --}}
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                                        style="background-color: {{ $p->genre == 'femme' ? '#C8102E' : '#007A3D' }}">
+                                        {{ strtoupper(substr($p->prenom ?? 'X', 0, 1)) }}
+                                    </div>
+                                    <div>
+                                        {{-- Nom --}}
+                                        <p class="font-semibold text-gray-800 text-sm">
+                                            {{ $p->nom }} {{ $p->prenom }}
+                                            @if($p->genre == 'femme')
+                                                <span class="text-xs text-gray-400">(Mme)</span>
+                                            @elseif($p->genre == 'homme')
+                                                <span class="text-xs text-gray-400">(M.)</span>
+                                            @endif
+                                        </p>
+                                        {{-- Fonction --}}
+                                        @if($p->fonction)
+                                        <p class="text-xs text-gray-400">
+                                            <i class="fa-solid fa-briefcase mr-1"></i>
+                                            {{ $p->fonction }}
+                                        </p>
+                                        @endif
+                                        {{-- Entreprise --}}
+                                        <p class="text-xs text-gray-400">
+                                            <i class="fa-solid fa-building mr-1"></i>
+                                            {{ $p->entreprise->nom ?? 'Indépendant' }}
+                                        </p>
+                                        {{-- Secteur --}}
+                                        @if($p->secteur_activite)
+                                        <p class="text-xs text-gray-400">
+                                            <i class="fa-solid fa-tag mr-1"></i>
+                                            {{ $p->secteur_activite }}
+                                        </p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </label>
+                            @empty
+                            <div class="text-center py-6 text-gray-400">
+                                <i class="fa-solid fa-users text-3xl mb-2 block text-gray-300"></i>
+                                <p class="text-sm">Aucun participant disponible dans votre événement</p>
+                            </div>
+                            @endforelse
+                        </div>
+                        @error('id_participant_cible')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    {{-- Priorité --}}
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Priorité *
+                            <span class="text-gray-400 font-normal">(1 = plus important)</span>
                         </label>
                         <input wire:model="priorite" type="number" min="1" max="20"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
                             placeholder="Entre 1 et 20">
-                        @error('priorite') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        @error('priorite')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
+
                 </div>
+
                 <div class="flex justify-end gap-3 mt-6">
                     <button wire:click="closeModal"
                         class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
-                        Annuler
+                        <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="sauvegarder"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm flex items-center gap-2"
                         style="background-color: #C8102E;">
-                        Enregistrer
+                        <span wire:loading.remove>
+                            <i class="fa-solid fa-floppy-disk mr-1"></i>
+                            Enregistrer
+                        </span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            Enregistrement...
+                        </span>
                     </button>
                 </div>
             </div>

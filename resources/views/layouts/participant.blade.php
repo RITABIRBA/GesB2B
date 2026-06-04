@@ -9,32 +9,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     @livewireStyles
     <style>
-        @media print {
-            body * { visibility: hidden; }
+@media print {
+    /* Cache tout */
+    body * { visibility: hidden; }
 
-            #recu-print {
-                visibility: visible;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                padding: 20px;
-            }
-            #recu-print * { visibility: visible; }
+    /* Affiche seulement le badge */
+    #badge-print, #badge-print * {
+        visibility: visible;
+    }
 
-            #planning-print, #planning-print * { visibility: visible; }
-            #planning-print {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                padding: 20px;
-            }
+    /* Centre le badge */
+    #badge-print {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+    }
 
-            .no-print { display: none !important; }
-            .print-header { display: block !important; }
-        }
-    </style>
+    /* Cache le bouton imprimer */
+    .no-print { display: none !important; }
+}
+</style>
 </head>
 <body class="font-sans antialiased bg-gray-100">
 
@@ -138,5 +133,14 @@
 </div>
 
 @livewireScripts
+{{-- Module de chargement global --}}
+<div wire:loading.flex
+    class="fixed inset-0 z-[9999] items-center justify-center"
+    style="background: rgba(0,0,0,0.4);">
+    <div class="bg-white rounded-2xl shadow-2xl px-10 py-8 flex flex-col items-center gap-4">
+        <div class="w-14 h-14 rounded-full border-4 border-gray-200 border-t-red-600 animate-spin"></div>
+        <p class="text-gray-700 font-semibold text-sm">Chargement en cours...</p>
+    </div>
+</div> 
 </body>
 </html>

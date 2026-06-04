@@ -44,6 +44,7 @@
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Année</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Date début</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Date fin</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Paiement</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Montant</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
@@ -64,11 +65,35 @@
                     <td class="px-6 py-4 text-gray-600">{{ $evenement->annee }}</td>
                     <td class="px-6 py-4 text-gray-600">{{ $evenement->date_debut }}</td>
                     <td class="px-6 py-4 text-gray-600">{{ $evenement->date_fin }}</td>
+
+                    {{-- Type paiement --}}
                     <td class="px-6 py-4">
-                        <span class="font-bold text-sm" style="color: #007A3D;">
-                            {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA
-                        </span>
+                        @if($evenement->type_paiement == 'gratuit')
+                            <span class="text-xs px-3 py-1 rounded-full font-medium text-white bg-green-500">
+                                <i class="fa-solid fa-gift mr-1"></i> Gratuit
+                            </span>
+                        @elseif($evenement->type_paiement == 'par_participant')
+                            <span class="text-xs px-3 py-1 rounded-full font-medium text-white bg-blue-600">
+                                <i class="fa-solid fa-user mr-1"></i> Par participant
+                            </span>
+                        @else
+                            <span class="text-xs px-3 py-1 rounded-full font-medium text-white bg-purple-600">
+                                <i class="fa-solid fa-building mr-1"></i> Par entreprise
+                            </span>
+                        @endif
                     </td>
+
+                    {{-- Montant --}}
+                    <td class="px-6 py-4">
+                        @if($evenement->type_paiement == 'gratuit')
+                            <span class="text-green-600 font-bold text-sm">Gratuit</span>
+                        @else
+                            <span class="font-bold text-sm" style="color: #007A3D;">
+                                {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA
+                            </span>
+                        @endif
+                    </td>
+
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
                             <button wire:click="modifier({{ $evenement->id }})"
@@ -86,7 +111,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="py-16 text-center text-gray-400">
+                    <td colspan="9" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-calendar-xmark text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun événement pour le moment</p>
                         <button wire:click="openModal"
@@ -106,7 +131,8 @@
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
 
-            <div class="flex justify-between items-center px-8 py-5 border-b" style="background: linear-gradient(135deg, #007A3D, #005a2d);">
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-plus' }}"></i>
                     {{ $isEditing ? 'Modifier l\'événement' : 'Nouvel événement' }}
@@ -128,9 +154,7 @@
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: Africallia 2026">
                         @error('nom')
-                            <span class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                <i class="fa-solid fa-circle-exclamation"></i> {{ $message }}
-                            </span>
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                     </div>
 
@@ -158,18 +182,14 @@
                             @endforeach
                         </select>
                         @error('id_type_evenement')
-                            <span class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                <i class="fa-solid fa-circle-exclamation"></i> {{ $message }}
-                            </span>
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                         @else
                         <input wire:model="nouveau_type" type="text"
                             placeholder="Ex: Foire internationale..."
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
                         @error('nouveau_type')
-                            <span class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                <i class="fa-solid fa-circle-exclamation"></i> {{ $message }}
-                            </span>
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                         @endif
                     </div>
@@ -233,22 +253,102 @@
                         @error('lieu') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
 
-                    {{-- Montant inscription --}}
+                    {{-- TYPE DE PAIEMENT --}}
+                    <div class="col-span-2">
+                        <label class="block text-gray-600 text-sm font-medium mb-3">
+                            <i class="fa-solid fa-money-bill mr-1" style="color: #007A3D;"></i>
+                            Type de paiement *
+                        </label>
+                        <div class="grid grid-cols-3 gap-3">
+
+                            {{-- Gratuit --}}
+                            <button type="button"
+                                wire:click="$set('type_paiement', 'gratuit')"
+                                class="border-2 rounded-xl p-4 text-left transition
+                                    {{ $type_paiement === 'gratuit'
+                                        ? 'border-green-400 bg-green-50'
+                                        : 'border-gray-200 hover:bg-gray-50' }}">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i class="fa-solid fa-gift text-green-500"></i>
+                                    <p class="font-semibold text-sm text-gray-800">Gratuit</p>
+                                </div>
+                                <p class="text-xs text-gray-400">
+                                    Aucun frais d'inscription
+                                </p>
+                            </button>
+
+                            {{-- Par participant --}}
+                            <button type="button"
+                                wire:click="$set('type_paiement', 'par_participant')"
+                                class="border-2 rounded-xl p-4 text-left transition
+                                    {{ $type_paiement === 'par_participant'
+                                        ? 'border-blue-400 bg-blue-50'
+                                        : 'border-gray-200 hover:bg-gray-50' }}">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i class="fa-solid fa-user text-blue-500"></i>
+                                    <p class="font-semibold text-sm text-gray-800">Par participant</p>
+                                </div>
+                                <p class="text-xs text-gray-400">
+                                    Chaque participant paie individuellement
+                                </p>
+                            </button>
+
+                            {{-- Par entreprise --}}
+                            <button type="button"
+                                wire:click="$set('type_paiement', 'par_entreprise')"
+                                class="border-2 rounded-xl p-4 text-left transition
+                                    {{ $type_paiement === 'par_entreprise'
+                                        ? 'border-purple-400 bg-purple-50'
+                                        : 'border-gray-200 hover:bg-gray-50' }}">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i class="fa-solid fa-building text-purple-500"></i>
+                                    <p class="font-semibold text-sm text-gray-800">Par entreprise</p>
+                                </div>
+                                <p class="text-xs text-gray-400">
+                                    L'entreprise paie un montant global
+                                </p>
+                            </button>
+
+                        </div>
+                        @error('type_paiement')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    {{-- Montant (caché si gratuit) --}}
+                    @if($type_paiement !== 'gratuit')
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
                             <i class="fa-solid fa-money-bill mr-1" style="color: #007A3D;"></i>
-                            Montant d'inscription (FCFA) *
+                            @if($type_paiement === 'par_participant')
+                                Montant par participant (FCFA) *
+                            @else
+                                Montant global par entreprise (FCFA) *
+                            @endif
                         </label>
-                        <input wire:model="montant_inscription" type="number" min="0"
+                        <input wire:model="montant_inscription" type="number" min="1"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: 50000">
                         @error('montant_inscription')
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                         <p class="text-xs text-gray-400 mt-1">
-                            Ce montant sera automatiquement affiché lors de l'inscription des participants.
+                            @if($type_paiement === 'par_participant')
+                                Ce montant sera payé par chaque participant individuellement.
+                            @else
+                                Ce montant sera payé une fois par l'entreprise pour tous ses participants.
+                            @endif
                         </p>
                     </div>
+                    @else
+                    <div class="col-span-2">
+                        <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i>
+                            Événement gratuit — Aucun frais d'inscription requis.
+                            Les participants seront validés directement après confirmation du CDD.
+                        </div>
+                    </div>
+                    @endif
 
                 </div>
 
@@ -259,10 +359,18 @@
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="sauvegarder"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
                         style="background-color: #C8102E;">
-                        <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
-                        {{ $isEditing ? 'Modifier' : 'Enregistrer' }}
+                        <span wire:loading.remove>
+                            <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
+                            {{ $isEditing ? 'Modifier' : 'Enregistrer' }}
+                        </span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            Enregistrement...
+                        </span>
                     </button>
                 </div>
             </div>

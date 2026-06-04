@@ -9,6 +9,7 @@ class GestionEntreprises extends Component
 {
     public $entreprise_id;
     public $nom = '';
+    public $ifu = ''; // ← nouveau
     public $secteur_activite = '';
     public $sous_secteur = '';
     public $pays = '';
@@ -50,6 +51,7 @@ class GestionEntreprises extends Component
     {
         $this->entreprise_id     = null;
         $this->nom               = '';
+        $this->ifu               = ''; // ← nouveau
         $this->secteur_activite  = '';
         $this->sous_secteur      = '';
         $this->pays              = '';
@@ -65,6 +67,7 @@ class GestionEntreprises extends Component
         $e = Entreprise::findOrFail($id);
         $this->entreprise_id     = $e->id;
         $this->nom               = $e->nom;
+        $this->ifu               = $e->ifu ?? ''; // ← nouveau
         $this->secteur_activite  = $e->secteur_activite;
         $this->sous_secteur      = $e->sous_secteur;
         $this->pays              = $e->pays;
@@ -79,6 +82,15 @@ class GestionEntreprises extends Component
     {
         $this->validate([
             'nom'              => 'required|string|max:255',
+            'ifu'              => [
+                'nullable',
+                'string',
+                'max:255',
+                // Unique sauf pour l'entreprise en cours de modification
+                $this->isEditing
+                    ? \Illuminate\Validation\Rule::unique('entreprises', 'ifu')->ignore($this->entreprise_id)
+                    : \Illuminate\Validation\Rule::unique('entreprises', 'ifu'),
+            ],
             'secteur_activite' => 'required|string|max:255',
             'sous_secteur'     => 'nullable|string|max:255',
             'pays'             => 'required|string|max:255',
@@ -89,6 +101,7 @@ class GestionEntreprises extends Component
 
         $data = [
             'nom'               => $this->nom,
+            'ifu'               => $this->ifu ?: null, // ← nouveau
             'secteur_activite'  => $this->secteur_activite,
             'sous_secteur'      => $this->sous_secteur,
             'pays'              => $this->pays,
@@ -134,6 +147,7 @@ class GestionEntreprises extends Component
                 $q->where('nom', 'like', '%'.$this->search.'%')
                   ->orWhere('pays', 'like', '%'.$this->search.'%')
                   ->orWhere('ville', 'like', '%'.$this->search.'%')
+                  ->orWhere('ifu', 'like', '%'.$this->search.'%')
             )->latest()->get(),
         ])->layout('layouts.admin', ['title' => 'Gestion des Entreprises']);
     }

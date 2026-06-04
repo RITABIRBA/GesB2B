@@ -9,21 +9,22 @@ use App\Models\TypeEvenement;
 class GestionEvenements extends Component
 {
     public $evenement_id;
-    public $id_type_evenement = '';
-    public $nouveau_type = '';
+    public $id_type_evenement    = '';
+    public $nouveau_type         = '';
     public $utiliser_nouveau_type = '';
-    public $nom = '';
-    public $annee = '';
-    public $date_debut = '';
-    public $date_fin = '';
-    public $heure_debut = '';
-    public $heure_fin = '';
-    public $ville = '';
-    public $lieu = '';
-    public $montant_inscription = 0; // ← nouveau
-    public $showModal = false;
-    public $isEditing = false;
-    public $search = '';
+    public $nom                  = '';
+    public $annee                = '';
+    public $date_debut           = '';
+    public $date_fin             = '';
+    public $heure_debut          = '';
+    public $heure_fin            = '';
+    public $ville                = '';
+    public $lieu                 = '';
+    public $montant_inscription  = 0;
+    public $type_paiement        = 'par_participant'; // ← nouveau
+    public $showModal            = false;
+    public $isEditing            = false;
+    public $search               = '';
 
     public function openModal()
     {
@@ -40,19 +41,20 @@ class GestionEvenements extends Component
 
     public function resetFields()
     {
-        $this->evenement_id          = null;
-        $this->id_type_evenement     = '';
-        $this->nouveau_type          = '';
-        $this->utiliser_nouveau_type = '';
-        $this->nom                   = '';
-        $this->annee                 = '';
-        $this->date_debut            = '';
-        $this->date_fin              = '';
-        $this->heure_debut           = '';
-        $this->heure_fin             = '';
-        $this->ville                 = '';
-        $this->lieu                  = '';
-        $this->montant_inscription   = 0; // ← nouveau
+        $this->evenement_id           = null;
+        $this->id_type_evenement      = '';
+        $this->nouveau_type           = '';
+        $this->utiliser_nouveau_type  = '';
+        $this->nom                    = '';
+        $this->annee                  = '';
+        $this->date_debut             = '';
+        $this->date_fin               = '';
+        $this->heure_debut            = '';
+        $this->heure_fin              = '';
+        $this->ville                  = '';
+        $this->lieu                   = '';
+        $this->montant_inscription    = 0;
+        $this->type_paiement          = 'par_participant'; // ← nouveau
         $this->resetErrorBag();
     }
 
@@ -69,41 +71,40 @@ class GestionEvenements extends Component
         $this->heure_fin             = $e->heure_fin;
         $this->ville                 = $e->ville;
         $this->lieu                  = $e->lieu;
-        $this->montant_inscription   = $e->montant_inscription; // ← nouveau
+        $this->montant_inscription   = $e->montant_inscription;
+        $this->type_paiement         = $e->type_paiement; // ← nouveau
         $this->isEditing             = true;
         $this->showModal             = true;
     }
 
     public function sauvegarder()
     {
+        // Règles de validation selon type_paiement
+        $regles_communes = [
+            'nom'          => 'required|string|max:255',
+            'annee'        => 'required|integer|min:2000|max:2100',
+            'date_debut'   => 'required|date',
+            'date_fin'     => 'required|date|after_or_equal:date_debut',
+            'heure_debut'  => 'required',
+            'heure_fin'    => 'required',
+            'ville'        => 'required|string|max:255',
+            'lieu'         => 'required|string|max:255',
+            'type_paiement'=> 'required|in:gratuit,par_participant,par_entreprise',
+        ];
+
+        // Montant obligatoire seulement si pas gratuit
+        if ($this->type_paiement !== 'gratuit') {
+            $regles_communes['montant_inscription'] = 'required|numeric|min:1';
+        }
+
         if ($this->utiliser_nouveau_type === '1') {
-            $this->validate([
-                'nouveau_type'         => 'required|string|max:255',
-                'nom'                  => 'required|string|max:255',
-                'annee'                => 'required|integer|min:2000|max:2100',
-                'date_debut'           => 'required|date',
-                'date_fin'             => 'required|date|after_or_equal:date_debut',
-                'heure_debut'          => 'required',
-                'heure_fin'            => 'required',
-                'ville'                => 'required|string|max:255',
-                'lieu'                 => 'required|string|max:255',
-                'montant_inscription'  => 'required|numeric|min:0',
-            ]);
+            $regles_communes['nouveau_type'] = 'required|string|max:255';
+            $this->validate($regles_communes);
             $type    = TypeEvenement::create(['nom' => $this->nouveau_type]);
             $id_type = $type->id;
         } else {
-            $this->validate([
-                'id_type_evenement'    => 'required',
-                'nom'                  => 'required|string|max:255',
-                'annee'                => 'required|integer|min:2000|max:2100',
-                'date_debut'           => 'required|date',
-                'date_fin'             => 'required|date|after_or_equal:date_debut',
-                'heure_debut'          => 'required',
-                'heure_fin'            => 'required',
-                'ville'                => 'required|string|max:255',
-                'lieu'                 => 'required|string|max:255',
-                'montant_inscription'  => 'required|numeric|min:0',
-            ]);
+            $regles_communes['id_type_evenement'] = 'required';
+            $this->validate($regles_communes);
             $id_type = $this->id_type_evenement;
         }
 
@@ -117,7 +118,10 @@ class GestionEvenements extends Component
             'heure_fin'           => $this->heure_fin,
             'ville'               => $this->ville,
             'lieu'                => $this->lieu,
-            'montant_inscription' => $this->montant_inscription, // ← nouveau
+            'type_paiement'       => $this->type_paiement, // ← nouveau
+            'montant_inscription' => $this->type_paiement === 'gratuit'
+                ? 0
+                : $this->montant_inscription,
         ];
 
         if ($this->isEditing) {

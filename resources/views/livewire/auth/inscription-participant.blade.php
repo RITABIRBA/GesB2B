@@ -88,19 +88,13 @@
 
                 {{-- Genre --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Genre *</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button type="button" wire:click="$set('genre', 'homme')"
-                            class="border rounded-xl p-2.5 text-center text-sm transition flex items-center justify-center gap-2
-                                {{ $genre === 'homme' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                            <i class="fa-solid fa-mars"></i> Homme
-                        </button>
-                        <button type="button" wire:click="$set('genre', 'femme')"
-                            class="border rounded-xl p-2.5 text-center text-sm transition flex items-center justify-center gap-2
-                                {{ $genre === 'femme' ? 'border-pink-400 bg-pink-50 text-pink-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                            <i class="fa-solid fa-venus"></i> Femme
-                        </button>
-                    </div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Genre *</label>
+                    <select wire:model="genre"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                        <option value="">-- Choisir le genre --</option>
+                        <option value="homme">Homme</option>
+                        <option value="femme">Femme</option>
+                    </select>
                     @error('genre') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
@@ -113,6 +107,43 @@
                     <input wire:model="fonction" type="text"
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                         placeholder="Ex: Directeur Commercial, PDG...">
+                </div>
+
+                {{-- IFU --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Numéro IFU
+                        <span class="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
+                    <input wire:model.live="ifu" type="text"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        placeholder="Ex: BF123456789">
+
+                    {{-- Entreprise trouvée via IFU --}}
+                    @if($entreprise_trouvee)
+                    <div class="mt-2 bg-green-50 border border-green-300 rounded-xl p-3 flex items-center gap-3">
+                        <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
+                        <div>
+                            <p class="text-sm font-bold text-green-700">
+                                Entreprise trouvée !
+                            </p>
+                            <p class="text-xs text-green-600">
+                                {{ $entreprise_trouvee->nom }}
+                                — {{ $entreprise_trouvee->secteur_activite }}
+                                — {{ $entreprise_trouvee->pays }}
+                            </p>
+                            <p class="text-xs text-green-500 mt-0.5">
+                                Vous serez automatiquement lié à cette entreprise.
+                            </p>
+                        </div>
+                    </div>
+                    @elseif($ifu && strlen($ifu) >= 3)
+                    <div class="mt-2 bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-center gap-2 text-xs text-yellow-700">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Aucune entreprise trouvée avec ce numéro IFU.
+                        Vous serez inscrit comme participant indépendant.
+                    </div>
+                    @endif
                 </div>
 
                 {{-- Email --}}
@@ -163,29 +194,43 @@
 
                 {{-- Rôle --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Rôle *</label>
-                    <div class="grid grid-cols-2 gap-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Rôle de participation *
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+
+                        {{-- Exposant --}}
                         <button type="button" wire:click="$set('role', 'exposant')"
-                            class="border rounded-xl p-2 text-center text-sm transition
-                                {{ $role === 'exposant' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                            <i class="fa-solid fa-store mr-1"></i> Exposant
+                            class="border-2 rounded-xl p-3 text-left transition
+                                {{ $role === 'exposant'
+                                    ? 'border-red-400 bg-red-50'
+                                    : 'border-gray-200 hover:bg-gray-50' }}">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="fa-solid fa-store text-sm" style="color: #C8102E;"></i>
+                                <p class="font-semibold text-sm text-gray-800">Exposant</p>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                Vous exposez vos produits et services dans un stand dédié
+                            </p>
                         </button>
-                        <button type="button" wire:click="$set('role', 'visiteur')"
-                            class="border rounded-xl p-2 text-center text-sm transition
-                                {{ $role === 'visiteur' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                            <i class="fa-solid fa-user mr-1"></i> Visiteur
+
+                        {{-- Participant --}}
+                        <button type="button" wire:click="$set('role', 'participant')"
+                            class="border-2 rounded-xl p-3 text-left transition
+                                {{ $role === 'participant'
+                                    ? 'border-green-400 bg-green-50'
+                                    : 'border-gray-200 hover:bg-gray-50' }}">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="fa-solid fa-user text-sm" style="color: #007A3D;"></i>
+                                <p class="font-semibold text-sm text-gray-800">Participant</p>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                Vous participez au forum pour rencontrer des partenaires
+                            </p>
                         </button>
-                        <button type="button" wire:click="$set('role', 'vip')"
-                            class="border rounded-xl p-2 text-center text-sm transition
-                                {{ $role === 'vip' ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                            <i class="fa-solid fa-star mr-1"></i> VIP
-                        </button>
-                        <button type="button" wire:click="$set('role', 'organisateur')"
-                            class="border rounded-xl p-2 text-center text-sm transition
-                                {{ $role === 'organisateur' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                            <i class="fa-solid fa-crown mr-1"></i> Organisateur
-                        </button>
+
                     </div>
+                    @error('role') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
 
                 {{-- Événement --}}
@@ -195,7 +240,10 @@
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
                         <option value="">-- Choisir un événement --</option>
                         @foreach($evenements as $evenement)
-                        <option value="{{ $evenement->id }}">{{ $evenement->nom }} — {{ $evenement->date_debut }}</option>
+                        <option value="{{ $evenement->id }}">
+                            {{ $evenement->nom }} — {{ $evenement->date_debut }}
+                            @if($evenement->type_paiement === 'gratuit') (Gratuit) @endif
+                        </option>
                         @endforeach
                     </select>
                     @error('id_evenement') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -241,10 +289,18 @@
 
                 {{-- Bouton --}}
                 <button wire:click="sinscrire"
-                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg"
+                    wire:loading.attr="disabled"
+                    wire:loading.class="opacity-70 cursor-not-allowed"
+                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg flex items-center justify-center gap-2"
                     style="background-color: #C8102E;">
-                    <i class="fa-solid fa-user-plus mr-1"></i>
-                    Créer mon compte
+                    <span wire:loading.remove>
+                        <i class="fa-solid fa-user-plus mr-1"></i>
+                        Créer mon compte
+                    </span>
+                    <span wire:loading>
+                        <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                        Création en cours...
+                    </span>
                 </button>
 
                 {{-- Liens --}}
@@ -301,11 +357,18 @@
                         </p>
                     </div>
 
+                    {{-- Entreprise liée --}}
+                    @if($entreprise_trouvee)
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700 flex items-center gap-2">
+                        <i class="fa-solid fa-building"></i>
+                        Vous êtes lié à <strong>{{ $entreprise_trouvee->nom }}</strong>
+                    </div>
+                    @endif
+
                     {{-- Info --}}
                     <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-700">
                         <i class="fa-solid fa-triangle-exclamation mr-1"></i>
                         Votre préinscription est en attente de validation par un CDD.
-                        Vous serez notifié après validation.
                     </div>
 
                     {{-- Étapes suivantes --}}

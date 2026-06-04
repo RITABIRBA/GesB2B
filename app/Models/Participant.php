@@ -13,10 +13,11 @@ class Participant extends Model
     'id_entreprise',
     'id_evenement',
     'nom',
+    'ifu',              // ← nouveau
     'prenom',
-    'genre',           // ← nouveau
-    'fonction',        // ← nouveau
-    'participation_rdv', // ← nouveau
+    'genre',
+    'fonction',
+    'participation_rdv',
     'secteur_activite',
     'email',
     'telephone',

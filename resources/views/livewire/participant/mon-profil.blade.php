@@ -13,6 +13,28 @@
     </div>
     @endif
 
+    {{-- Carte entreprise actuelle --}}
+    @if($entreprise_actuelle)
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center"
+                style="background-color: #e6f4ed;">
+                <i class="fa-solid fa-building text-xl" style="color: #007A3D;"></i>
+            </div>
+            <div>
+                <p class="font-bold text-gray-800">Entreprise liée</p>
+                <p class="text-sm font-semibold" style="color: #007A3D;">
+                    {{ $entreprise_actuelle->nom }}
+                </p>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    {{ $entreprise_actuelle->secteur_activite }}
+                    — {{ $entreprise_actuelle->pays }}
+                </p>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Carte participation RDV --}}
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center justify-between">
@@ -111,21 +133,29 @@
                 <p class="text-xs text-gray-400 mb-1">Téléphone</p>
                 <p class="font-semibold text-gray-800">{{ $telephone }}</p>
             </div>
-            <div class="bg-gray-50 rounded-xl p-4 col-span-2">
+            <div class="bg-gray-50 rounded-xl p-4">
                 <p class="text-xs text-gray-400 mb-1">Secteur d'activité</p>
                 <p class="font-semibold text-gray-800">{{ $secteur_activite ?: '-' }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-xs text-gray-400 mb-1">Numéro IFU</p>
+                <p class="font-semibold text-gray-800">{{ $ifu ?: '-' }}</p>
             </div>
         </div>
 
         @else
 
         <div class="grid grid-cols-2 gap-5">
+
+            {{-- Nom --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom *</label>
                 <input wire:model="nom" type="text"
                     class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
                 @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
+
+            {{-- Prénom --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Prénom *</label>
                 <input wire:model="prenom" type="text"
@@ -135,19 +165,13 @@
 
             {{-- Genre --}}
             <div>
-                <label class="block text-gray-600 text-sm font-medium mb-2">Genre</label>
-                <div class="flex gap-3">
-                    <button type="button" wire:click="$set('genre', 'homme')"
-                        class="flex-1 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition
-                            {{ $genre === 'homme' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                        <i class="fa-solid fa-mars"></i> Homme
-                    </button>
-                    <button type="button" wire:click="$set('genre', 'femme')"
-                        class="flex-1 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition
-                            {{ $genre === 'femme' ? 'bg-pink-50 border-pink-400 text-pink-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                        <i class="fa-solid fa-venus"></i> Femme
-                    </button>
-                </div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Genre</label>
+                <select wire:model="genre"
+                    class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                    <option value="">-- Choisir le genre --</option>
+                    <option value="homme">Homme</option>
+                    <option value="femme">Femme</option>
+                </select>
             </div>
 
             {{-- Fonction --}}
@@ -160,6 +184,7 @@
                     placeholder="Ex: Directeur Commercial">
             </div>
 
+            {{-- Email --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Email *</label>
                 <input wire:model="email" type="email"
@@ -167,17 +192,57 @@
                 @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
 
+            {{-- Téléphone --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone</label>
                 <input wire:model="telephone" type="text"
                     class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
             </div>
 
+            {{-- Secteur --}}
             <div class="col-span-2">
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Secteur d'activité</label>
                 <input wire:model="secteur_activite" type="text"
                     class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
             </div>
+
+            {{-- IFU --}}
+            <div class="col-span-2">
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                    Numéro IFU
+                    <span class="text-gray-400 font-normal">(optionnel)</span>
+                </label>
+                <input wire:model.live="ifu" type="text"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                    placeholder="Ex: BF123456789">
+
+                {{-- Entreprise trouvée --}}
+                @if($entreprise_trouvee)
+                <div class="mt-2 bg-green-50 border border-green-300 rounded-xl p-3 flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
+                    <div>
+                        <p class="text-sm font-bold text-green-700">
+                            Entreprise trouvée !
+                        </p>
+                        <p class="text-xs text-green-600">
+                            {{ $entreprise_trouvee->nom }}
+                            — {{ $entreprise_trouvee->secteur_activite }}
+                            — {{ $entreprise_trouvee->pays }}
+                        </p>
+                        <p class="text-xs text-green-500 mt-0.5">
+                            Vous serez automatiquement lié à cette entreprise.
+                        </p>
+                    </div>
+                </div>
+                @elseif($ifu && strlen($ifu) >= 3)
+                <div class="mt-2 bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Aucune entreprise trouvée avec ce numéro IFU.
+                    Vous resterez participant indépendant.
+                </div>
+                @endif
+            </div>
+
         </div>
 
         <div class="flex justify-end gap-3 mt-6">
@@ -186,9 +251,16 @@
                 <i class="fa-solid fa-xmark mr-1"></i> Annuler
             </button>
             <button wire:click="sauvegarder"
-                class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
+                wire:loading.attr="disabled"
+                wire:loading.class="opacity-70 cursor-not-allowed"
+                class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm flex items-center gap-2"
                 style="background-color: #C8102E;">
-                <i class="fa-solid fa-floppy-disk mr-1"></i> Enregistrer
+                <span wire:loading.remove>
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Enregistrer
+                </span>
+                <span wire:loading>
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Enregistrement...
+                </span>
             </button>
         </div>
         @endif

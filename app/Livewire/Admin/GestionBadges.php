@@ -6,17 +6,25 @@ use Livewire\Component;
 use App\Models\Badge;
 use App\Models\TypeBadge;
 use App\Models\Participant;
+use App\Models\Evenement;
 use Illuminate\Support\Str;
 
 class GestionBadges extends Component
 {
     public $badge_id;
     public $id_participant = '';
-    public $id_type_badge = '';
-    public $qr_code = '';
-    public $showModal = false;
-    public $isEditing = false;
-    public $search = '';
+    public $id_type_badge  = '';
+    public $qr_code        = '';
+    public $showModal      = false;
+    public $isEditing      = false;
+    public $search         = '';
+
+    // ← Génération par type et événement
+    public $showGenererModal   = false;
+    public $type_badge_generer = '';
+    public $id_evenement_generer = '';
+    public $participants_selectionnes = [];
+    public $participants_disponibles  = [];
 
     public function openModal()
     {
@@ -41,6 +49,116 @@ class GestionBadges extends Component
         $this->resetErrorBag();
     }
 
+    // =========================================================
+    // MODAL GÉNÉRATION PAR TYPE
+    // =========================================================
+
+    public function openGenererModal()
+    {
+        $this->showGenererModal         = true;
+        $this->type_badge_generer       = '';
+        $this->id_evenement_generer     = '';
+        $this->participants_selectionnes = [];
+        $this->participants_disponibles  = [];
+    }
+
+    public function closeGenererModal()
+    {
+        $this->showGenererModal         = false;
+        $this->type_badge_generer       = '';
+        $this->id_evenement_generer     = '';
+        $this->participants_selectionnes = [];
+        $this->participants_disponibles  = [];
+    }
+
+    // ← Quand l'événement change → charge les participants
+    public function updatedIdEvenementGenerer($value)
+    {
+        if ($value) {
+            $this->participants_disponibles = Participant::with('entreprise')
+                ->where('id_evenement', $value)
+                ->orderBy('nom')
+                ->get()
+                ->toArray();
+        } else {
+            $this->participants_disponibles = [];
+        }
+        $this->participants_selectionnes = [];
+    }
+
+    // ← Sélectionner tous les participants
+    public function selectionnerTous()
+    {
+        $this->participants_selectionnes = collect($this->participants_disponibles)
+            ->pluck('id')
+            ->toArray();
+    }
+
+    // ← Désélectionner tous
+    public function deselectionnerTous()
+    {
+        $this->participants_selectionnes = [];
+    }
+
+    // ← Génère les badges pour les participants sélectionnés
+    public function genererParType()
+    {
+        $this->validate([
+            'type_badge_generer'       => 'required',
+            'id_evenement_generer'     => 'required',
+            'participants_selectionnes' => 'required|array|min:1',
+        ], [
+            'participants_selectionnes.required' => 'Sélectionnez au moins un participant.',
+            'participants_selectionnes.min'      => 'Sélectionnez au moins un participant.',
+        ]);
+
+        // Trouve ou crée le type de badge
+        $typeBadge = TypeBadge::firstOrCreate(
+            ['libelle' => $this->type_badge_generer],
+            ['description' => 'Badge ' . $this->type_badge_generer]
+        );
+
+        $count = 0;
+        foreach ($this->participants_selectionnes as $id_participant) {
+            // Vérifie si badge existe déjà
+            $existe = Badge::where('id_participant', $id_participant)
+                           ->where('id_type_badge', $typeBadge->id)
+                           ->exists();
+
+            if (!$existe) {
+                $participant = Participant::find($id_participant);
+                if (!$participant) continue;
+
+                $qrCode = strtoupper(
+                    substr($participant->nom, 0, 2) .
+                    substr($participant->prenom ?? 'XX', 0, 2) .
+                    '-' .
+                    $this->id_evenement_generer .
+                    '-' .
+                    Str::random(6)
+                );
+
+                Badge::create([
+                    'id_participant' => $id_participant,
+                    'id_type_badge'  => $typeBadge->id,
+                    'qr_code'        => $qrCode,
+                ]);
+                $count++;
+            }
+        }
+
+        $this->closeGenererModal();
+
+        if ($count === 0) {
+            session()->flash('error', 'Ces participants ont déjà des badges de ce type !');
+        } else {
+            session()->flash('success', $count . ' badge(s) de type "' . $this->type_badge_generer . '" générés !');
+        }
+    }
+
+    
+    // ACTIONS INDIVIDUELLES
+    
     public function modifier($id)
     {
         $badge = Badge::findOrFail($id);
@@ -145,6 +263,7 @@ class GestionBadges extends Component
                 ->get(),
             'participants' => Participant::with('entreprise')->orderBy('nom')->get(),
             'typesBadges'  => TypeBadge::orderBy('libelle')->get(),
+            'evenements'   => Evenement::orderBy('nom')->get(),
         ])->layout('layouts.admin', ['title' => 'Gestion des Badges']);
     }
 }
