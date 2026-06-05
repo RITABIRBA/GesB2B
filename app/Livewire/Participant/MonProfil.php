@@ -17,12 +17,19 @@ class MonProfil extends Component
     public $telephone = '';
     public $secteur_activite = '';
     public $participation_rdv = true;
-    public $ifu = ''; // ← nouveau
+    public $ifu = '';
     public $isEditing = false;
+    public $statut_adhesion = null;
 
-    // Entreprise trouvée via IFU
-    public $entreprise_trouvee = null; // ← nouveau
-    public $entreprise_actuelle = null; // ← nouveau
+    // Entreprise
+    public $entreprise_trouvee = null;
+    public $entreprise_actuelle = null;
+
+    // Recherche entreprise par nom
+    public $recherche_entreprise = '';
+    public $entreprises_trouvees = [];
+    public $showDemandeModal = false;
+    public $entreprise_choisie = null;
 
     public function mount()
     {
@@ -31,16 +38,17 @@ class MonProfil extends Component
             ->first();
 
         if ($participant) {
-            $this->participant_id    = $participant->id;
-            $this->nom               = $participant->nom;
-            $this->prenom            = $participant->prenom;
-            $this->genre             = $participant->genre;
-            $this->fonction          = $participant->fonction;
-            $this->email             = $participant->email;
-            $this->telephone         = $participant->telephone;
-            $this->secteur_activite  = $participant->secteur_activite;
-            $this->participation_rdv = $participant->participation_rdv;
-            $this->ifu               = $participant->ifu ?? '';
+            $this->participant_id      = $participant->id;
+            $this->nom                 = $participant->nom;
+            $this->prenom              = $participant->prenom;
+            $this->genre               = $participant->genre;
+            $this->fonction            = $participant->fonction;
+            $this->email               = $participant->email;
+            $this->telephone           = $participant->telephone;
+            $this->secteur_activite    = $participant->secteur_activite;
+            $this->participation_rdv   = $participant->participation_rdv;
+            $this->ifu                 = $participant->ifu ?? '';
+            $this->statut_adhesion     = $participant->statut_adhesion;
             $this->entreprise_actuelle = $participant->entreprise;
         }
     }
@@ -65,6 +73,72 @@ class MonProfil extends Component
         }
     }
 
+    // ← Recherche entreprise par nom
+    public function updatedRechercheEntreprise($value)
+    {
+        if ($value && strlen($value) >= 2) {
+            $this->entreprises_trouvees = Entreprise::where('nom', 'like', '%'.$value.'%')
+                ->where('statut_validation', 'valide')
+                ->limit(5)
+                ->get()
+                ->toArray();
+        } else {
+            $this->entreprises_trouvees = [];
+        }
+    }
+
+    // ← Sélectionne une entreprise dans la liste
+    public function ouvrirDemandeAdhesion($entreprise_id)
+    {
+        // ← toArray() pour éviter le problème d'accès objet/tableau
+        $entreprise = Entreprise::find($entreprise_id);
+        if ($entreprise) {
+            $this->entreprise_choisie = $entreprise->toArray();
+        }
+    }
+
+    public function fermerDemandeModal()
+    {
+        $this->showDemandeModal     = false;
+        $this->entreprise_choisie   = null;
+        $this->recherche_entreprise = '';
+        $this->entreprises_trouvees = [];
+    }
+
+    // ← Envoie la demande d'adhésion
+    public function envoyerDemande()
+    {
+        if (!$this->entreprise_choisie) return;
+
+        // ← Sauvegarde le nom AVANT de fermer le modal
+        $nom_entreprise = $this->entreprise_choisie['nom'];
+        $id_entreprise  = $this->entreprise_choisie['id'];
+
+        Participant::findOrFail($this->participant_id)->update([
+            'id_entreprise'   => $id_entreprise,
+            'statut_adhesion' => 'en_attente',
+        ]);
+
+        $this->statut_adhesion     = 'en_attente';
+        $this->entreprise_actuelle = Entreprise::find($id_entreprise);
+
+        $this->fermerDemandeModal();
+        session()->flash('success', 'Demande envoyée à ' . $nom_entreprise . ' ! En attente de validation.');
+    }
+
+    // ← Annuler la demande
+    public function annulerDemande()
+    {
+        Participant::findOrFail($this->participant_id)->update([
+            'id_entreprise'   => null,
+            'statut_adhesion' => null,
+        ]);
+
+        $this->statut_adhesion     = null;
+        $this->entreprise_actuelle = null;
+        session()->flash('success', 'Demande annulée.');
+    }
+
     public function toggleParticipationRdv()
     {
         $participant = Participant::findOrFail($this->participant_id);
@@ -87,12 +161,14 @@ class MonProfil extends Component
             'ifu'    => 'nullable|string|max:255',
         ]);
 
-        // Cherche l'entreprise via IFU
-        $id_entreprise = null;
+        $id_entreprise   = null;
+        $statut_adhesion = null;
+
         if ($this->ifu) {
             $entreprise = Entreprise::where('ifu', $this->ifu)->first();
             if ($entreprise) {
-                $id_entreprise = $entreprise->id;
+                $id_entreprise             = $entreprise->id;
+                $statut_adhesion           = 'accepte';
                 $this->entreprise_actuelle = $entreprise;
             }
         }
@@ -108,11 +184,12 @@ class MonProfil extends Component
             'participation_rdv' => $this->participation_rdv,
             'ifu'               => $this->ifu ?: null,
             'id_entreprise'     => $id_entreprise,
+            'statut_adhesion'   => $statut_adhesion,
         ]);
 
         auth()->user()->update(['email' => $this->email]);
 
-        $this->isEditing = false;
+        $this->isEditing          = false;
         $this->entreprise_trouvee = null;
 
         if ($id_entreprise) {

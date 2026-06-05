@@ -73,6 +73,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
                         <input wire:model="nom" type="text"
+                            autocomplete="off"
                             class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                             placeholder="Votre nom">
                         @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -80,6 +81,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
                         <input wire:model="prenom" type="text"
+                            autocomplete="off"
                             class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                             placeholder="Votre prénom">
                         @error('prenom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -105,6 +107,7 @@
                         <span class="text-gray-400 font-normal">(optionnel)</span>
                     </label>
                     <input wire:model="fonction" type="text"
+                        autocomplete="off"
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                         placeholder="Ex: Directeur Commercial, PDG...">
                 </div>
@@ -116,17 +119,15 @@
                         <span class="text-gray-400 font-normal">(optionnel)</span>
                     </label>
                     <input wire:model.live="ifu" type="text"
+                        autocomplete="off"
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                         placeholder="Ex: BF123456789">
 
-                    {{-- Entreprise trouvée via IFU --}}
                     @if($entreprise_trouvee)
                     <div class="mt-2 bg-green-50 border border-green-300 rounded-xl p-3 flex items-center gap-3">
                         <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
                         <div>
-                            <p class="text-sm font-bold text-green-700">
-                                Entreprise trouvée !
-                            </p>
+                            <p class="text-sm font-bold text-green-700">Entreprise trouvée !</p>
                             <p class="text-xs text-green-600">
                                 {{ $entreprise_trouvee->nom }}
                                 — {{ $entreprise_trouvee->secteur_activite }}
@@ -150,6 +151,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                     <input wire:model="email" type="email"
+                        autocomplete="off"
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                         placeholder="votre@email.com">
                     @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -159,6 +161,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
                     <input wire:model="telephone" type="text"
+                        autocomplete="off"
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                         placeholder="Ex: 70000000">
                     @error('telephone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -198,13 +201,9 @@
                         Rôle de participation *
                     </label>
                     <div class="grid grid-cols-2 gap-3">
-
-                        {{-- Exposant --}}
                         <button type="button" wire:click="$set('role', 'exposant')"
                             class="border-2 rounded-xl p-3 text-left transition
-                                {{ $role === 'exposant'
-                                    ? 'border-red-400 bg-red-50'
-                                    : 'border-gray-200 hover:bg-gray-50' }}">
+                                {{ $role === 'exposant' ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:bg-gray-50' }}">
                             <div class="flex items-center gap-2 mb-1">
                                 <i class="fa-solid fa-store text-sm" style="color: #C8102E;"></i>
                                 <p class="font-semibold text-sm text-gray-800">Exposant</p>
@@ -214,12 +213,9 @@
                             </p>
                         </button>
 
-                        {{-- Participant --}}
                         <button type="button" wire:click="$set('role', 'participant')"
                             class="border-2 rounded-xl p-3 text-left transition
-                                {{ $role === 'participant'
-                                    ? 'border-green-400 bg-green-50'
-                                    : 'border-gray-200 hover:bg-gray-50' }}">
+                                {{ $role === 'participant' ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:bg-gray-50' }}">
                             <div class="flex items-center gap-2 mb-1">
                                 <i class="fa-solid fa-user text-sm" style="color: #007A3D;"></i>
                                 <p class="font-semibold text-sm text-gray-800">Participant</p>
@@ -228,7 +224,6 @@
                                 Vous participez au forum pour rencontrer des partenaires
                             </p>
                         </button>
-
                     </div>
                     @error('role') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
@@ -268,6 +263,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
                     <input wire:model="password" type="password"
+                        autocomplete="new-password"
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                         placeholder="Minimum 8 caractères">
                     @error('password') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -276,6 +272,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Confirmer *</label>
                     <input wire:model="password_confirmation" type="password"
+                        autocomplete="new-password"
                         class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                         placeholder="Répéter le mot de passe">
                 </div>
@@ -307,16 +304,12 @@
                 <p class="text-center text-sm text-gray-500">
                     Déjà inscrit ?
                     <a href="{{ route('login') }}" class="font-medium hover:underline"
-                        style="color: #007A3D;">
-                        Se connecter
-                    </a>
+                        style="color: #007A3D;">Se connecter</a>
                 </p>
                 <p class="text-center text-sm text-gray-500">
                     Vous représentez une entreprise ?
                     <a href="{{ route('inscription.entreprise') }}" class="font-medium hover:underline"
-                        style="color: #C8102E;">
-                        Inscrire mon entreprise
-                    </a>
+                        style="color: #C8102E;">Inscrire mon entreprise</a>
                 </p>
 
             </div>
@@ -326,7 +319,7 @@
     {{-- MODAL SUCCÈS --}}
     @if($showSuccessModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]">
 
             <div class="px-8 py-6 rounded-t-2xl text-white text-center"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
@@ -335,9 +328,7 @@
                     <i class="fa-solid fa-circle-check text-4xl"></i>
                 </div>
                 <h3 class="text-xl font-bold">Inscription réussie !</h3>
-                <p class="text-green-200 text-sm mt-1">
-                    Votre compte a été créé avec succès
-                </p>
+                <p class="text-green-200 text-sm mt-1">Votre compte a été créé avec succès</p>
             </div>
 
             <div class="p-8">
@@ -353,7 +344,7 @@
                             {{ $code_acces_genere }}
                         </p>
                         <p class="text-xs text-red-400 mt-1">
-                            Notez ce code ! Il vous permettra de vous connecter.
+                            Notez ce code ! Il vous permettra de vous identifier.
                         </p>
                     </div>
 
@@ -375,22 +366,21 @@
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
                         <p class="font-semibold mb-2">Prochaines étapes :</p>
                         <ol class="space-y-1 text-xs">
-                            <li>1. Connectez-vous avec votre email et mot de passe</li>
-                            <li>2. Attendez la validation de votre CDD</li>
-                            <li>3. Effectuez votre paiement</li>
-                            <li>4. Émettez vos souhaits de RDV</li>
+                            <li>1. Attendez la validation de votre CDD</li>
+                            <li>2. Effectuez votre paiement</li>
+                            <li>3. Émettez vos souhaits de RDV</li>
                         </ol>
                     </div>
 
                 </div>
 
-                <a href="{{ route('login') }}"
+                {{-- ← Bouton redirection directe --}}
+                <button wire:click="allerAuDashboard"
                     class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow flex items-center justify-center gap-2"
                     style="background-color: #C8102E;">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    Se connecter maintenant
-                </a>
-
+                    <i class="fa-solid fa-gauge"></i>
+                    Accéder à mon espace
+                </button>
             </div>
         </div>
     </div>

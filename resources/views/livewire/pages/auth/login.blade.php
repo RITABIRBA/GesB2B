@@ -53,11 +53,10 @@ new #[Layout('layouts.guest')] class extends Component
 
 <div class="min-h-screen flex" style="background-color: #f8f9fa;">
 
-    {{-- PARTIE GAUCHE — Visuel CCI-BF --}}
+    {{-- PARTIE GAUCHE --}}
     <div class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
         style="background: linear-gradient(135deg, #006B34 0%, #007A3D 50%, #005a2d 100%);">
 
-        {{-- Logo --}}
         <div class="flex items-center gap-3">
             <img src="{{ asset('images/logo-ccibf.png') }}"
                 alt="CCI-BF" class="w-12 h-12 object-contain rounded-xl">
@@ -67,7 +66,6 @@ new #[Layout('layouts.guest')] class extends Component
             </div>
         </div>
 
-        {{-- Contenu central --}}
         <div>
             <h2 class="text-4xl font-bold mb-4 leading-tight">
                 Plateforme de gestion des rencontres B2B
@@ -75,7 +73,6 @@ new #[Layout('layouts.guest')] class extends Component
             <p class="text-green-200 text-lg mb-8">
                 Chambre de Commerce et d'Industrie du Burkina Faso
             </p>
-
             <div class="space-y-4">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -111,12 +108,20 @@ new #[Layout('layouts.guest')] class extends Component
         <div class="text-green-300 text-sm">
             © {{ date('Y') }} CCI-BF — Tous droits réservés
         </div>
-
     </div>
 
-    {{-- PARTIE DROITE — Formulaire --}}
+    {{-- PARTIE DROITE --}}
     <div class="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div class="w-full max-w-md">
+
+            {{-- ← Bouton retour Welcome --}}
+            <a href="{{ url('/') }}"
+                class="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 mb-6 transition group">
+                <div class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                </div>
+                Retour à l'accueil
+            </a>
 
             {{-- Logo mobile --}}
             <div class="lg:hidden flex items-center gap-3 mb-8 justify-center">
@@ -128,17 +133,15 @@ new #[Layout('layouts.guest')] class extends Component
                 </div>
             </div>
 
-            {{-- Titre --}}
             <div class="mb-8">
                 <h2 class="text-3xl font-bold text-gray-800">Connexion</h2>
                 <p class="text-gray-500 mt-2">Bienvenue sur GesB2B CCI-BF</p>
             </div>
 
-            {{-- Message statut --}}
             <x-auth-session-status class="mb-4" :status="session('status')" />
 
             {{-- FORMULAIRE EMAIL --}}
-            <form wire:submit="login" class="space-y-4">
+            <form wire:submit="login" class="space-y-4" autocomplete="off">
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">
@@ -146,8 +149,12 @@ new #[Layout('layouts.guest')] class extends Component
                         Adresse email
                     </label>
                     <input wire:model="form.email"
-                        id="email" type="email" name="email"
-                        required autofocus autocomplete="username"
+                        id="email"
+                        type="email"
+                        name="email"
+                        required
+                        autofocus
+                        autocomplete="off"
                         placeholder="votre@email.com"
                         class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
                     @if($errors->get('form.email'))
@@ -161,8 +168,11 @@ new #[Layout('layouts.guest')] class extends Component
                         Mot de passe
                     </label>
                     <input wire:model="form.password"
-                        id="password" type="password" name="password"
-                        required autocomplete="current-password"
+                        id="password"
+                        type="password"
+                        name="password"
+                        required
+                        autocomplete="new-password"
                         placeholder="••••••••"
                         class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
                     @if($errors->get('form.password'))
@@ -212,6 +222,7 @@ new #[Layout('layouts.guest')] class extends Component
                 <div class="flex gap-2">
                     <input wire:model="code_acces"
                         type="text"
+                        autocomplete="off"
                         placeholder="Ex: TIN5273"
                         class="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm font-mono uppercase tracking-widest text-center"
                         style="letter-spacing: 0.2em;">

@@ -13,7 +13,7 @@ class Participant extends Model
     'id_entreprise',
     'id_evenement',
     'nom',
-    'ifu',              // ← nouveau
+    'ifu',
     'prenom',
     'genre',
     'fonction',
@@ -24,6 +24,7 @@ class Participant extends Model
     'code_acces',
     'role',
     'statut_historique',
+    'statut_adhesion', // ← nouveau
 ];
     public function entreprise()
     {

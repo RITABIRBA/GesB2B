@@ -47,19 +47,39 @@ class MesParticipants extends Component
 
     public $roles = ['exposant', 'participant'];
 
-    // =========================================================
+    
     // HELPER — Trouver l'entreprise connectée
-    // =========================================================
+    
     private function getEntreprise()
     {
         return Entreprise::where('email_responsable', auth()->user()->email)->first()
             ?? Entreprise::where('nom', auth()->user()->name)->first();
     }
 
-    // =========================================================
-    // MODAL PARTICIPANT
-    // =========================================================
+    
+    // VALIDATION ADHÉSION
+    
 
+    public function accepterAdhesion($id)
+    {
+        Participant::findOrFail($id)->update([
+            'statut_adhesion' => 'accepte',
+        ]);
+        session()->flash('success', 'Demande d\'adhésion acceptée !');
+    }
+
+    public function rejeterAdhesion($id)
+    {
+        Participant::findOrFail($id)->update([
+            'statut_adhesion' => 'rejete',
+            'id_entreprise'   => null,
+        ]);
+        session()->flash('success', 'Demande d\'adhésion rejetée.');
+    }
+
+    
+    // MODAL PARTICIPANT
+    
     public function openModal()
     {
         $this->resetFields();
@@ -87,10 +107,9 @@ class MesParticipants extends Component
         $this->resetErrorBag();
     }
 
-    // =========================================================
+    
     // PAIEMENT GROUPÉ
-    // =========================================================
-
+   
     public function openPaiementGroupe($id_evenement)
     {
         $entreprise = $this->getEntreprise();
@@ -208,10 +227,9 @@ class MesParticipants extends Component
         session()->flash('success', "Paiement groupé confirmé ! {$nb} participant(s) validés et badges générés !");
     }
 
-    // =========================================================
+    
     // GESTION PARTICIPANTS
-    // =========================================================
-
+    
     public function modifier($id)
     {
         $p = Participant::findOrFail($id);
@@ -261,6 +279,7 @@ class MesParticipants extends Component
             'role'              => $this->role,
             'secteur_activite'  => $entreprise->secteur_activite,
             'statut_historique' => 'actif',
+            'statut_adhesion'   => 'accepte', // ← Ajouté directement par l'entreprise
         ];
 
         if ($this->isEditing) {
@@ -294,10 +313,9 @@ class MesParticipants extends Component
         session()->flash('success', 'Participant supprimé.');
     }
 
-    // =========================================================
+    
     // RENDU
-    // =========================================================
-
+    
     public function render()
     {
         $entreprise = $this->getEntreprise();
@@ -325,7 +343,13 @@ class MesParticipants extends Component
                     ->get()
                 : collect(),
 
-            // ← Seulement les événements non expirés
+            // ← Demandes en attente
+            'demandesEnAttente' => $entreprise
+                ? Participant::where('id_entreprise', $entreprise->id)
+                    ->where('statut_adhesion', 'en_attente')
+                    ->get()
+                : collect(),
+
             'evenements' => Evenement::where('date_fin', '>=', now()->toDateString())
                 ->orderBy('nom')
                 ->get(),

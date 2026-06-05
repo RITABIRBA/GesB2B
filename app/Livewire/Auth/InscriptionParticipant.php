@@ -8,33 +8,25 @@ use App\Models\Participant;
 use App\Models\Entreprise;
 use App\Models\Evenement;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class InscriptionParticipant extends Component
 {
-    // Infos personnelles
     public $nom = '';
     public $prenom = '';
     public $genre = '';
     public $fonction = '';
-    public $ifu = ''; // ← nouveau
+    public $ifu = '';
     public $email = '';
     public $telephone = '';
     public $secteur_activite = '';
     public $participation_rdv = true;
-
-    // Entreprise trouvée via IFU
-    public $entreprise_trouvee = null; // ← nouveau
-
-    // Rôle et événement
+    public $entreprise_trouvee = null;
     public $role = 'participant';
     public $id_evenement = '';
     public $id_cdd = '';
-
-    // Mot de passe
     public $password = '';
     public $password_confirmation = '';
-
-    // Modal succès
     public $showSuccessModal = false;
     public $code_acces_genere = '';
 
@@ -47,7 +39,6 @@ class InscriptionParticipant extends Component
         'Artisanat', 'Autre',
     ];
 
-    // ← Quand l'IFU change → cherche l'entreprise
     public function updatedIfu($value)
     {
         if ($value && strlen($value) >= 3) {
@@ -72,10 +63,8 @@ class InscriptionParticipant extends Component
             'ifu'          => 'nullable|string|max:255',
         ]);
 
-        // Génère le code d'accès
         $code = strtoupper(substr($this->nom, 0, 3) . rand(1000, 9999));
 
-        // Cherche l'entreprise via IFU
         $entreprise = null;
         if ($this->ifu) {
             $entreprise = Entreprise::where('ifu', $this->ifu)->first();
@@ -93,7 +82,7 @@ class InscriptionParticipant extends Component
         Participant::create([
             'id_cdd'            => $this->id_cdd,
             'id_evenement'      => $this->id_evenement,
-            'id_entreprise'     => $entreprise?->id, // ← lié auto si IFU trouvé
+            'id_entreprise'     => $entreprise?->id,
             'nom'               => $this->nom,
             'prenom'            => $this->prenom,
             'genre'             => $this->genre,
@@ -108,8 +97,17 @@ class InscriptionParticipant extends Component
             'statut_historique' => 'actif',
         ]);
 
+        // ← Connexion automatique
+        Auth::login($user);
+
         $this->code_acces_genere = $code;
         $this->showSuccessModal  = true;
+    }
+
+    // ← Redirection vers le dashboard participant
+    public function allerAuDashboard()
+    {
+        return redirect()->to(route('participant.dashboard'));
     }
 
     public function render()
