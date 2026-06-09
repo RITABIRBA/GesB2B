@@ -7,61 +7,54 @@ use App\Models\Inscription;
 use App\Models\Paiement;
 use App\Models\Participant;
 use App\Models\Evenement;
+use App\Models\Entreprise;
 
 class MonInscription extends Component
 {
-    // =========================================================
-    // PROPRIÉTÉS — MODAL INSCRIPTION
-    // =========================================================
+    // MODAL INSCRIPTION
     public $id_evenement         = '';
     public $montant_paye         = 0;
     public $showModalInscription = false;
 
-    // =========================================================
-    // PROPRIÉTÉS — MODAL PAIEMENT
-    // =========================================================
+    // MODAL PAIEMENT
     public $mode_paiement        = 'orange_money';
     public $montant_paiement     = 0;
     public $showModalPaiement    = false;
     public $inscription_id;
 
-    // =========================================================
-    // PROPRIÉTÉS — SIMULATION PAIEMENT
-    // =========================================================
+    // SIMULATION PAIEMENT
     public $telephone_paiement   = '';
     public $otp_code             = '';
     public $otp_saisi            = '';
     public $etape_paiement       = 1;
-    public $showOtpInput         = false;
 
-    // Carte bleue
+    // Carte
     public $carte_numero         = '';
     public $carte_nom            = '';
     public $carte_expiration     = '';
     public $carte_cvv            = '';
 
-    // =========================================================
-    // PROPRIÉTÉS — MODAL REÇU
-    // =========================================================
+    // MODAL REÇU
     public $showModalRecu  = false;
     public $recu_courant   = null;
 
-    // =========================================================
-    // QUAND L'ÉVÉNEMENT CHANGE → MONTANT AUTO
-    // =========================================================
     public function updatedIdEvenement($value)
     {
         if ($value) {
             $evenement = Evenement::find($value);
-            $this->montant_paye = $evenement?->montant_inscription ?? 0;
+            $participant = Participant::findForUser(auth()->user());
+
+            // ← Si paiement par entreprise et participant lié à une entreprise
+            if ($evenement?->type_paiement == 'par_entreprise' && $participant?->id_entreprise) {
+                $this->montant_paye = 0; // L'entreprise paie
+            } else {
+                $this->montant_paye = $evenement?->montant_inscription ?? 0;
+            }
         } else {
             $this->montant_paye = 0;
         }
     }
 
-    // =========================================================
-    // GESTION DU MODAL INSCRIPTION
-    // =========================================================
     public function openModalInscription()
     {
         $this->id_evenement         = '';
@@ -75,9 +68,6 @@ class MonInscription extends Component
         $this->showModalInscription = false;
     }
 
-    // =========================================================
-    // GESTION DU MODAL PAIEMENT
-    // =========================================================
     public function openModalPaiement($id)
     {
         $inscription              = Inscription::findOrFail($id);
@@ -102,27 +92,21 @@ class MonInscription extends Component
         $this->etape_paiement    = 1;
     }
 
-    // =========================================================
-    // SIMULATION PAIEMENT MOBILE MONEY
-    // =========================================================
     public function envoyerOtp()
     {
         $this->validate([
             'telephone_paiement' => 'required|string|min:8|max:15',
         ]);
-
         $this->otp_code       = rand(100000, 999999);
         $this->etape_paiement = 3;
     }
 
     public function confirmerOtp()
     {
-        $this->validate([
-            'otp_saisi' => 'required|string',
-        ]);
+        $this->validate(['otp_saisi' => 'required|string']);
 
         if ($this->otp_saisi != $this->otp_code) {
-            $this->addError('otp_saisi', 'Code OTP incorrect. Veuillez réessayer.');
+            $this->addError('otp_saisi', 'Code OTP incorrect.');
             return;
         }
 
@@ -143,14 +127,12 @@ class MonInscription extends Component
 
     private function enregistrerPaiement()
     {
-        // ← Point 6 : Événement gratuit → valider directement
         $inscription = Inscription::with('evenement')->findOrFail($this->inscription_id);
 
         if ($inscription->montant_paye == 0) {
-            // Événement gratuit → pas de paiement requis
             $inscription->update(['statut_paiement' => 'paye']);
             $this->closeModalPaiement();
-            session()->flash('success', 'Inscription confirmée ! Événement gratuit.');
+            session()->flash('success', 'Inscription confirmée !');
             return;
         }
 
@@ -163,19 +145,13 @@ class MonInscription extends Component
         ]);
 
         $this->closeModalPaiement();
-        session()->flash('success', 'Paiement soumis avec succès ! En attente de confirmation.');
+        session()->flash('success', 'Paiement soumis avec succès !');
     }
 
-    // =========================================================
-    // GESTION DU MODAL REÇU
-    // =========================================================
     public function voirRecu($inscription_id)
     {
         $this->recu_courant = Inscription::with([
-            'paiement',
-            'paiement.recu',
-            'evenement',
-            'participant',
+            'paiement', 'paiement.recu', 'evenement', 'participant',
         ])->findOrFail($inscription_id);
 
         $this->showModalRecu = true;
@@ -187,19 +163,34 @@ class MonInscription extends Component
         $this->recu_courant  = null;
     }
 
-    // =========================================================
-    // INSCRIPTION
-    // =========================================================
     public function inscrire()
     {
         $this->validate([
             'id_evenement' => 'required',
         ]);
 
-        $participant = Participant::where('email', auth()->user()->email)->first();
+        // ← Utilise le helper
+        $participant = Participant::findForUser(auth()->user());
 
         if (!$participant) {
-            session()->flash('error', 'Profil participant non trouvé. Contactez votre CDD.');
+            session()->flash('error', 'Profil participant non trouvé.');
+            $this->closeModalInscription();
+            return;
+        }
+
+        $evenement = Evenement::find($this->id_evenement);
+
+        // ← Vérifie dates inscriptions
+        if ($evenement->date_ouverture_inscriptions &&
+            now()->toDateString() < $evenement->date_ouverture_inscriptions) {
+            session()->flash('error', 'Les inscriptions ne sont pas encore ouvertes.');
+            $this->closeModalInscription();
+            return;
+        }
+
+        if ($evenement->date_cloture_inscriptions &&
+            now()->toDateString() > $evenement->date_cloture_inscriptions) {
+            session()->flash('error', 'Les inscriptions sont clôturées.');
             $this->closeModalInscription();
             return;
         }
@@ -214,40 +205,71 @@ class MonInscription extends Component
             return;
         }
 
+        // ← Détermine le montant et le statut selon le type de paiement
+        $montant = $evenement->montant_inscription ?? 0;
+        $statut  = 'en_attente';
+
+        if ($evenement->type_paiement == 'gratuit') {
+            // ← Gratuit → validé automatiquement
+            $montant = 0;
+            $statut  = 'paye';
+
+        } elseif ($evenement->type_paiement == 'par_entreprise' && $participant->id_entreprise) {
+            // ← Paiement par entreprise → pas de paiement individuel
+            $montant = 0;
+            $statut  = 'paye'; // ← Validé automatiquement car l'entreprise paie
+        }
+
+        // ← Met à jour l'événement du participant
+        $participant->update(['id_evenement' => $this->id_evenement]);
+
         Inscription::create([
             'id_participant'   => $participant->id,
             'id_evenement'     => $this->id_evenement,
             'date_inscription' => now()->toDateString(),
-            'montant_paye'     => $this->montant_paye,
-            'statut_paiement'  => 'en_attente',
+            'montant_paye'     => $montant,
+            'statut_paiement'  => $statut,
             'statut_presence'  => 'absent',
         ]);
 
-        session()->flash('success', 'Préinscription envoyée ! En attente de validation par votre CDD.');
+        // ← Message adapté selon le type
+        if ($evenement->type_paiement == 'gratuit') {
+            session()->flash('success', 'Inscription confirmée ! Événement gratuit.');
+        } elseif ($evenement->type_paiement == 'par_entreprise' && $participant->id_entreprise) {
+            session()->flash('success', 'Inscription confirmée ! Le paiement est géré par votre entreprise.');
+        } else {
+            session()->flash('success', 'Préinscription envoyée ! Procédez au paiement.');
+        }
+
         $this->closeModalInscription();
     }
 
-    // =========================================================
-    // RENDU
-    // =========================================================
     public function render()
     {
-        $participant = Participant::where('email', auth()->user()->email)->first();
+        $participant = Participant::findForUser(auth()->user());
+        $today = now()->toDateString();
 
         return view('livewire.participant.mon-inscription', [
             'inscriptions' => $participant
-                ? Inscription::with([
-                        'evenement',
-                        'paiement',
-                        'paiement.recu',
-                    ])
+                ? Inscription::with(['evenement', 'paiement', 'paiement.recu'])
                     ->where('id_participant', $participant->id)
                     ->latest()
                     ->get()
                 : collect(),
 
-            // ← Point 5 : Événements non expirés seulement
-            'evenements' => Evenement::where('date_fin', '>=', now()->toDateString())
+            'evenements' => Evenement::where('date_fin', '>=', $today)
+                ->where(fn($q) =>
+                    $q->whereNull('date_ouverture_inscriptions')
+                      ->orWhere('date_ouverture_inscriptions', '<=', $today)
+                )
+                ->where(fn($q) =>
+                    $q->whereNull('date_cloture_inscriptions')
+                      ->orWhere('date_cloture_inscriptions', '>=', $today)
+                )
+                ->orderBy('nom')
+                ->get(),
+
+            'tousEvenements' => Evenement::where('date_fin', '>=', $today)
                 ->orderBy('nom')
                 ->get(),
 

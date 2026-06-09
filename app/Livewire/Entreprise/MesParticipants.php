@@ -47,18 +47,15 @@ class MesParticipants extends Component
 
     public $roles = ['exposant', 'participant'];
 
-    
-    // HELPER — Trouver l'entreprise connectée
-    
     private function getEntreprise()
     {
         return Entreprise::where('email_responsable', auth()->user()->email)->first()
             ?? Entreprise::where('nom', auth()->user()->name)->first();
     }
 
-    
+    // =========================================================
     // VALIDATION ADHÉSION
-    
+    // =========================================================
 
     public function accepterAdhesion($id)
     {
@@ -77,9 +74,10 @@ class MesParticipants extends Component
         session()->flash('success', 'Demande d\'adhésion rejetée.');
     }
 
-    
+    // =========================================================
     // MODAL PARTICIPANT
-    
+    // =========================================================
+
     public function openModal()
     {
         $this->resetFields();
@@ -107,9 +105,10 @@ class MesParticipants extends Component
         $this->resetErrorBag();
     }
 
-    
+    // =========================================================
     // PAIEMENT GROUPÉ
-   
+    // =========================================================
+
     public function openPaiementGroupe($id_evenement)
     {
         $entreprise = $this->getEntreprise();
@@ -224,12 +223,13 @@ class MesParticipants extends Component
 
         $nb = count($this->participants_a_payer);
         $this->closePaiementGroupe();
-        session()->flash('success', "Paiement groupé confirmé ! {$nb} participant(s) validés et badges générés !");
+        session()->flash('success', "Paiement groupé confirmé ! {$nb} participant(s) validés !");
     }
 
-    
+    // =========================================================
     // GESTION PARTICIPANTS
-    
+    // =========================================================
+
     public function modifier($id)
     {
         $p = Participant::findOrFail($id);
@@ -279,7 +279,7 @@ class MesParticipants extends Component
             'role'              => $this->role,
             'secteur_activite'  => $entreprise->secteur_activite,
             'statut_historique' => 'actif',
-            'statut_adhesion'   => 'accepte', // ← Ajouté directement par l'entreprise
+            'statut_adhesion'   => 'accepte',
         ];
 
         if ($this->isEditing) {
@@ -287,8 +287,9 @@ class MesParticipants extends Component
             session()->flash('success', 'Participant modifié.');
         } else {
             $data['code_acces'] = $code;
-            Participant::create($data);
+            $participant = Participant::create($data);
 
+            // ← Crée le compte USER si email fourni
             if ($this->email) {
                 $userExiste = User::where('email', $this->email)->exists();
                 if (!$userExiste) {
@@ -301,7 +302,39 @@ class MesParticipants extends Component
                 }
             }
 
-            session()->flash('success', "Participant ajouté ! Code d'accès : {$code}");
+            // ← Crée automatiquement l'inscription
+            $evenement = Evenement::find($this->id_evenement);
+            if ($evenement) {
+                $inscriptionExiste = Inscription::where('id_participant', $participant->id)
+                    ->where('id_evenement', $this->id_evenement)
+                    ->exists();
+
+                if (!$inscriptionExiste) {
+                    // ← Détermine le montant et statut selon type paiement
+                    $montant = $evenement->montant_inscription ?? 0;
+                    $statut  = 'en_attente';
+
+                    if ($evenement->type_paiement == 'gratuit') {
+                        $montant = 0;
+                        $statut  = 'paye';
+                    } elseif ($evenement->type_paiement == 'par_entreprise') {
+                        // ← L'entreprise paie → pas de paiement individuel
+                        $montant = 0;
+                        $statut  = 'en_attente'; // ← En attente du paiement groupé
+                    }
+
+                    Inscription::create([
+                        'id_participant'   => $participant->id,
+                        'id_evenement'     => $this->id_evenement,
+                        'date_inscription' => now()->toDateString(),
+                        'montant_paye'     => $montant,
+                        'statut_paiement'  => $statut,
+                        'statut_presence'  => 'absent',
+                    ]);
+                }
+            }
+
+            session()->flash('success', "Participant ajouté ! Code : {$code}");
         }
 
         $this->closeModal();
@@ -313,9 +346,10 @@ class MesParticipants extends Component
         session()->flash('success', 'Participant supprimé.');
     }
 
-    
+    // =========================================================
     // RENDU
-    
+    // =========================================================
+
     public function render()
     {
         $entreprise = $this->getEntreprise();
@@ -343,7 +377,6 @@ class MesParticipants extends Component
                     ->get()
                 : collect(),
 
-            // ← Demandes en attente
             'demandesEnAttente' => $entreprise
                 ? Participant::where('id_entreprise', $entreprise->id)
                     ->where('statut_adhesion', 'en_attente')

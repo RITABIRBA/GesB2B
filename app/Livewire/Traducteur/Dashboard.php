@@ -10,10 +10,8 @@ class Dashboard extends Component
 {
     public function render()
     {
-        // Liaison par email ou nom
-        $traducteur = Traducteur::where('email', auth()->user()->email)
-            ->orWhere('nom', auth()->user()->name)
-            ->first();
+        // ← Liaison par email
+        $traducteur = Traducteur::where('email', auth()->user()->email)->first();
 
         $totalRdv = $traducteur
             ? RendezVous::where('id_traducteur', $traducteur->id)->count()
@@ -25,10 +23,19 @@ class Dashboard extends Component
                 ->count()
             : 0;
 
+        $rdvConfirmes = $traducteur
+            ? RendezVous::where('id_traducteur', $traducteur->id)
+                ->where('statut', 'confirme')
+                ->count()
+            : 0;
+
         $prochainRdv = $traducteur
-            ? RendezVous::with(['participant1', 'participant2', 'stand'])
+            ? RendezVous::with([
+                    'participant1', 'participant1.entreprise',
+                    'participant2', 'participant2.entreprise',
+                ])
                 ->where('id_traducteur', $traducteur->id)
-                ->where('statut', 'planifie')
+                ->where('statut', '!=', 'annule')
                 ->orderBy('date')
                 ->orderBy('heure_debut')
                 ->take(5)
@@ -39,6 +46,7 @@ class Dashboard extends Component
             'traducteur'    => $traducteur,
             'totalRdv'      => $totalRdv,
             'rdvAujourdhui' => $rdvAujourdhui,
+            'rdvConfirmes'  => $rdvConfirmes,
             'prochainRdv'   => $prochainRdv,
         ])->layout('layouts.traducteur', ['title' => 'Dashboard Traducteur']);
     }

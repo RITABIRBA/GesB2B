@@ -66,6 +66,20 @@
                 <p class="text-gray-500 mt-1">Créez votre compte participant</p>
             </div>
 
+            {{-- Info flux --}}
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-700 flex items-start gap-2">
+                <i class="fa-solid fa-circle-info mt-0.5"></i>
+                <div>
+                    <p class="font-semibold mb-1">Comment ça marche ?</p>
+                    <ol class="space-y-0.5">
+                        <li>1. Créez votre compte ici</li>
+                        <li>2. Connectez-vous et choisissez un événement</li>
+                        <li>3. Votre CDD valide votre inscription</li>
+                        <li>4. Effectuez votre paiement</li>
+                    </ol>
+                </div>
+            </div>
+
             <div class="space-y-4">
 
                 {{-- Nom + Prénom --}}
@@ -147,16 +161,6 @@
                     @endif
                 </div>
 
-                {{-- Email --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                    <input wire:model="email" type="email"
-                        autocomplete="off"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="votre@email.com">
-                    @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
-
                 {{-- Téléphone --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
@@ -166,6 +170,45 @@
                         placeholder="Ex: 70000000">
                     @error('telephone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
+
+                {{-- ← Email optionnel --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                        <span class="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
+                    <input wire:model.live="email" type="email"
+                        autocomplete="off"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        placeholder="votre@email.com">
+                    @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    @if(!$email)
+                    <p class="text-xs text-orange-500 mt-1">
+                        <i class="fa-solid fa-circle-info mr-1"></i>
+                        Sans email, vous vous connecterez uniquement via votre code d'accès.
+                    </p>
+                    @endif
+                </div>
+
+                {{-- ← Mot de passe seulement si email fourni --}}
+                @if($email)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
+                    <input wire:model="password" type="password"
+                        autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        placeholder="Minimum 8 caractères">
+                    @error('password') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirmer *</label>
+                    <input wire:model="password_confirmation" type="password"
+                        autocomplete="new-password"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        placeholder="Répéter le mot de passe">
+                </div>
+                @endif
 
                 {{-- Secteur --}}
                 <div>
@@ -228,22 +271,6 @@
                     @error('role') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
 
-                {{-- Événement --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Événement *</label>
-                    <select wire:model="id_evenement"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-                        <option value="">-- Choisir un événement --</option>
-                        @foreach($evenements as $evenement)
-                        <option value="{{ $evenement->id }}">
-                            {{ $evenement->nom }} — {{ $evenement->date_debut }}
-                            @if($evenement->type_paiement === 'gratuit') (Gratuit) @endif
-                        </option>
-                        @endforeach
-                    </select>
-                    @error('id_evenement') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
-
                 {{-- CDD --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -259,29 +286,11 @@
                     @error('id_cdd') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
-                {{-- Mot de passe --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
-                    <input wire:model="password" type="password"
-                        autocomplete="new-password"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Minimum 8 caractères">
-                    @error('password') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirmer *</label>
-                    <input wire:model="password_confirmation" type="password"
-                        autocomplete="new-password"
-                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Répéter le mot de passe">
-                </div>
-
                 {{-- Info --}}
                 <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-start gap-2">
                     <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
-                    Votre inscription sera soumise à validation par un
-                    <strong>Chef de Délégation (CDD)</strong> avant de pouvoir payer.
+                    Après la création de votre compte, connectez-vous pour
+                    <strong>choisir votre événement</strong> et soumettre votre inscription.
                 </div>
 
                 {{-- Bouton --}}
@@ -327,8 +336,8 @@
                     style="background-color: rgba(255,255,255,0.2);">
                     <i class="fa-solid fa-circle-check text-4xl"></i>
                 </div>
-                <h3 class="text-xl font-bold">Inscription réussie !</h3>
-                <p class="text-green-200 text-sm mt-1">Votre compte a été créé avec succès</p>
+                <h3 class="text-xl font-bold">Compte créé avec succès !</h3>
+                <p class="text-green-200 text-sm mt-1">Bienvenue sur GesB2B CCI-BF</p>
             </div>
 
             <div class="p-8">
@@ -348,6 +357,22 @@
                         </p>
                     </div>
 
+                    {{-- Info connexion --}}
+                    @if($email)
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
+                        <i class="fa-solid fa-circle-info mr-1"></i>
+                        Vous pouvez vous connecter avec votre
+                        <strong>email + mot de passe</strong>
+                        ou votre <strong>code d'accès</strong>.
+                    </div>
+                    @else
+                    <div class="bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm text-orange-700">
+                        <i class="fa-solid fa-key mr-1"></i>
+                        Pas d'email renseigné. Connectez-vous uniquement
+                        avec votre <strong>code d'accès</strong>.
+                    </div>
+                    @endif
+
                     {{-- Entreprise liée --}}
                     @if($entreprise_trouvee)
                     <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700 flex items-center gap-2">
@@ -356,31 +381,36 @@
                     </div>
                     @endif
 
-                    {{-- Info --}}
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-700">
-                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                        Votre préinscription est en attente de validation par un CDD.
-                    </div>
-
                     {{-- Étapes suivantes --}}
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
                         <p class="font-semibold mb-2">Prochaines étapes :</p>
                         <ol class="space-y-1 text-xs">
-                            <li>1. Attendez la validation de votre CDD</li>
-                            <li>2. Effectuez votre paiement</li>
-                            <li>3. Émettez vos souhaits de RDV</li>
+                            <li>1. Connectez-vous à votre espace</li>
+                            <li>2. Choisissez un événement et inscrivez-vous</li>
+                            <li>3. Attendez la validation de votre CDD</li>
+                            <li>4. Effectuez votre paiement</li>
+                            <li>5. Émettez vos souhaits de RDV</li>
                         </ol>
                     </div>
 
                 </div>
 
-                {{-- ← Bouton redirection directe --}}
+                {{-- ← Si email → accéder à l'espace, sinon → aller au login --}}
+                @if($email)
                 <button wire:click="allerAuDashboard"
                     class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow flex items-center justify-center gap-2"
                     style="background-color: #C8102E;">
                     <i class="fa-solid fa-gauge"></i>
                     Accéder à mon espace
                 </button>
+                @else
+                <a href="{{ route('login') }}"
+                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow flex items-center justify-center gap-2"
+                    style="background-color: #C8102E;">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    Se connecter avec mon code
+                </a>
+                @endif
             </div>
         </div>
     </div>

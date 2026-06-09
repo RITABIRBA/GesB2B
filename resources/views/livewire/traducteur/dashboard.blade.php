@@ -39,7 +39,7 @@
     @endif
 
     {{-- Cartes statistiques --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
         <div class="bg-white rounded-xl shadow p-6 flex items-center gap-4 border-l-4 hover:shadow-lg transition"
             style="border-color: #007A3D;">
@@ -48,7 +48,7 @@
                 <i class="fa-solid fa-handshake" style="color: #007A3D;"></i>
             </div>
             <div>
-                <p class="text-gray-500 text-sm">Total Rendez-vous</p>
+                <p class="text-gray-500 text-sm">Total RDV</p>
                 <p class="text-3xl font-bold text-gray-800">{{ $totalRdv }}</p>
             </div>
         </div>
@@ -65,6 +65,17 @@
             </div>
         </div>
 
+        <div class="bg-white rounded-xl shadow p-6 flex items-center gap-4 border-l-4 hover:shadow-lg transition"
+            style="border-color: #2d5a8e;">
+            <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl bg-blue-50">
+                <i class="fa-solid fa-circle-check text-blue-600"></i>
+            </div>
+            <div>
+                <p class="text-gray-500 text-sm">RDV Confirmés</p>
+                <p class="text-3xl font-bold text-gray-800">{{ $rdvConfirmes }}</p>
+            </div>
+        </div>
+
     </div>
 
     {{-- Prochains rendez-vous --}}
@@ -74,7 +85,7 @@
                 <i class="fa-solid fa-calendar-check" style="color: #007A3D;"></i>
                 Mes Prochains Rendez-vous
             </h3>
-            <a href="{{ route('traducteur.rendez-vous') }}"
+            <a href="{{ route('traducteur.planning') }}"
                 class="text-sm px-4 py-2 rounded-lg text-white transition hover:opacity-90"
                 style="background-color: #007A3D;">
                 Voir tous
@@ -84,15 +95,34 @@
         @forelse($prochainRdv as $rdv)
         <div class="flex items-center justify-between py-4 border-b last:border-0">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold"
-                    style="background-color: #007A3D;">
-                    {{ $rdv->stand->numero_stand ?? '-' }}
+
+                {{-- ← Salle & Table --}}
+                <div class="text-center flex-shrink-0">
+                    @if($rdv->salle)
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg"
+                        style="background-color: #2d5a8e;">
+                        {{ $rdv->numero_table }}
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ $rdv->salle }}</p>
+                    @else
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-gray-200">
+                        <i class="fa-solid fa-question text-gray-400"></i>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5">Non assigné</p>
+                    @endif
                 </div>
+
                 <div>
                     <p class="font-semibold text-gray-800 text-sm">
-                        {{ $rdv->participant1->nom ?? '-' }}
+                        {{ $rdv->participant1->nom ?? '-' }} {{ $rdv->participant1->prenom ?? '' }}
                         <span class="text-gray-400 mx-1">↔</span>
-                        {{ $rdv->participant2->nom ?? '-' }}
+                        {{ $rdv->participant2->nom ?? '-' }} {{ $rdv->participant2->prenom ?? '' }}
+                    </p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        <i class="fa-solid fa-building mr-1"></i>
+                        {{ $rdv->participant1->entreprise->nom ?? 'Indépendant' }}
+                        <span class="mx-1">vs</span>
+                        {{ $rdv->participant2->entreprise->nom ?? 'Indépendant' }}
                     </p>
                     <p class="text-xs text-gray-400 mt-0.5">
                         <i class="fa-solid fa-calendar mr-1"></i>{{ $rdv->date }}
@@ -100,14 +130,26 @@
                     </p>
                 </div>
             </div>
-            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">
-                Planifié
+
+            @if($rdv->statut == 'confirme')
+            <span class="px-3 py-1 rounded-full text-xs text-white font-medium"
+                style="background-color: #007A3D;">
+                <i class="fa-solid fa-circle-check mr-1"></i> Confirmé
             </span>
+            @elseif($rdv->statut == 'annule')
+            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
+                <i class="fa-solid fa-circle-xmark mr-1"></i> Annulé
+            </span>
+            @else
+            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">
+                <i class="fa-solid fa-calendar-check mr-1"></i> Planifié
+            </span>
+            @endif
         </div>
         @empty
         <div class="text-center py-8 text-gray-400">
             <i class="fa-solid fa-calendar-xmark text-3xl mb-2 block text-gray-300"></i>
-            <p>Aucun rendez-vous assigné</p>
+            <p>Aucun rendez-vous assigné pour le moment</p>
         </div>
         @endforelse
     </div>

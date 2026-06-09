@@ -14,6 +14,8 @@ class Stand extends Model
         'numero_stand',
         'superficie',
         'standing',
+        'prix',                  // ← nouveau
+        'statut_paiement_stand', // ← nouveau
     ];
 
     public function evenement()

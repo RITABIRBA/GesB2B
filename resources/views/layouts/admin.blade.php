@@ -8,6 +8,44 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     @livewireStyles
+
+    {{-- ← Styles d'impression --}}
+    <style>
+        @media print {
+            /* Cache tout sauf le contenu principal */
+            aside,
+            header,
+            .no-print {
+                display: none !important;
+            }
+
+            /* Affiche tout le contenu de la page */
+            body {
+                background: white !important;
+            }
+
+            main {
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+
+            /* Assure que les couleurs s'impriment */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Evite les coupures dans les tableaux */
+            tr {
+                page-break-inside: avoid;
+            }
+
+            /* Sauts de page */
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
 </head>
 <body class="font-sans antialiased bg-gray-100">
 
@@ -126,22 +164,6 @@
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 </div>
             </div>
-            
-<style>
-    @media print {
-        body * { visibility: hidden; }
-        #planning-global, #planning-global * { visibility: visible; }
-        #planning-global {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 20px;
-        }
-        .no-print { display: none !important; }
-        .print-header { display: block !important; }
-    }
-</style>
         </header>
 
         {{-- Contenu --}}

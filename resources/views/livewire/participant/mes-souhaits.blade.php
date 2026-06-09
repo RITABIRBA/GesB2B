@@ -13,6 +13,50 @@
     </div>
     @endif
 
+    {{-- ← Blocage si participation_rdv = false --}}
+    @if(!$participant || !$participant->participation_rdv)
+    <div class="bg-orange-50 border border-orange-200 rounded-xl p-8 text-center">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-orange-100">
+            <i class="fa-solid fa-ban text-3xl text-orange-500"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">
+            Participation aux RDV désactivée
+        </h3>
+        <p class="text-gray-500 text-sm mb-4">
+            Vous n'avez pas activé la participation aux rendez-vous d'affaires.
+            Pour émettre des souhaits, activez cette option dans votre profil.
+        </p>
+        <a href="{{ route('participant.profil') }}"
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90"
+            style="background-color: #007A3D;">
+            <i class="fa-solid fa-user-gear"></i>
+            Aller à mon profil
+        </a>
+    </div>
+
+    {{-- ← Blocage si pas d'inscription validée et payée --}}
+    @elseif(!$inscriptionValide)
+    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-yellow-100">
+            <i class="fa-solid fa-clock text-3xl text-yellow-500"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">
+            Inscription non validée
+        </h3>
+        <p class="text-gray-500 text-sm mb-4">
+            Vous devez avoir une inscription validée et payée pour émettre des souhaits de RDV.
+        </p>
+        <a href="{{ route('participant.inscription') }}"
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90"
+            style="background-color: #C8102E;">
+            <i class="fa-solid fa-clipboard-list"></i>
+            Voir mes inscriptions
+        </a>
+    </div>
+
+    @else
+
+    {{-- Contenu normal --}}
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
             <h3 class="text-xl font-bold text-gray-700">Mes Souhaits de RDV</h3>
@@ -83,7 +127,6 @@
                                 {{ $souhait->participantCible->nom ?? '-' }}
                                 {{ $souhait->participantCible->prenom ?? '' }}
                             </p>
-                            {{-- ← Point 4 : Fonction visible --}}
                             @if($souhait->participantCible?->fonction)
                             <p class="text-xs text-gray-400 mt-0.5">
                                 <i class="fa-solid fa-briefcase mr-1"></i>
@@ -111,7 +154,6 @@
                     <td class="px-6 py-4">
                         <button wire:click="supprimer({{ $souhait->id }})"
                             wire:confirm="Supprimer ce souhait ?"
-                            wire:loading.attr="disabled"
                             class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700">
                             <i class="fa-solid fa-trash"></i>
                         </button>
@@ -151,14 +193,10 @@
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
                             Veut rencontrer *
                         </label>
-
-                        {{-- Info même événement --}}
                         <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 text-xs text-blue-700 flex items-center gap-2">
                             <i class="fa-solid fa-circle-info"></i>
-                            Seuls les participants de votre événement sont affichés.
+                            Seuls les participants de votre événement avec RDV activé sont affichés.
                         </div>
-
-                        {{-- Liste des participants --}}
                         <div class="space-y-2 max-h-60 overflow-y-auto border rounded-xl p-2">
                             @forelse($autresParticipants as $p)
                             <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition hover:bg-gray-50
@@ -168,13 +206,11 @@
                                     value="{{ $p->id }}"
                                     class="text-green-600">
                                 <div class="flex items-center gap-3 flex-1">
-                                    {{-- Avatar --}}
                                     <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
                                         style="background-color: {{ $p->genre == 'femme' ? '#C8102E' : '#007A3D' }}">
                                         {{ strtoupper(substr($p->prenom ?? 'X', 0, 1)) }}
                                     </div>
                                     <div>
-                                        {{-- Nom --}}
                                         <p class="font-semibold text-gray-800 text-sm">
                                             {{ $p->nom }} {{ $p->prenom }}
                                             @if($p->genre == 'femme')
@@ -183,19 +219,16 @@
                                                 <span class="text-xs text-gray-400">(M.)</span>
                                             @endif
                                         </p>
-                                        {{-- Fonction --}}
                                         @if($p->fonction)
                                         <p class="text-xs text-gray-400">
                                             <i class="fa-solid fa-briefcase mr-1"></i>
                                             {{ $p->fonction }}
                                         </p>
                                         @endif
-                                        {{-- Entreprise --}}
                                         <p class="text-xs text-gray-400">
                                             <i class="fa-solid fa-building mr-1"></i>
                                             {{ $p->entreprise->nom ?? 'Indépendant' }}
                                         </p>
-                                        {{-- Secteur --}}
                                         @if($p->secteur_activite)
                                         <p class="text-xs text-gray-400">
                                             <i class="fa-solid fa-tag mr-1"></i>
@@ -256,5 +289,7 @@
             </div>
         </div>
     </div>
+    @endif
+
     @endif
 </div>

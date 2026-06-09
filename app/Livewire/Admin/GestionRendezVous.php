@@ -6,7 +6,6 @@ use Livewire\Component;
 use App\Models\RendezVous;
 use App\Models\Participant;
 use App\Models\Souhait;
-use App\Models\Stand;
 use App\Models\Traducteur;
 use App\Models\Evenement;
 
@@ -20,41 +19,46 @@ class GestionRendezVous extends Component
     public $pause_cafe_matin       = false;
     public $pause_cafe_matin_debut = '10:00';
     public $pause_cafe_matin_fin   = '10:15';
-
     public $pause_dejeuner         = false;
     public $pause_dejeuner_debut   = '12:00';
     public $pause_dejeuner_fin     = '14:00';
-
     public $pause_cafe_aprem       = false;
     public $pause_cafe_aprem_debut = '15:30';
     public $pause_cafe_aprem_fin   = '15:45';
 
-    // PROPRIÉTÉS — RÉSUMÉ AUTOMATIQUE
+    // PROPRIÉTÉS — RÉSUMÉ
     public $evenement_selectionne = null;
-    public $nb_creneaux = 0;
-    public $nb_stands = 0;
-    public $nb_paires = 0;
+    public $nb_creneaux  = 0;
+    public $nb_tables    = 0;
+    public $nb_paires    = 0;
 
     // PROPRIÉTÉS — MODALS
     public $showGenerateModal   = false;
     public $showTraducteurModal = false;
     public $showRematchModal    = false;
+    public $showAnnulerModal    = false;
     public $rdv_id;
     public $rdv_courant         = null;
     public $id_traducteur       = '';
 
+    // PROPRIÉTÉS — ANNULATION
+    public $annuler_rdv_id      = null;
+    public $annuler_rdv         = null;
+    public $absent_id           = '';
+
     // PROPRIÉTÉS — RE-MATCH
-    public $rematch_rdv_id      = null;
-    public $rematch_rdv         = null;
-    public $nouveau_participant  = '';
+    public $rematch_rdv_id     = null;
+    public $rematch_rdv        = null;
+    public $nouveau_participant = '';
+    public $erreur_rematch      = ''; // ← nouveau
 
     // PROPRIÉTÉS — FILTRES
     public $search        = '';
     public $filtre_statut = '';
 
-    // =========================================================
-    // CALCUL AUTOMATIQUE DU RÉSUMÉ
-    // =========================================================
+    
+    // CALCUL RÉSUMÉ
+    
 
     public function updatedIdEvenement()
     {
@@ -71,7 +75,7 @@ class GestionRendezVous extends Component
         if (!$this->id_evenement) {
             $this->evenement_selectionne = null;
             $this->nb_creneaux           = 0;
-            $this->nb_stands             = 0;
+            $this->nb_tables             = 0;
             $this->nb_paires             = 0;
             return;
         }
@@ -85,14 +89,13 @@ class GestionRendezVous extends Component
         $fin         = strtotime($evenement->heure_fin);
         $duree       = $this->duree_rdv * 60;
         $nb_creneaux = 0;
-
-        $pauses = $this->getPauses();
+        $pauses      = $this->getPauses();
 
         while ($debut + $duree <= $fin) {
             $creneauDebut = $debut;
             $creneauFin   = $debut + $duree;
-
             $dansUnePause = false;
+
             foreach ($pauses as $pause) {
                 if ($creneauDebut < $pause['fin'] && $creneauFin > $pause['debut']) {
                     $dansUnePause = true;
@@ -108,12 +111,11 @@ class GestionRendezVous extends Component
         }
 
         $this->nb_creneaux = $nb_creneaux;
-        $this->nb_stands   = Stand::where('id_evenement', $this->id_evenement)->count();
+        $this->nb_tables   = $evenement->nombre_tables ?? 0;
 
-        $participants = Participant::where('id_evenement', $this->id_evenement)
+        $participants    = Participant::where('id_evenement', $this->id_evenement)
             ->where('participation_rdv', true)
             ->pluck('id');
-
         $souhaitsTraites = [];
         $nb_paires       = 0;
 
@@ -125,7 +127,7 @@ class GestionRendezVous extends Component
             foreach ($souhaits as $souhait) {
                 $paire     = collect([
                     $souhait->id_participant,
-                    $souhait->id_participant_cible
+                    $souhait->id_participant_cible,
                 ])->sort()->values()->toArray();
                 $cleUnique = $paire[0] . '-' . $paire[1];
 
@@ -139,9 +141,9 @@ class GestionRendezVous extends Component
         $this->nb_paires = $nb_paires;
     }
 
-    // =========================================================
-    // HELPER — PAUSES
-    // =========================================================
+    
+    // HELPER PAUSES
+    
 
     private function getPauses(): array
     {
@@ -151,7 +153,6 @@ class GestionRendezVous extends Component
             $pauses[] = [
                 'debut' => strtotime($this->pause_cafe_matin_debut),
                 'fin'   => strtotime($this->pause_cafe_matin_fin),
-                'label' => 'Pause café matin',
             ];
         }
 
@@ -159,7 +160,6 @@ class GestionRendezVous extends Component
             $pauses[] = [
                 'debut' => strtotime($this->pause_dejeuner_debut),
                 'fin'   => strtotime($this->pause_dejeuner_fin),
-                'label' => 'Pause déjeuner',
             ];
         }
 
@@ -167,16 +167,15 @@ class GestionRendezVous extends Component
             $pauses[] = [
                 'debut' => strtotime($this->pause_cafe_aprem_debut),
                 'fin'   => strtotime($this->pause_cafe_aprem_fin),
-                'label' => 'Pause café après-midi',
             ];
         }
 
         return $pauses;
     }
 
-    // =========================================================
-    // GESTION DU MODAL DE GÉNÉRATION
-    // =========================================================
+    
+    // MODAL GÉNÉRATION
+    
 
     public function openGenerateModal()
     {
@@ -185,7 +184,7 @@ class GestionRendezVous extends Component
         $this->duree_rdv             = 30;
         $this->evenement_selectionne = null;
         $this->nb_creneaux           = 0;
-        $this->nb_stands             = 0;
+        $this->nb_tables             = 0;
         $this->nb_paires             = 0;
         $this->pause_cafe_matin      = false;
         $this->pause_dejeuner        = false;
@@ -199,7 +198,7 @@ class GestionRendezVous extends Component
         $this->duree_rdv             = 30;
         $this->evenement_selectionne = null;
         $this->nb_creneaux           = 0;
-        $this->nb_stands             = 0;
+        $this->nb_tables             = 0;
         $this->nb_paires             = 0;
         $this->pause_cafe_matin      = false;
         $this->pause_dejeuner        = false;
@@ -207,19 +206,17 @@ class GestionRendezVous extends Component
         $this->resetErrorBag();
     }
 
-    // =========================================================
-    // GESTION DU MODAL TRADUCTEUR
-    // =========================================================
+    
+    // MODAL TRADUCTEUR
+    
 
     public function ouvrirModalTraducteur($id)
     {
         $this->rdv_id        = $id;
         $this->id_traducteur = '';
         $this->rdv_courant   = RendezVous::with([
-            'participant1',
-            'participant1.entreprise',
-            'participant2',
-            'participant2.entreprise',
+            'participant1', 'participant1.entreprise',
+            'participant2', 'participant2.entreprise',
             'traducteur',
         ])->find($id);
         $this->showTraducteurModal = true;
@@ -241,21 +238,57 @@ class GestionRendezVous extends Component
         session()->flash('success', 'Traducteur assigné avec succès !');
     }
 
-    // =========================================================
-    // GESTION DU RE-MATCH
-    // =========================================================
+    // MODAL ANNULATION
+
+    public function ouvrirModalAnnuler($id)
+    {
+        $this->annuler_rdv_id = $id;
+        $this->absent_id      = '';
+        $this->annuler_rdv    = RendezVous::with([
+            'participant1', 'participant1.entreprise',
+            'participant2', 'participant2.entreprise',
+        ])->findOrFail($id);
+        $this->showAnnulerModal = true;
+    }
+
+    public function fermerModalAnnuler()
+    {
+        $this->showAnnulerModal = false;
+        $this->annuler_rdv_id  = null;
+        $this->annuler_rdv     = null;
+        $this->absent_id       = '';
+    }
+
+    public function confirmerAnnulation()
+    {
+        $this->validate([
+            'absent_id' => 'required',
+        ], [
+            'absent_id.required' => 'Veuillez indiquer qui est absent.',
+        ]);
+
+        RendezVous::findOrFail($this->annuler_rdv_id)->update([
+            'statut'                => 'annule',
+            'absent_participant_id' => $this->absent_id,
+        ]);
+
+        $this->fermerModalAnnuler();
+        session()->flash('success', 'Rendez-vous annulé. Vous pouvez effectuer un re-match.');
+    }
+
+    
+    // RE-MATCH
+    
 
     public function ouvrirRematch($id)
     {
-        $this->rematch_rdv_id      = $id;
-        $this->nouveau_participant  = '';
-        $this->rematch_rdv         = RendezVous::with([
-            'participant1',
-            'participant1.entreprise',
-            'participant2',
-            'participant2.entreprise',
+        $this->rematch_rdv_id     = $id;
+        $this->nouveau_participant = '';
+        $this->erreur_rematch      = '';
+        $this->rematch_rdv        = RendezVous::with([
+            'participant1', 'participant1.entreprise',
+            'participant2', 'participant2.entreprise',
             'participantAbsent',
-            'stand',
         ])->findOrFail($id);
         $this->showRematchModal = true;
     }
@@ -266,15 +299,39 @@ class GestionRendezVous extends Component
         $this->rematch_rdv_id      = null;
         $this->rematch_rdv         = null;
         $this->nouveau_participant  = '';
+        $this->erreur_rematch       = '';
     }
 
     public function effectuerRematch()
     {
-        $this->validate([
-            'nouveau_participant' => 'required',
-        ]);
+        $this->validate(['nouveau_participant' => 'required']);
 
         $rdv = RendezVous::findOrFail($this->rematch_rdv_id);
+
+        // ← Vérifie que le remplaçant n'a pas déjà un RDV
+        // sur le même créneau horaire
+        $conflit = RendezVous::where('date', $rdv->date)
+            ->where('heure_debut', $rdv->heure_debut)
+            ->where('id', '!=', $rdv->id) // ← exclut le RDV annulé
+            ->where(function($q) {
+                $q->where('id_participant1', $this->nouveau_participant)
+                  ->orWhere('id_participant2', $this->nouveau_participant);
+            })
+            ->exists();
+
+        if ($conflit) {
+            // ← Trouve le nom du participant pour le message
+            $participant = Participant::find($this->nouveau_participant);
+            $this->erreur_rematch = ($participant->nom ?? '') . ' ' .
+                ($participant->prenom ?? '') .
+                ' a déjà un RDV sur ce créneau (' .
+                $rdv->heure_debut . ' - ' . $rdv->heure_fin .
+                '). Choisissez un autre participant !';
+            return;
+        }
+
+        // ← Pas de conflit → effectue le re-match
+        $this->erreur_rematch = '';
 
         if ($rdv->absent_participant_id == $rdv->id_participant1) {
             $rdv->update([
@@ -294,20 +351,14 @@ class GestionRendezVous extends Component
         $this->fermerRematch();
     }
 
-    // =========================================================
-    // ACTIONS SUR LES RENDEZ-VOUS
-    // =========================================================
+   
+    // ACTIONS SUR LES RDV
+    
 
     public function confirmer($id)
     {
         RendezVous::findOrFail($id)->update(['statut' => 'confirme']);
         session()->flash('success', 'Rendez-vous confirmé !');
-    }
-
-    public function annuler($id)
-    {
-        RendezVous::findOrFail($id)->update(['statut' => 'annule']);
-        session()->flash('success', 'Rendez-vous annulé !');
     }
 
     public function terminer($id)
@@ -322,10 +373,9 @@ class GestionRendezVous extends Component
         session()->flash('success', 'Rendez-vous supprimé.');
     }
 
-    // =========================================================
+    
     // GÉNÉRATION DU PLANNING
-    // =========================================================
-
+    
     public function genererPlanning()
     {
         $this->validate([
@@ -335,19 +385,24 @@ class GestionRendezVous extends Component
 
         $evenement = Evenement::findOrFail($this->id_evenement);
 
-        $participants = Participant::where('id_evenement', $this->id_evenement)
-            ->where('participation_rdv', true)
-            ->get();
-
-        $stands = Stand::where('id_evenement', $this->id_evenement)->get();
-
-        if ($participants->isEmpty() || $stands->isEmpty()) {
-            session()->flash('error', 'Pas assez de participants ou de stands !');
+        if (!$evenement->nom_salle || !$evenement->nombre_tables) {
+            session()->flash('error',
+                'Veuillez d\'abord définir la salle et le nombre de tables dans la gestion des événements !'
+            );
             $this->closeGenerateModal();
             return;
         }
 
-        // Calcule les créneaux en excluant les pauses
+        $participants = Participant::where('id_evenement', $this->id_evenement)
+            ->where('participation_rdv', true)
+            ->get();
+
+        if ($participants->isEmpty()) {
+            session()->flash('error', 'Aucun participant avec participation RDV activée !');
+            $this->closeGenerateModal();
+            return;
+        }
+
         $creneaux = [];
         $debut    = strtotime($evenement->heure_debut);
         $fin      = strtotime($evenement->heure_fin);
@@ -357,8 +412,8 @@ class GestionRendezVous extends Component
         while ($debut + $duree <= $fin) {
             $creneauDebut = $debut;
             $creneauFin   = $debut + $duree;
-
             $dansUnePause = false;
+
             foreach ($pauses as $pause) {
                 if ($creneauDebut < $pause['fin'] && $creneauFin > $pause['debut']) {
                     $dansUnePause = true;
@@ -376,15 +431,11 @@ class GestionRendezVous extends Component
             }
         }
 
-        // Supprime les anciens RDV
         $participantIds = $participants->pluck('id')->toArray();
         RendezVous::whereIn('id_participant1', $participantIds)
                   ->orWhereIn('id_participant2', $participantIds)
                   ->delete();
 
-        // =========================================================
-        // ALGORITHME DE MATCH-MAKING
-        // =========================================================
         $souhaitsTraites = [];
         $rdvMutuels      = [];
         $rdvUnilateraux  = [];
@@ -397,7 +448,7 @@ class GestionRendezVous extends Component
             foreach ($souhaits as $souhait) {
                 $paire     = collect([
                     $souhait->id_participant,
-                    $souhait->id_participant_cible
+                    $souhait->id_participant_cible,
                 ])->sort()->values()->toArray();
                 $cleUnique = $paire[0] . '-' . $paire[1];
 
@@ -412,101 +463,65 @@ class GestionRendezVous extends Component
                     $rdvMutuels[] = [
                         'id_participant1' => $souhait->id_participant,
                         'id_participant2' => $souhait->id_participant_cible,
-                        'type'            => 'mutuel',
                     ];
                 } else {
                     $rdvUnilateraux[] = [
                         'id_participant1' => $souhait->id_participant,
                         'id_participant2' => $souhait->id_participant_cible,
-                        'type'            => 'unilateral',
                     ];
                 }
             }
         }
 
-        $planning = array_merge($rdvMutuels, $rdvUnilateraux);
-
-        // =========================================================
-        // ASSIGNE CRÉNEAUX ET STANDS
-        // Avec détection des conflits d'agenda (chevauchement)
-        // =========================================================
-        $standIndex   = 0;
-        $creneauIndex = 0;
-        $date         = $evenement->date_debut;
+        $planning        = array_merge($rdvMutuels, $rdvUnilateraux);
+        $date            = $evenement->date_debut;
+        $salle           = $evenement->nom_salle;
+        $nombreTables    = $evenement->nombre_tables;
+        $tablesByCreneau = [];
 
         foreach ($planning as $rdv) {
-            if ($creneauIndex >= count($creneaux)) break;
-            if ($standIndex >= count($stands)) $standIndex = 0;
+            for ($ci = 0; $ci < count($creneaux); $ci++) {
+                $tablesUtilisees = $tablesByCreneau[$ci] ?? [];
 
-            // ← Correction conflit d'agenda :
-            // Vérifie le chevauchement et pas juste l'heure exacte
-            $conflit = RendezVous::where('date', $date)
-                ->where(function ($q) use ($rdv) {
-                    $q->whereIn('id_participant1', [
-                            $rdv['id_participant1'],
-                            $rdv['id_participant2']
-                        ])
-                      ->orWhereIn('id_participant2', [
-                            $rdv['id_participant1'],
-                            $rdv['id_participant2']
-                        ]);
-                })
-                ->where(function ($q) use ($creneaux, $creneauIndex) {
-                    // Vérifie le chevauchement
-                    $q->where('heure_debut', '<', $creneaux[$creneauIndex]['fin'])
-                      ->where('heure_fin', '>', $creneaux[$creneauIndex]['debut']);
-                })
-                ->exists();
+                $conflit = RendezVous::where('date', $date)
+                    ->where(function ($q) use ($rdv) {
+                        $q->whereIn('id_participant1', [
+                                $rdv['id_participant1'],
+                                $rdv['id_participant2'],
+                            ])
+                          ->orWhereIn('id_participant2', [
+                                $rdv['id_participant1'],
+                                $rdv['id_participant2'],
+                            ]);
+                    })
+                    ->where('heure_debut', $creneaux[$ci]['debut'])
+                    ->exists();
 
-            if (!$conflit) {
+                if ($conflit) continue;
+
+                $tableTrouvee = null;
+                for ($t = 1; $t <= $nombreTables; $t++) {
+                    if (!in_array($t, $tablesUtilisees)) {
+                        $tableTrouvee = $t;
+                        break;
+                    }
+                }
+
+                if ($tableTrouvee === null) continue;
+
                 RendezVous::create([
                     'id_participant1' => $rdv['id_participant1'],
                     'id_participant2' => $rdv['id_participant2'],
-                    'id_stand'        => $stands[$standIndex]->id,
+                    'salle'           => $salle,
+                    'numero_table'    => $tableTrouvee,
                     'date'            => $date,
-                    'heure_debut'     => $creneaux[$creneauIndex]['debut'],
-                    'heure_fin'       => $creneaux[$creneauIndex]['fin'],
+                    'heure_debut'     => $creneaux[$ci]['debut'],
+                    'heure_fin'       => $creneaux[$ci]['fin'],
                     'statut'          => 'planifie',
                 ]);
-                $standIndex++;
-                $creneauIndex++;
-            } else {
-                // Conflit détecté → essaie le créneau suivant
-                $creneauIndex++;
 
-                // Réessaie avec le nouveau créneau
-                if ($creneauIndex < count($creneaux)) {
-                    $conflit2 = RendezVous::where('date', $date)
-                        ->where(function ($q) use ($rdv) {
-                            $q->whereIn('id_participant1', [
-                                    $rdv['id_participant1'],
-                                    $rdv['id_participant2']
-                                ])
-                              ->orWhereIn('id_participant2', [
-                                    $rdv['id_participant1'],
-                                    $rdv['id_participant2']
-                                ]);
-                        })
-                        ->where(function ($q) use ($creneaux, $creneauIndex) {
-                            $q->where('heure_debut', '<', $creneaux[$creneauIndex]['fin'])
-                              ->where('heure_fin', '>', $creneaux[$creneauIndex]['debut']);
-                        })
-                        ->exists();
-
-                    if (!$conflit2) {
-                        RendezVous::create([
-                            'id_participant1' => $rdv['id_participant1'],
-                            'id_participant2' => $rdv['id_participant2'],
-                            'id_stand'        => $stands[$standIndex]->id,
-                            'date'            => $date,
-                            'heure_debut'     => $creneaux[$creneauIndex]['debut'],
-                            'heure_fin'       => $creneaux[$creneauIndex]['fin'],
-                            'statut'          => 'planifie',
-                        ]);
-                        $standIndex++;
-                        $creneauIndex++;
-                    }
-                }
+                $tablesByCreneau[$ci][] = $tableTrouvee;
+                break;
             }
         }
 
@@ -515,14 +530,13 @@ class GestionRendezVous extends Component
         $nbMutuels     = count($rdvMutuels);
         $nbUnilateraux = count($rdvUnilateraux);
         session()->flash('success',
-            "Planning généré ! {$nbMutuels} RDV mutuels (prioritaires) + {$nbUnilateraux} RDV unilatéraux."
+            "Planning généré dans {$salle} ! {$nbMutuels} RDV mutuels + {$nbUnilateraux} RDV unilatéraux."
         );
     }
 
-    // =========================================================
+    
     // RENDU
-    // =========================================================
-
+   
     public function render()
     {
         $traducteurs = collect();
@@ -548,6 +562,8 @@ class GestionRendezVous extends Component
                          ?? $this->rematch_rdv->participant2->id_evenement
                          ?? null;
 
+            // ← Exclut les participants qui ont déjà un RDV
+            // sur le même créneau que le RDV annulé
             $participantsDisponibles = Participant::with('entreprise')
                 ->when($id_evenement, fn($q) =>
                     $q->where('id_evenement', $id_evenement)
@@ -555,6 +571,16 @@ class GestionRendezVous extends Component
                 ->where('participation_rdv', true)
                 ->where('id', '!=', $this->rematch_rdv->id_participant1)
                 ->where('id', '!=', $this->rematch_rdv->id_participant2)
+                ->whereDoesntHave('rendezVous1', fn($q) =>
+                    $q->where('date', $this->rematch_rdv->date)
+                      ->where('heure_debut', $this->rematch_rdv->heure_debut)
+                      ->where('statut', '!=', 'annule')
+                )
+                ->whereDoesntHave('rendezVous2', fn($q) =>
+                    $q->where('date', $this->rematch_rdv->date)
+                      ->where('heure_debut', $this->rematch_rdv->heure_debut)
+                      ->where('statut', '!=', 'annule')
+                )
                 ->orderBy('nom')
                 ->get();
         }
@@ -563,8 +589,7 @@ class GestionRendezVous extends Component
             'rendezVous' => RendezVous::with([
                     'participant1', 'participant1.entreprise',
                     'participant2', 'participant2.entreprise',
-                    'stand', 'traducteur',
-                    'participantAbsent',
+                    'traducteur', 'participantAbsent',
                 ])
                 ->when($this->filtre_statut, fn($q) => $q->where('statut', $this->filtre_statut))
                 ->when($this->search, fn($q) =>
@@ -580,6 +605,7 @@ class GestionRendezVous extends Component
             'evenements'              => Evenement::orderBy('nom')->get(),
             'traducteurs'             => $traducteurs,
             'participantsDisponibles' => $participantsDisponibles,
+            'erreur_rematch'          => $this->erreur_rematch,
         ])->layout('layouts.admin', ['title' => 'Gestion des Rendez-vous']);
     }
 }

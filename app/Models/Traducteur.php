@@ -9,12 +9,19 @@ class Traducteur extends Model
     protected $table = 'traducteurs';
 
     protected $fillable = [
+        'user_id', // ← nouveau
         'nom',
         'prenom',
         'telephone',
         'email',
         'langue',
     ];
+
+    // ← Relation avec User
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function rendezVous()
     {

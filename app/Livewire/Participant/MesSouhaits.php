@@ -5,6 +5,7 @@ namespace App\Livewire\Participant;
 use Livewire\Component;
 use App\Models\Souhait;
 use App\Models\Participant;
+use App\Models\Inscription;
 
 class MesSouhaits extends Component
 {
@@ -27,10 +28,25 @@ class MesSouhaits extends Component
 
     public function sauvegarder()
     {
-        $participant = Participant::where('email', auth()->user()->email)->first();
+        $participant = Participant::findForUser(auth()->user());
 
         if (!$participant) {
             session()->flash('error', 'Participant non trouvé.');
+            return;
+        }
+
+        if (!$participant->id_evenement) {
+            session()->flash('error', 'Vous devez d\'abord vous inscrire à un événement.');
+            $this->closeModal();
+            return;
+        }
+
+        // ← Vérifie inscription valide
+        $inscriptionValide = $this->verifierInscriptionValide($participant);
+
+        if (!$inscriptionValide) {
+            session()->flash('error', 'Vous devez avoir une inscription validée pour émettre des souhaits.');
+            $this->closeModal();
             return;
         }
 
@@ -39,7 +55,6 @@ class MesSouhaits extends Component
             'priorite'             => 'required|integer|min:1|max:20',
         ]);
 
-        // Vérifie si souhait déjà existant
         $existe = Souhait::where('id_participant', $participant->id)
             ->where('id_participant_cible', $this->id_participant_cible)
             ->exists();
@@ -67,9 +82,34 @@ class MesSouhaits extends Component
         session()->flash('success', 'Souhait supprimé.');
     }
 
+    // ← Helper pour vérifier si l'inscription est valide
+    private function verifierInscriptionValide($participant): bool
+    {
+        if (!$participant || !$participant->id_evenement) return false;
+
+        return Inscription::where('id_participant', $participant->id)
+            ->where('id_evenement', $participant->id_evenement)
+            ->where(function($q) {
+                $q->where('statut_paiement', 'paye')
+                  // ← Par entreprise → en_attente est valide aussi
+                  ->orWhereHas('evenement', fn($q) =>
+                      $q->where('type_paiement', 'par_entreprise')
+                  )
+                  // ← Gratuit → toujours valide
+                  ->orWhereHas('evenement', fn($q) =>
+                      $q->where('type_paiement', 'gratuit')
+                  );
+            })
+            ->exists();
+    }
+
     public function render()
     {
-        $participant = Participant::where('email', auth()->user()->email)->first();
+        $participant = Participant::findForUser(auth()->user());
+
+        $inscriptionValide = $participant
+            ? $this->verifierInscriptionValide($participant)
+            : false;
 
         return view('livewire.participant.mes-souhaits', [
             'souhaits' => $participant
@@ -79,9 +119,7 @@ class MesSouhaits extends Component
                     ->get()
                 : collect(),
 
-            // ← Point 3 : Filtre même événement
-            // ← Point 4 : Charge entreprise et infos complètes
-            'autresParticipants' => $participant
+            'autresParticipants' => ($participant && $inscriptionValide)
                 ? Participant::with('entreprise')
                     ->where('id_evenement', $participant->id_evenement)
                     ->where('id', '!=', $participant->id)
@@ -90,7 +128,8 @@ class MesSouhaits extends Component
                     ->get()
                 : collect(),
 
-            'participant' => $participant,
+            'participant'       => $participant,
+            'inscriptionValide' => $inscriptionValide,
         ])->layout('layouts.participant', ['title' => 'Mes Souhaits']);
     }
 }

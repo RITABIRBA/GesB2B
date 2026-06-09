@@ -13,6 +13,8 @@ class RendezVous extends Model
         'id_participant2',
         'id_traducteur',
         'id_stand',
+        'salle',          // ← nouveau
+        'numero_table',   // ← nouveau
         'date',
         'heure_debut',
         'heure_fin',

@@ -10,8 +10,8 @@ class MonPlanning extends Component
 {
     public function render()
     {
-        // Liaison par email
-        $participant = Participant::where('email', auth()->user()->email)->first();
+        // ← Utilise le helper
+        $participant = Participant::findForUser(auth()->user());
 
         $rendezVous = $participant
             ? RendezVous::with([

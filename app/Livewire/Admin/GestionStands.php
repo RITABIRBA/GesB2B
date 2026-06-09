@@ -19,6 +19,13 @@ class GestionStands extends Component
     public $isEditing = false;
     public $search = '';
 
+    // ← Génération automatique
+    public $showGenerateModal = false;
+    public $id_evenement_generate = '';
+    public $nombre_stands = 10;
+    public $superficie_default = 9;
+    public $standing_default = 'standard';
+
     public $standings = ['standard', 'premium', 'vip'];
 
     public function openModal()
@@ -45,6 +52,49 @@ class GestionStands extends Component
         $this->resetErrorBag();
     }
 
+    // ← Ouvre modal génération
+    public function openGenerateModal()
+    {
+        $this->id_evenement_generate = '';
+        $this->nombre_stands         = 10;
+        $this->superficie_default    = 9;
+        $this->standing_default      = 'standard';
+        $this->showGenerateModal     = true;
+    }
+
+    public function closeGenerateModal()
+    {
+        $this->showGenerateModal = false;
+    }
+
+    // ← Génère les stands automatiquement
+    public function genererStands()
+    {
+        $this->validate([
+            'id_evenement_generate' => 'required',
+            'nombre_stands'         => 'required|integer|min:1|max:100',
+            'superficie_default'    => 'required|numeric|min:1',
+            'standing_default'      => 'required',
+        ]);
+
+        // Supprime les anciens stands de cet événement
+        Stand::where('id_evenement', $this->id_evenement_generate)->delete();
+
+        // Génère les nouveaux stands
+        for ($i = 1; $i <= $this->nombre_stands; $i++) {
+            Stand::create([
+                'id_evenement'  => $this->id_evenement_generate,
+                'id_entreprise' => null,
+                'numero_stand'  => $i,
+                'superficie'    => $this->superficie_default,
+                'standing'      => $this->standing_default,
+            ]);
+        }
+
+        $this->closeGenerateModal();
+        session()->flash('success', "{$this->nombre_stands} stands générés automatiquement !");
+    }
+
     public function modifier($id)
     {
         $stand = Stand::findOrFail($id);
@@ -62,7 +112,6 @@ class GestionStands extends Component
     {
         $this->validate([
             'id_evenement'  => 'required',
-            'id_entreprise' => 'required',
             'numero_stand'  => 'required|integer',
             'superficie'    => 'required|numeric',
             'standing'      => 'required',
@@ -70,7 +119,7 @@ class GestionStands extends Component
 
         $data = [
             'id_evenement'  => $this->id_evenement,
-            'id_entreprise' => $this->id_entreprise,
+            'id_entreprise' => $this->id_entreprise ?: null,
             'numero_stand'  => $this->numero_stand,
             'superficie'    => $this->superficie,
             'standing'      => $this->standing,
@@ -98,13 +147,16 @@ class GestionStands extends Component
         return view('livewire.admin.gestion-stands', [
             'stands' => Stand::with(['evenement', 'entreprise'])
                 ->when($this->search, fn($q) =>
-                    $q->whereHas('entreprise', fn($q) =>
+                    $q->where('numero_stand', 'like', '%'.$this->search.'%')
+                    ->orWhereHas('entreprise', fn($q) =>
                         $q->where('nom', 'like', '%'.$this->search.'%')
                     )->orWhereHas('evenement', fn($q) =>
                         $q->where('nom', 'like', '%'.$this->search.'%')
                     )
                 )
-                ->latest()->get(),
+                ->orderBy('id_evenement')
+                ->orderBy('numero_stand')
+                ->get(),
             'evenements'  => Evenement::orderBy('nom')->get(),
             'entreprises' => Entreprise::where('statut_validation', 'valide')->orderBy('nom')->get(),
         ])->layout('layouts.admin', ['title' => 'Gestion des Stands']);

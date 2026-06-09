@@ -4,80 +4,39 @@ namespace App\Livewire\Admin;
 
 use Livewire\Component;
 use App\Models\Traducteur;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
-/**
- * Composant Livewire — Gestion des Traducteurs
- * 
- * Ce composant permet à l'administrateur de gérer les traducteurs
- * de la plateforme GesB2B. Les traducteurs facilitent les rencontres
- * B2B entre entreprises qui parlent des langues différentes.
- * 
- * Fonctionnalités :
- * - Lister les traducteurs avec recherche en temps réel
- * - Créer un nouveau traducteur
- * - Modifier un traducteur existant
- * - Supprimer un traducteur
- */
 class GestionTraducteurs extends Component
 {
-    // =========================================================
-    // PROPRIÉTÉS DU FORMULAIRE
-    // =========================================================
-
-    /** @var int|null Identifiant du traducteur en cours de modification */
     public $traducteur_id;
-
-    /** @var string Nom du traducteur */
-    public $nom = '';
-
-    /** @var string Prénom du traducteur */
-    public $prenom = '';
-
-    /** @var string Numéro de téléphone du traducteur */
+    public $nom       = '';
+    public $prenom    = '';
     public $telephone = '';
+    public $email     = '';
+    public $langue    = '';
+    public $showModal  = false;
+    public $isEditing  = false;
+    public $search     = '';
 
-    /** @var string|null Email du traducteur (optionnel) */
-    public $email = '';
+    // Modal compte créé
+    public $showModalCompte   = false;
+    public $compte_email      = '';
+    public $compte_password   = '';
 
-    /** @var string Langue maîtrisée par le traducteur */
-    public $langue = '';
+    // ← Modal voir compte
+    public $showModalVoirCompte  = false;
+    public $voir_compte_nom      = '';
+    public $voir_compte_email    = '';
+    public $nouveau_mot_de_passe = '';
+    public $traducteur_reset_id  = null;
 
-    // =========================================================
-    // PROPRIÉTÉS DE L'INTERFACE
-    // =========================================================
-
-    /** @var bool Contrôle l'affichage du modal (ouvert/fermé) */
-    public $showModal = false;
-
-    /** @var bool Indique si on est en mode modification (true) ou création (false) */
-    public $isEditing = false;
-
-    /** @var string Texte de recherche pour filtrer les traducteurs */
-    public $search = '';
-
-    // =========================================================
-    // DONNÉES STATIQUES
-    // =========================================================
-
-    /**
-     * Liste des langues disponibles pour les traducteurs.
-     * Inclut les langues internationales et les langues locales
-     * du Burkina Faso (Dioula, Mooré, Fulfuldé).
-     */
     public $langues = [
         'Français', 'Anglais', 'Arabe', 'Espagnol',
         'Portugais', 'Allemand', 'Chinois', 'Dioula',
         'Mooré', 'Fulfuldé',
     ];
 
-    // =========================================================
-    // GESTION DU MODAL
-    // =========================================================
-
-    /**
-     * Ouvre le modal en mode création.
-     * Réinitialise tous les champs avant d'ouvrir.
-     */
     public function openModal()
     {
         $this->resetFields();
@@ -85,19 +44,17 @@ class GestionTraducteurs extends Component
         $this->isEditing = false;
     }
 
-    /**
-     * Ferme le modal et réinitialise les champs.
-     */
     public function closeModal()
     {
         $this->showModal = false;
         $this->resetFields();
     }
 
-    /**
-     * Réinitialise tous les champs du formulaire
-     * et efface les erreurs de validation.
-     */
+    public function closeModalCompte()
+    {
+        $this->showModalCompte = false;
+    }
+
     public function resetFields()
     {
         $this->traducteur_id = null;
@@ -106,110 +63,128 @@ class GestionTraducteurs extends Component
         $this->telephone     = '';
         $this->email         = '';
         $this->langue        = '';
-        $this->resetErrorBag(); // Efface les messages d'erreur
+        $this->resetErrorBag();
     }
 
-    // =========================================================
-    // ACTIONS CRUD
-    // =========================================================
+    // ← Voir le compte d'un traducteur
+    public function voirCompte($id)
+    {
+        $traducteur = Traducteur::findOrFail($id);
+        $this->traducteur_reset_id  = $id;
+        $this->voir_compte_nom      = $traducteur->nom . ' ' . $traducteur->prenom;
+        $this->voir_compte_email    = $traducteur->email;
+        $this->nouveau_mot_de_passe = '';
+        $this->showModalVoirCompte  = true;
+    }
 
-    /**
-     * Charge les données d'un traducteur dans le formulaire
-     * et ouvre le modal en mode modification.
-     *
-     * @param int $id Identifiant du traducteur à modifier
-     */
+    public function closeModalVoirCompte()
+    {
+        $this->showModalVoirCompte  = false;
+        $this->traducteur_reset_id  = null;
+        $this->voir_compte_nom      = '';
+        $this->voir_compte_email    = '';
+        $this->nouveau_mot_de_passe = '';
+    }
+
+    // ← Réinitialiser le mot de passe
+    public function reinitialiserMotDePasse()
+    {
+        $traducteur = Traducteur::findOrFail($this->traducteur_reset_id);
+        $user = User::find($traducteur->user_id);
+
+        if (!$user) {
+            session()->flash('error', 'Aucun compte trouvé pour ce traducteur.');
+            $this->closeModalVoirCompte();
+            return;
+        }
+
+        $nouveau_mdp = substr(str_shuffle(
+            'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        ), 0, 8);
+
+        $user->update(['password' => Hash::make($nouveau_mdp)]);
+        $this->nouveau_mot_de_passe = $nouveau_mdp;
+    }
+
     public function modifier($id)
     {
-        // Récupère le traducteur (lève une erreur 404 si introuvable)
         $t = Traducteur::findOrFail($id);
-
-        // Charge les données dans le formulaire
         $this->traducteur_id = $t->id;
         $this->nom           = $t->nom;
         $this->prenom        = $t->prenom;
         $this->telephone     = $t->telephone;
         $this->email         = $t->email;
         $this->langue        = $t->langue;
-
-        // Active le mode modification et ouvre le modal
-        $this->isEditing = true;
-        $this->showModal = true;
+        $this->isEditing     = true;
+        $this->showModal     = true;
     }
 
-    /**
-     * Valide et sauvegarde le traducteur (création ou modification).
-     * 
-     * En création : insère un nouveau traducteur en base.
-     * En modification : met à jour le traducteur existant.
-     */
     public function sauvegarder()
     {
-        // Validation des champs du formulaire
         $this->validate([
             'nom'       => 'required|string|max:255',
             'prenom'    => 'required|string|max:255',
             'telephone' => 'required|string|max:20',
-            'email'     => 'nullable|email|max:255', // Email optionnel mais doit être valide
+            'email'     => $this->isEditing
+                ? 'nullable|email|max:255'
+                : 'required|email|max:255|unique:users,email',
             'langue'    => 'required|string|max:255',
         ]);
 
-        // Préparation des données à sauvegarder
         $data = [
             'nom'       => $this->nom,
             'prenom'    => $this->prenom,
             'telephone' => $this->telephone,
-            'email'     => $this->email ?: null, // Convertit chaîne vide en null
+            'email'     => $this->email ?: null,
             'langue'    => $this->langue,
         ];
 
         if ($this->isEditing) {
-            // Mode modification : mise à jour du traducteur existant
             Traducteur::findOrFail($this->traducteur_id)->update($data);
             session()->flash('success', 'Traducteur modifié avec succès.');
+            $this->closeModal();
         } else {
-            // Mode création : insertion d'un nouveau traducteur
-            Traducteur::create($data);
-            session()->flash('success', 'Traducteur créé avec succès.');
-        }
+            $password = substr(str_shuffle(
+                'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            ), 0, 8);
 
-        // Ferme le modal après sauvegarde
-        $this->closeModal();
+            $user = User::create([
+                'name'     => $this->nom . ' ' . $this->prenom,
+                'email'    => $this->email,
+                'password' => Hash::make($password),
+            ]);
+            $user->assignRole('traducteur');
+
+            $data['user_id'] = $user->id;
+            Traducteur::create($data);
+
+            $this->compte_email    = $this->email;
+            $this->compte_password = $password;
+            $this->showModalCompte = true;
+
+            $this->closeModal();
+        }
     }
 
-    /**
-     * Supprime un traducteur de la base de données.
-     * La confirmation est gérée côté vue avec wire:confirm.
-     *
-     * @param int $id Identifiant du traducteur à supprimer
-     */
     public function supprimer($id)
     {
-        Traducteur::findOrFail($id)->delete();
+        $traducteur = Traducteur::findOrFail($id);
+        if ($traducteur->user_id) {
+            User::find($traducteur->user_id)?->delete();
+        }
+        $traducteur->delete();
         session()->flash('success', 'Traducteur supprimé.');
     }
 
-    
-    // RENDU DU COMPOSANT
-    
-
-    /**
-     * Rendu du composant Livewire.
-     * 
-     * Charge les traducteurs avec filtre de recherche en temps réel.
-     * Utilise le layout admin principal.
-     */
     public function render()
     {
         return view('livewire.admin.gestion-traducteurs', [
-            // Charge les traducteurs avec filtre de recherche
             'traducteurs' => Traducteur::when($this->search, fn($q) =>
-                    // Recherche sur le nom, prénom ou la langue
                     $q->where('nom', 'like', '%'.$this->search.'%')
                       ->orWhere('prenom', 'like', '%'.$this->search.'%')
                       ->orWhere('langue', 'like', '%'.$this->search.'%')
                 )
-                ->latest() // Tri par date de création (plus récent en premier)
+                ->latest()
                 ->get(),
         ])->layout('layouts.admin', ['title' => 'Gestion des Traducteurs']);
     }

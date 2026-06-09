@@ -3,9 +3,11 @@
 use App\Livewire\Forms\LoginForm;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 use App\Models\Participant;
+use App\Models\User;
 
 new #[Layout('layouts.guest')] class extends Component
 {
@@ -38,11 +40,29 @@ new #[Layout('layouts.guest')] class extends Component
             return;
         }
 
-        $user = \App\Models\User::where('email', $participant->email)->first();
+        // ← Cherche le USER par email
+        $user = $participant->email
+            ? User::where('email', $participant->email)->first()
+            : null;
 
+        // ← Si pas de USER
         if (!$user) {
-            $this->erreur_code = 'Aucun compte associé à ce code. Contactez votre CDD.';
-            return;
+            if (!$participant->email) {
+                // ← Pas d'email → crée un email fictif
+                $emailFictif = 'participant_' . $participant->id . '@gesb2b.local';
+                $user = User::create([
+                    'name'     => $participant->nom . ' ' . $participant->prenom,
+                    'email'    => $emailFictif,
+                    'password' => Hash::make($participant->code_acces),
+                ]);
+                $user->assignRole('participant');
+
+                // ← Met à jour l'email du participant
+                $participant->update(['email' => $emailFictif]);
+            } else {
+                $this->erreur_code = 'Aucun compte associé à ce code. Contactez votre CDD.';
+                return;
+            }
         }
 
         Auth::login($user);
@@ -114,7 +134,7 @@ new #[Layout('layouts.guest')] class extends Component
     <div class="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div class="w-full max-w-md">
 
-            {{-- ← Bouton retour Welcome --}}
+            {{-- Bouton retour Welcome --}}
             <a href="{{ url('/') }}"
                 class="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 mb-6 transition group">
                 <div class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center group-hover:border-gray-300 transition">
