@@ -41,8 +41,7 @@
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Nom</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">IFU</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Secteur</th>
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Pays</th>
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Ville</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Pays / Ville</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Statut</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
@@ -50,7 +49,16 @@
             <tbody>
                 @forelse($entreprises as $entreprise)
                 <tr class="border-b hover:bg-gray-50 transition">
-                    <td class="px-6 py-4 font-semibold text-gray-800">{{ $entreprise->nom }}</td>
+
+                    {{-- Nom --}}
+                    <td class="px-6 py-4 font-semibold text-gray-800">
+                        {{ $entreprise->nom }}
+                        @if($entreprise->sous_secteur)
+                        <p class="text-xs text-gray-400 font-normal mt-0.5">{{ $entreprise->sous_secteur }}</p>
+                        @endif
+                    </td>
+
+                    {{-- IFU --}}
                     <td class="px-6 py-4">
                         @if($entreprise->ifu)
                         <span class="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg">
@@ -60,19 +68,23 @@
                         <span class="text-gray-300 text-xs">—</span>
                         @endif
                     </td>
+
+                    {{-- Secteur --}}
                     <td class="px-6 py-4">
                         <span class="text-xs px-3 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
                             {{ $entreprise->secteur_activite }}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-gray-600">
-                        <i class="fa-solid fa-flag text-gray-400 mr-1"></i>
-                        {{ $entreprise->pays }}
+
+                    {{-- Pays / Ville --}}
+                    <td class="px-6 py-4 text-gray-600 text-sm">
+                        <p><i class="fa-solid fa-flag text-gray-400 mr-1"></i>{{ $entreprise->pays }}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            <i class="fa-solid fa-location-dot text-gray-300 mr-1"></i>{{ $entreprise->ville }}
+                        </p>
                     </td>
-                    <td class="px-6 py-4 text-gray-600">
-                        <i class="fa-solid fa-location-dot text-gray-400 mr-1"></i>
-                        {{ $entreprise->ville }}
-                    </td>
+
+                    {{-- Statut --}}
                     <td class="px-6 py-4">
                         @if($entreprise->statut_validation == 'valide')
                             <span class="px-3 py-1 rounded-full text-xs text-white font-medium" style="background-color: #007A3D;">
@@ -88,6 +100,8 @@
                             </span>
                         @endif
                     </td>
+
+                    {{-- Actions --}}
                     <td class="px-6 py-4">
                         <div class="flex gap-2 flex-wrap">
                             @if($entreprise->statut_validation == 'en_attente')
@@ -103,19 +117,19 @@
                             @endif
                             <button wire:click="modifier({{ $entreprise->id }})"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-blue-600 transition hover:bg-blue-700 flex items-center gap-1">
-                                <i class="fa-solid fa-pen"></i> Modifier
+                                <i class="fa-solid fa-pen"></i>
                             </button>
                             <button wire:click="supprimer({{ $entreprise->id }})"
                                 wire:confirm="Voulez-vous vraiment supprimer cette entreprise ?"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-gray-500 transition hover:bg-gray-600 flex items-center gap-1">
-                                <i class="fa-solid fa-trash"></i> Supprimer
+                                <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="py-16 text-center text-gray-400">
+                    <td colspan="6" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-building text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucune entreprise pour le moment</p>
                         <button wire:click="openModal"
@@ -162,30 +176,32 @@
                         @enderror
                     </div>
 
-                    {{-- IFU --}}
+                    {{-- ← IFU obligatoire avec format --}}
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Numéro IFU
-                            <span class="text-gray-400 font-normal">(optionnel — unique par entreprise)</span>
+                            Numéro IFU *
                         </label>
                         <input wire:model="ifu" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm font-mono"
-                            placeholder="Ex: BF123456789">
+                            maxlength="9"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm font-mono uppercase"
+                            placeholder="Ex: 12345678A">
+                        <p class="text-xs text-gray-400 mt-1">
+                            <i class="fa-solid fa-circle-info mr-1"></i>
+                            Format : 8 chiffres suivis d'une lettre (ex: 12345678A)
+                        </p>
                         @error('ifu')
                             <span class="text-red-500 text-xs mt-1">
                                 <i class="fa-solid fa-circle-exclamation mr-1"></i>
                                 {{ $message }}
                             </span>
                         @enderror
-                        <p class="text-xs text-gray-400 mt-1">
-                            <i class="fa-solid fa-circle-info mr-1"></i>
-                            Les participants qui saisissent cet IFU seront automatiquement liés à cette entreprise.
-                        </p>
                     </div>
 
-                    {{-- Secteur --}}
+                    {{-- ← Secteur obligatoire --}}
                     <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Secteur d'activité *</label>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Secteur d'activité *
+                        </label>
                         <select wire:model="secteur_activite"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
                             <option value="">-- Choisir --</option>
@@ -198,20 +214,23 @@
                         @enderror
                     </div>
 
-                    {{-- Sous-secteur --}}
+                    {{-- ← Sous-secteur obligatoire --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Sous-secteur <span class="text-gray-400 font-normal">(optionnel)</span>
+                            Sous-secteur *
                         </label>
                         <input wire:model="sous_secteur" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: Céréales, BTP...">
+                        @error('sous_secteur')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
 
-                    {{-- Pays --}}
+                    {{-- ← Pays avec ville dynamique --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays *</label>
-                        <select wire:model="pays"
+                        <select wire:model.live="pays"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
                             <option value="">-- Choisir --</option>
                             @foreach($pays_liste as $p)
@@ -223,12 +242,22 @@
                         @enderror
                     </div>
 
-                    {{-- Ville --}}
+                    {{-- ← Ville dynamique --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville *</label>
+                        @if($pays && count($villesDisponibles) > 1)
+                        <select wire:model="ville"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                            <option value="">-- Choisir --</option>
+                            @foreach($villesDisponibles as $v)
+                            <option value="{{ $v }}">{{ $v }}</option>
+                            @endforeach
+                        </select>
+                        @else
                         <input wire:model="ville" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: Ouagadougou">
+                        @endif
                         @error('ville')
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror

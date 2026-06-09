@@ -16,59 +16,26 @@
     {{-- En-tête --}}
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
-            <h3 class="text-xl font-bold text-gray-700">Gestion des Accès</h3>
+            <h3 class="text-xl font-bold text-gray-700">Gestion des CDD</h3>
             <span class="text-sm px-3 py-1 rounded-full text-white font-medium"
-                style="background-color: #6b2d6b;">
-                {{ $utilisateurs->count() }} utilisateur(s)
+                style="background-color: #2d5a8e;">
+                {{ $cdds->count() }} CDD
             </span>
         </div>
         <button wire:click="openModal"
             class="px-5 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow"
             style="background-color: #C8102E;">
             <i class="fa-solid fa-plus"></i>
-            Nouvel accès
+            Nouveau CDD
         </button>
     </div>
 
     {{-- Info --}}
     <div class="bg-blue-50 border border-blue-200 rounded-xl px-6 py-4 mb-6 text-sm text-blue-700 flex items-start gap-2">
         <i class="fa-solid fa-circle-info mt-0.5"></i>
-        En tant que Superviseur, vous pouvez créer et gérer les accès pour les
-        <strong>CDD</strong>, les <strong>Entreprises</strong> et les <strong>Participants</strong>.
-    </div>
-
-    {{-- Statistiques --}}
-    <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow p-4 flex items-center gap-3 border-l-4"
-            style="border-color: #2d5a8e;">
-            <i class="fa-solid fa-user-tie text-xl" style="color: #2d5a8e;"></i>
-            <div>
-                <p class="text-xs text-gray-500">CDD</p>
-                <p class="font-bold text-gray-800 text-lg">
-                    {{ $utilisateurs->filter(fn($u) => $u->getRoleNames()->first() === 'cdd')->count() }}
-                </p>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-4 flex items-center gap-3 border-l-4"
-            style="border-color: #007A3D;">
-            <i class="fa-solid fa-building text-xl" style="color: #007A3D;"></i>
-            <div>
-                <p class="text-xs text-gray-500">Entreprises</p>
-                <p class="font-bold text-gray-800 text-lg">
-                    {{ $utilisateurs->filter(fn($u) => $u->getRoleNames()->first() === 'entreprise')->count() }}
-                </p>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl shadow p-4 flex items-center gap-3 border-l-4"
-            style="border-color: #8b5cf6;">
-            <i class="fa-solid fa-users text-xl" style="color: #8b5cf6;"></i>
-            <div>
-                <p class="text-xs text-gray-500">Participants</p>
-                <p class="font-bold text-gray-800 text-lg">
-                    {{ $utilisateurs->filter(fn($u) => $u->getRoleNames()->first() === 'participant')->count() }}
-                </p>
-            </div>
-        </div>
+        En tant que Superviseur, vous pouvez créer et gérer uniquement les comptes
+        <strong>Chef de Délégation (CDD)</strong>.
+        Les entreprises et participants s'inscrivent eux-mêmes sur la plateforme.
     </div>
 
     {{-- Recherche --}}
@@ -86,55 +53,53 @@
         <table class="w-full text-left">
             <thead style="background-color: #f8f9fa;">
                 <tr class="border-b">
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Utilisateur</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">CDD</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Email</th>
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Rôle</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Créé le</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($utilisateurs as $user)
-                @php
-                    $roleUser = $user->getRoleNames()->first() ?? 'aucun';
-                    $colors = [
-                        'cdd'         => '#2d5a8e',
-                        'entreprise'  => '#007A3D',
-                        'participant' => '#8b5cf6',
-                    ];
-                    $color = $colors[$roleUser] ?? '#6b7280';
-                @endphp
+                @forelse($cdds as $cdd)
                 <tr class="border-b hover:bg-gray-50 transition">
+
+                    {{-- Nom --}}
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                                style="background-color: {{ $color }}">
-                                {{ strtoupper(substr($user->name, 0, 1)) }}
+                                style="background-color: #2d5a8e;">
+                                {{ strtoupper(substr($cdd->name, 0, 1)) }}
                             </div>
-                            <p class="font-semibold text-gray-800">{{ $user->name }}</p>
+                            <div>
+                                <p class="font-semibold text-gray-800">{{ $cdd->name }}</p>
+                                <span class="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                                    style="background-color: #2d5a8e;">
+                                    CDD
+                                </span>
+                            </div>
                         </div>
                     </td>
+
+                    {{-- Email --}}
                     <td class="px-6 py-4 text-gray-600 text-sm">
                         <i class="fa-solid fa-envelope text-gray-400 mr-1"></i>
-                        {{ $user->email }}
+                        {{ $cdd->email }}
                     </td>
-                    <td class="px-6 py-4">
-                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium capitalize"
-                            style="background-color: {{ $color }}">
-                            {{ $roleUser }}
-                        </span>
-                    </td>
+
+                    {{-- Date --}}
                     <td class="px-6 py-4 text-gray-600 text-sm">
-                        {{ $user->created_at->format('d/m/Y') }}
+                        {{ $cdd->created_at->format('d/m/Y') }}
                     </td>
+
+                    {{-- Actions --}}
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
-                            <button wire:click="modifier({{ $user->id }})"
+                            <button wire:click="modifier({{ $cdd->id }})"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-blue-600 transition hover:bg-blue-700 flex items-center gap-1">
-                                <i class="fa-solid fa-pen"></i> Modifier
+                                <i class="fa-solid fa-pen"></i>
                             </button>
-                            <button wire:click="supprimer({{ $user->id }})"
-                                wire:confirm="Voulez-vous vraiment supprimer cet utilisateur ?"
+                            <button wire:click="supprimer({{ $cdd->id }})"
+                                wire:confirm="Voulez-vous vraiment supprimer ce CDD ?"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700 flex items-center gap-1">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
@@ -143,13 +108,13 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="py-16 text-center text-gray-400">
-                        <i class="fa-solid fa-users-gear text-5xl mb-3 block text-gray-300"></i>
-                        <p class="text-lg font-medium">Aucun utilisateur créé</p>
+                    <td colspan="4" class="py-16 text-center text-gray-400">
+                        <i class="fa-solid fa-user-tie text-5xl mb-3 block text-gray-300"></i>
+                        <p class="text-lg font-medium">Aucun CDD créé</p>
                         <button wire:click="openModal"
                             class="mt-3 px-5 py-2 rounded-xl text-white text-sm font-medium"
                             style="background-color: #C8102E;">
-                            Créer le premier accès
+                            Créer le premier CDD
                         </button>
                     </td>
                 </tr>
@@ -164,71 +129,49 @@
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
 
             <div class="flex justify-between items-center px-8 py-5 border-b"
-                style="background: linear-gradient(135deg, #4a1942, #6b2d6b);">
+                style="background: linear-gradient(135deg, #2d5a8e, #1e3f6e);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus"></i>
-                    {{ $isEditing ? 'Modifier l\'accès' : 'Nouvel accès' }}
+                    <i class="fa-solid fa-user-tie"></i>
+                    {{ $isEditing ? 'Modifier le CDD' : 'Nouveau CDD' }}
                 </h3>
                 <button wire:click="closeModal"
                     class="text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
 
             <div class="p-8">
-                <div class="grid grid-cols-1 gap-5">
+
+                {{-- Info --}}
+                @if(!$isEditing)
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-700 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-info mt-0.5"></i>
+                    Le compte créé aura automatiquement le rôle <strong>CDD</strong>.
+                    Incluez la région dans le nom pour identifier facilement le CDD.
+                    Ex: "CDD Bobo-Dioulasso"
+                </div>
+                @endif
+
+                <div class="space-y-5">
 
                     {{-- Nom --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom complet *</label>
                         <input wire:model="name" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
-                            placeholder="Ex: Jean Dupont">
-                        @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+                            placeholder="Ex: CDD Bobo-Dioulasso">
+                        @error('name')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
-
-                    @if($role === 'cdd')
-<p class="text-xs text-blue-600 mt-1 flex items-center gap-1">
-    <i class="fa-solid fa-circle-info"></i>
-    Pour un CDD, incluez la région dans le nom.
-    Ex: "CDD Bobo-Dioulasso", "CDD Ouagadougou"
-</p>
-@endif
 
                     {{-- Email --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Email *</label>
                         <input wire:model="email" type="email"
-    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
-    placeholder="Ex: jean@email.com">
-                        @error('email') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                    </div>
-
-                    {{-- Rôle --}}
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-2">Rôle *</label>
-                        <div class="grid grid-cols-3 gap-3">
-                            <button type="button"
-                                wire:click="$set('role', 'cdd')"
-                                class="border rounded-xl p-3 transition text-center
-                                    {{ $role === 'cdd' ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:bg-gray-50' }}">
-                                <div class="w-3 h-3 rounded-full mx-auto mb-1" style="background-color: #2d5a8e;"></div>
-                                <span class="text-sm font-medium text-gray-700">CDD</span>
-                            </button>
-                            <button type="button"
-                                wire:click="$set('role', 'entreprise')"
-                                class="border rounded-xl p-3 transition text-center
-                                    {{ $role === 'entreprise' ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:bg-gray-50' }}">
-                                <div class="w-3 h-3 rounded-full mx-auto mb-1" style="background-color: #007A3D;"></div>
-                                <span class="text-sm font-medium text-gray-700">Entreprise</span>
-                            </button>
-                            <button type="button"
-                                wire:click="$set('role', 'participant')"
-                                class="border rounded-xl p-3 transition text-center
-                                    {{ $role === 'participant' ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:bg-gray-50' }}">
-                                <div class="w-3 h-3 rounded-full mx-auto mb-1" style="background-color: #8b5cf6;"></div>
-                                <span class="text-sm font-medium text-gray-700">Participant</span>
-                            </button>
-                        </div>
-                        @error('role') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+                            placeholder="Ex: cdd.bobo@ccibf.bf">
+                        @error('email')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     {{-- Mot de passe (création seulement) --}}
@@ -236,14 +179,16 @@
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Mot de passe *</label>
                         <input wire:model="password" type="password"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
                             placeholder="Minimum 8 caractères">
-                        @error('password') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('password')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Confirmer *</label>
                         <input wire:model="password_confirmation" type="password"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
                             placeholder="Répéter le mot de passe">
                     </div>
                     @endif
@@ -256,10 +201,18 @@
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="sauvegarder"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
-                        style="background-color: #C8102E;">
-                        <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
-                        {{ $isEditing ? 'Modifier' : 'Créer l\'accès' }}
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
+                        style="background-color: #2d5a8e;">
+                        <span wire:loading.remove>
+                            <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
+                            {{ $isEditing ? 'Modifier' : 'Créer le CDD' }}
+                        </span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            Création...
+                        </span>
                     </button>
                 </div>
             </div>
@@ -272,101 +225,58 @@
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
 
-            {{-- Header --}}
             <div class="px-8 py-5 rounded-t-2xl text-white text-center"
-                style="background: linear-gradient(135deg, #007A3D, #005a2d);">
+                style="background: linear-gradient(135deg, #2d5a8e, #1e3f6e);">
                 <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
                     style="background-color: rgba(255,255,255,0.2);">
-                    <i class="fa-solid fa-circle-check text-4xl text-white"></i>
+                    <i class="fa-solid fa-user-tie text-4xl text-white"></i>
                 </div>
-                <h3 class="text-xl font-bold">Compte créé avec succès !</h3>
-                <p class="text-green-200 text-sm mt-1">
-                    Communiquez ces informations à l'utilisateur
+                <h3 class="text-xl font-bold">CDD créé avec succès !</h3>
+                <p class="text-blue-200 text-sm mt-1">
+                    Communiquez ces informations au CDD
                 </p>
             </div>
 
-            {{-- Corps --}}
             <div class="p-8">
 
-                {{-- Avertissement --}}
                 <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-5 text-xs text-yellow-700 flex items-start gap-2">
                     <i class="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0"></i>
-                    <span>
-                        Ces informations ne seront plus affichées après fermeture.
-                        Notez-les ou envoyez-les maintenant à l'utilisateur.
-                    </span>
+                    Ces informations ne seront plus affichées après fermeture.
+                    Notez-les ou envoyez-les maintenant au CDD.
                 </div>
 
-                {{-- Infos --}}
                 <div class="space-y-3">
 
-                    {{-- Nom --}}
                     <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                         <span class="text-sm text-gray-500 flex items-center gap-2">
-                            <i class="fa-solid fa-user text-gray-400"></i>
-                            Nom
+                            <i class="fa-solid fa-user text-gray-400"></i> Nom
                         </span>
-                        <span class="font-semibold text-gray-800">
-                            {{ $identifiants['name'] ?? '' }}
-                        </span>
+                        <span class="font-semibold text-gray-800">{{ $identifiants['name'] ?? '' }}</span>
                     </div>
 
-                    {{-- Rôle --}}
-                    @php
-                    $colors = [
-                        'cdd'         => '#2d5a8e',
-                        'entreprise'  => '#007A3D',
-                        'participant' => '#8b5cf6',
-                    ];
-                    $color = $colors[$identifiants['role'] ?? ''] ?? '#6b7280';
-                    @endphp
                     <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                         <span class="text-sm text-gray-500 flex items-center gap-2">
-                            <i class="fa-solid fa-shield text-gray-400"></i>
-                            Rôle
+                            <i class="fa-solid fa-envelope text-gray-400"></i> Email
                         </span>
-                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium capitalize"
-                            style="background-color: {{ $color }}">
-                            {{ $identifiants['role'] ?? '' }}
-                        </span>
+                        <span class="font-semibold text-gray-800 text-sm">{{ $identifiants['email'] ?? '' }}</span>
                     </div>
 
-                    {{-- Email --}}
-                    <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
-                        <span class="text-sm text-gray-500 flex items-center gap-2">
-                            <i class="fa-solid fa-envelope text-gray-400"></i>
-                            Email
-                        </span>
-                        <span class="font-semibold text-gray-800 text-sm">
-                            {{ $identifiants['email'] ?? '' }}
-                        </span>
-                    </div>
-
-                    {{-- Mot de passe --}}
                     <div class="flex items-center justify-between bg-red-50 rounded-xl px-4 py-3 border border-red-200">
                         <span class="text-sm text-red-500 flex items-center gap-2">
-                            <i class="fa-solid fa-key text-red-400"></i>
-                            Mot de passe
+                            <i class="fa-solid fa-key text-red-400"></i> Mot de passe
                         </span>
-                        <span class="font-bold text-red-700 font-mono">
-                            {{ $identifiants['password'] ?? '' }}
-                        </span>
+                        <span class="font-bold text-red-700 font-mono">{{ $identifiants['password'] ?? '' }}</span>
                     </div>
 
-                    {{-- Lien connexion --}}
                     <div class="flex items-center justify-between bg-blue-50 rounded-xl px-4 py-3">
                         <span class="text-sm text-blue-500 flex items-center gap-2">
-                            <i class="fa-solid fa-link text-blue-400"></i>
-                            Lien
+                            <i class="fa-solid fa-link text-blue-400"></i> Lien
                         </span>
-                        <span class="font-semibold text-blue-700 text-xs">
-                            {{ url('/login') }}
-                        </span>
+                        <span class="font-semibold text-blue-700 text-xs">{{ url('/login') }}</span>
                     </div>
 
                 </div>
 
-                {{-- Boutons --}}
                 <div class="flex gap-3 mt-6">
                     <button
                         onclick="
@@ -384,11 +294,10 @@
                     </button>
                     <button wire:click="closeIdentifiantsModal"
                         class="flex-1 px-4 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm flex items-center justify-center gap-1"
-                        style="background-color: #C8102E;">
+                        style="background-color: #2d5a8e;">
                         <i class="fa-solid fa-check mr-1"></i> J'ai noté
                     </button>
                 </div>
-
             </div>
         </div>
     </div>

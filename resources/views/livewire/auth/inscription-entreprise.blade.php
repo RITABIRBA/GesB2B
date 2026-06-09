@@ -76,7 +76,6 @@
                     </h3>
                     <div class="grid grid-cols-2 gap-3">
 
-                        {{-- Nom responsable --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
                             <input wire:model="nom_responsable" type="text"
@@ -87,7 +86,6 @@
                             @enderror
                         </div>
 
-                        {{-- Prénom responsable --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
                             <input wire:model="prenom_responsable" type="text"
@@ -98,15 +96,34 @@
                             @enderror
                         </div>
 
-                        {{-- Fonction responsable --}}
+                        {{-- ← Fonction obligatoire avec liste --}}
                         <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Fonction / Poste
-                                <span class="text-gray-400 font-normal">(optionnel)</span>
+                                Fonction / Poste *
                             </label>
+                            <div class="flex gap-2">
+                                <select wire:model="fonction_responsable"
+                                    class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm">
+                                    <option value="">-- Choisir --</option>
+                                    <option>Directeur Général</option>
+                                    <option>Directeur Commercial</option>
+                                    <option>PDG</option>
+                                    <option>Gérant</option>
+                                    <option>Responsable Export</option>
+                                    <option>Responsable Partenariats</option>
+                                    <option>Chargé de Développement</option>
+                                    <option>Représentant</option>
+                                    <option>Autre</option>
+                                </select>
+                            </div>
+                            @if($fonction_responsable == 'Autre')
                             <input wire:model="fonction_responsable" type="text"
-                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                                placeholder="Ex: Directeur Général, PDG, Gérant...">
+                                class="w-full mt-2 border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                                placeholder="Précisez votre fonction...">
+                            @endif
+                            @error('fonction_responsable')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
                         </div>
 
                     </div>
@@ -131,19 +148,23 @@
                             @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        {{-- IFU --}}
+                        {{-- ← IFU obligatoire avec format --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Numéro IFU
-                                <span class="text-gray-400 font-normal">(optionnel — unique)</span>
+                                Numéro IFU *
                             </label>
                             <input wire:model="ifu" type="text"
-                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm font-mono"
-                                placeholder="Ex: BF123456789">
+                                maxlength="9"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm font-mono uppercase"
+                                placeholder="Ex: 12345678A">
+                            <p class="text-xs text-gray-400 mt-1">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                Format : 8 chiffres suivis d'une lettre (ex: 12345678A)
+                            </p>
                             @error('ifu') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        {{-- Secteur --}}
+                        {{-- ← Secteur obligatoire --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Secteur d'activité *
@@ -158,15 +179,15 @@
                             @error('secteur_activite') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        {{-- Sous-secteur --}}
+                        {{-- ← Sous-secteur obligatoire --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Sous-secteur
-                                <span class="text-gray-400 font-normal">(optionnel)</span>
+                                Sous-secteur *
                             </label>
                             <input wire:model="sous_secteur" type="text"
                                 class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                                 placeholder="Ex: Informatique, Agro-alimentaire...">
+                            @error('sous_secteur') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         {{-- Description --}}
@@ -191,11 +212,11 @@
                                 placeholder="Ex: Logiciels de gestion..."></textarea>
                         </div>
 
-                        {{-- Pays et Ville --}}
+                        {{-- ← Pays + Ville dynamique --}}
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
-                                <select wire:model="pays"
+                                <select wire:model.live="pays"
                                     class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
                                     <option value="">-- Choisir --</option>
                                     @foreach($pays_liste as $p)
@@ -206,9 +227,20 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Ville *</label>
+                                {{-- ← Ville dynamique selon pays --}}
+                                @if($pays && count($villesDisponibles) > 1)
+                                <select wire:model="ville"
+                                    class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                                    <option value="">-- Choisir --</option>
+                                    @foreach($villesDisponibles as $v)
+                                    <option value="{{ $v }}">{{ $v }}</option>
+                                    @endforeach
+                                </select>
+                                @else
                                 <input wire:model="ville" type="text"
                                     class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                    placeholder="Ex: Ouagadougou">
+                                    placeholder="Votre ville">
+                                @endif
                                 @error('ville') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                         </div>
@@ -235,22 +267,26 @@
                     </h3>
                     <div class="space-y-4">
 
-                        {{-- CDD --}}
+                        {{-- ← CDD optionnel --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Chef de Délégation (CDD) *
+                                Chef de Délégation (CDD)
+                                <span class="text-gray-400 font-normal">(optionnel)</span>
                             </label>
                             <select wire:model="id_cdd"
                                 class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-                                <option value="">-- Choisir votre CDD --</option>
+                                <option value="">-- Aucun CDD --</option>
                                 @foreach($cdds as $cdd)
                                 <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
                                 @endforeach
                             </select>
-                            @error('id_cdd') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            <p class="text-xs text-gray-400 mt-1">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                Le CDD n'est pas obligatoire pour s'inscrire.
+                            </p>
                         </div>
 
-                        {{-- Email --}}
+                        {{-- ← Email obligatoire --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                             <input wire:model="email" type="email"
@@ -259,7 +295,6 @@
                             @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        {{-- Mot de passe --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
                             <input wire:model="password" type="password"
@@ -281,8 +316,7 @@
                 {{-- Info --}}
                 <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-start gap-2">
                     <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
-                    Votre entreprise sera soumise à validation par un
-                    <strong>Chef de Délégation (CDD)</strong> avant d'être visible.
+                    Votre entreprise sera soumise à validation par l'administration avant d'être active.
                 </div>
 
                 {{-- Bouton --}}
@@ -301,19 +335,11 @@
                     </span>
                 </button>
 
-                {{-- Liens --}}
                 <p class="text-center text-sm text-gray-500">
                     Déjà inscrit ?
                     <a href="{{ route('login') }}" class="font-medium hover:underline"
                         style="color: #007A3D;">
                         Se connecter
-                    </a>
-                </p>
-                <p class="text-center text-sm text-gray-500">
-                    Vous êtes un participant ?
-                    <a href="{{ route('inscription.participant') }}" class="font-medium hover:underline"
-                        style="color: #C8102E;">
-                        S'inscrire comme participant
                     </a>
                 </p>
 
@@ -331,7 +357,6 @@
             </div>
             <h3 class="text-xl font-bold text-gray-800 mb-2">Entreprise inscrite !</h3>
 
-            {{-- Infos responsable --}}
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700 mb-4 text-left">
                 <p class="font-semibold mb-1">
                     <i class="fa-solid fa-user-tie mr-1"></i>
@@ -346,14 +371,14 @@
             </div>
 
             <p class="text-gray-500 text-sm mb-6">
-                Votre entreprise est en attente de validation par un CDD.
+                Votre entreprise est en attente de validation.
             </p>
 
             <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-700 mb-6 text-left">
                 <p class="font-semibold mb-1">Prochaines étapes :</p>
                 <ol class="space-y-1 text-xs">
                     <li>1. Connectez-vous avec votre email et mot de passe</li>
-                    <li>2. Attendez la validation de votre CDD</li>
+                    <li>2. Attendez la validation de l'administration</li>
                     <li>3. Ajoutez vos participants</li>
                     <li>4. Émettez vos souhaits de RDV</li>
                 </ol>

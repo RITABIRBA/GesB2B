@@ -19,6 +19,17 @@ class Participant extends Model
         'fonction',
         'participation_rdv',
         'secteur_activite',
+        'sous_secteur',           // ← nouveau
+        'description_activites',  // ← nouveau
+        'principaux_produits',    // ← nouveau
+        'annee_creation',         // ← nouveau
+        'nombre_salaries',        // ← nouveau
+        'chiffre_affaires',       // ← nouveau
+        'type_partenaire',        // ← nouveau
+        'zone_geographique',      // ← nouveau
+        'disponibilites',         // ← nouveau
+        'pays',                   // ← nouveau
+        'ville',                  // ← nouveau
         'email',
         'telephone',
         'code_acces',
@@ -76,7 +87,6 @@ class Participant extends Model
         return $this->hasMany(Inscription::class, 'id_participant');
     }
 
-    // ← Relations RDV renommées pour correspondre au code
     public function rendezVous1()
     {
         return $this->hasMany(RendezVous::class, 'id_participant1');
@@ -87,7 +97,6 @@ class Participant extends Model
         return $this->hasMany(RendezVous::class, 'id_participant2');
     }
 
-    // ← Garde les anciennes pour compatibilité
     public function rendezVous()
     {
         return $this->hasMany(RendezVous::class, 'id_participant1');

@@ -4,26 +4,22 @@ namespace App\Livewire\Superviseur;
 
 use Livewire\Component;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
 
 class GestionCdd extends Component
 {
     public $user_id;
-    public $name = '';
-    public $email = '';
+    public $name     = '';
+    public $email    = '';
     public $password = '';
     public $password_confirmation = '';
-    public $role = 'cdd';
-    public $showModal = false;
-    public $isEditing = false;
-    public $search = '';
+    public $showModal  = false;
+    public $isEditing  = false;
+    public $search     = '';
 
     // Modal identifiants après création
     public $showIdentifiantsModal = false;
-    public $identifiants = [];
-
-    public $roles_autorises = ['cdd', 'entreprise', 'participant'];
+    public $identifiants          = [];
 
     public function openModal()
     {
@@ -41,7 +37,7 @@ class GestionCdd extends Component
     public function closeIdentifiantsModal()
     {
         $this->showIdentifiantsModal = false;
-        $this->identifiants = [];
+        $this->identifiants          = [];
     }
 
     public function resetFields()
@@ -51,7 +47,6 @@ class GestionCdd extends Component
         $this->email                 = '';
         $this->password              = '';
         $this->password_confirmation = '';
-        $this->role                  = 'cdd';
         $this->resetErrorBag();
     }
 
@@ -61,7 +56,6 @@ class GestionCdd extends Component
         $this->user_id   = $user->id;
         $this->name      = $user->name;
         $this->email     = $user->email;
-        $this->role      = $user->getRoleNames()->first() ?? 'cdd';
         $this->isEditing = true;
         $this->showModal = true;
     }
@@ -72,16 +66,14 @@ class GestionCdd extends Component
             $this->validate([
                 'name'  => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email,'.$this->user_id,
-                'role'  => 'required|in:cdd,entreprise,participant',
             ]);
 
-            $user = User::findOrFail($this->user_id);
-            $user->update([
+            User::findOrFail($this->user_id)->update([
                 'name'  => $this->name,
                 'email' => $this->email,
             ]);
-            $user->syncRoles([$this->role]);
-            session()->flash('success', 'Utilisateur modifié avec succès.');
+
+            session()->flash('success', 'CDD modifié avec succès.');
             $this->closeModal();
 
         } else {
@@ -89,22 +81,21 @@ class GestionCdd extends Component
                 'name'     => 'required|string|max:255',
                 'email'    => 'required|email|unique:users,email',
                 'password' => 'required|min:8|confirmed',
-                'role'     => 'required|in:cdd,entreprise,participant',
             ]);
 
+            // ← Crée uniquement un compte CDD
             $user = User::create([
                 'name'     => $this->name,
                 'email'    => $this->email,
                 'password' => Hash::make($this->password),
             ]);
-            $user->assignRole($this->role);
+            $user->assignRole('cdd'); // ← Toujours CDD
 
-            // Stocke les identifiants pour les afficher
+            // ← Affiche les identifiants
             $this->identifiants = [
                 'name'     => $this->name,
                 'email'    => $this->email,
                 'password' => $this->password,
-                'role'     => $this->role,
             ];
 
             $this->closeModal();
@@ -115,23 +106,24 @@ class GestionCdd extends Component
     public function supprimer($id)
     {
         $user = User::findOrFail($id);
-        $role = $user->getRoleNames()->first();
 
-        if (!in_array($role, ['cdd', 'entreprise', 'participant'])) {
-            session()->flash('error', 'Vous n\'avez pas le droit de supprimer cet utilisateur.');
+        // ← Vérifie que c'est bien un CDD
+        if (!$user->hasRole('cdd')) {
+            session()->flash('error', 'Vous ne pouvez supprimer que des comptes CDD.');
             return;
         }
 
         $user->delete();
-        session()->flash('success', 'Utilisateur supprimé.');
+        session()->flash('success', 'CDD supprimé.');
     }
 
     public function render()
     {
         return view('livewire.superviseur.gestion-cdd', [
-            'utilisateurs' => User::with('roles')
+            // ← Affiche uniquement les CDD
+            'cdds' => User::with('roles')
                 ->whereHas('roles', fn($q) =>
-                    $q->whereIn('name', ['cdd', 'entreprise', 'participant'])
+                    $q->where('name', 'cdd')
                 )
                 ->when($this->search, fn($q) =>
                     $q->where('name', 'like', '%'.$this->search.'%')
@@ -139,6 +131,6 @@ class GestionCdd extends Component
                 )
                 ->latest()
                 ->get(),
-        ])->layout('layouts.superviseur', ['title' => 'Gestion des Accès']);
+        ])->layout('layouts.superviseur', ['title' => 'Gestion des CDD']);
     }
 }

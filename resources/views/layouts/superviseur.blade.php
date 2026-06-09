@@ -39,7 +39,7 @@
                 ['route' => 'superviseur.paiements',    'icon' => 'fa-money-bill',      'label' => 'Paiements'],
                 ['route' => 'superviseur.rendez-vous',  'icon' => 'fa-handshake',       'label' => 'Rendez-vous'],
                 ['route' => 'superviseur.badges',       'icon' => 'fa-id-badge',        'label' => 'Badges'],
-                ['route' => 'superviseur.gestion-acces','icon' => 'fa-users-gear',      'label' => 'Gestion des Accès'],
+                ['route' => 'superviseur.gestion-acces','icon' => 'fa-users-gear',      'label' => 'Gestion des CDD'],
             ];
             @endphp
 

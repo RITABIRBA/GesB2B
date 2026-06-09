@@ -93,6 +93,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/badge',       \App\Livewire\Participant\MonBadge::class)->name('participant.badge');
         Route::get('/catalogue',   \App\Livewire\Participant\Catalogue::class)->name('participant.catalogue');
         Route::get('/planning',    \App\Livewire\Participant\MonPlanning::class)->name('participant.planning');
+        Route::get('/inscription/{evenement}', \App\Livewire\Participant\InscriptionWizard::class)->name('participant.inscription.wizard');
     });
 
     // ROUTES TRADUCTEUR

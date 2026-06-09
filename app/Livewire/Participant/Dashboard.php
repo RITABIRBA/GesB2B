@@ -8,13 +8,13 @@ use App\Models\Souhait;
 use App\Models\RendezVous;
 use App\Models\Badge;
 use App\Models\Inscription;
+use App\Models\Evenement;
 
 class Dashboard extends Component
 {
     public function render()
     {
-        // Liaison par email
-        $participant = Participant::where('email', auth()->user()->email)->first();
+        $participant = Participant::findForUser(auth()->user());
 
         $totalSouhaits = $participant
             ? Souhait::where('id_participant', $participant->id)->count()
@@ -31,7 +31,7 @@ class Dashboard extends Component
             : null;
 
         $prochainRdv = $participant
-            ? RendezVous::with(['participant1', 'participant2', 'stand'])
+            ? RendezVous::with(['participant1', 'participant2'])
                 ->where('statut', 'planifie')
                 ->where(function($q) use ($participant) {
                     $q->where('id_participant1', $participant->id)
@@ -43,7 +43,31 @@ class Dashboard extends Component
                 ->get()
             : collect();
 
-        // Notifications — inscriptions validées par CDD
+        $today = now()->toDateString();
+
+        // ← Événements disponibles pour inscription
+        $evenementsDisponibles = Evenement::where('date_fin', '>=', $today)
+            ->where(fn($q) =>
+                $q->whereNull('date_ouverture_inscriptions')
+                  ->orWhere('date_ouverture_inscriptions', '<=', $today)
+            )
+            ->where(fn($q) =>
+                $q->whereNull('date_cloture_inscriptions')
+                  ->orWhere('date_cloture_inscriptions', '>=', $today)
+            )
+            ->orderBy('date_debut')
+            ->get()
+            ->map(function($evenement) use ($participant) {
+                // ← Vérifie si le participant est déjà inscrit
+                $evenement->deja_inscrit = $participant
+                    ? Inscription::where('id_participant', $participant->id)
+                        ->where('id_evenement', $evenement->id)
+                        ->exists()
+                    : false;
+                return $evenement;
+            });
+
+        // Inscriptions validées en attente de paiement
         $inscriptionsValidees = $participant
             ? Inscription::with('evenement')
                 ->where('id_participant', $participant->id)
@@ -53,7 +77,7 @@ class Dashboard extends Component
                 ->get()
             : collect();
 
-        // Inscriptions dont le paiement a été validé
+        // Paiements validés
         $paiementsValides = $participant
             ? Inscription::with(['evenement', 'paiement'])
                 ->where('id_participant', $participant->id)
@@ -62,13 +86,14 @@ class Dashboard extends Component
             : collect();
 
         return view('livewire.participant.dashboard', [
-            'participant'          => $participant,
-            'totalSouhaits'        => $totalSouhaits,
-            'totalRdv'             => $totalRdv,
-            'badge'                => $badge,
-            'prochainRdv'          => $prochainRdv,
-            'inscriptionsValidees' => $inscriptionsValidees,
-            'paiementsValides'     => $paiementsValides,
+            'participant'            => $participant,
+            'totalSouhaits'          => $totalSouhaits,
+            'totalRdv'               => $totalRdv,
+            'badge'                  => $badge,
+            'prochainRdv'            => $prochainRdv,
+            'evenementsDisponibles'  => $evenementsDisponibles,
+            'inscriptionsValidees'   => $inscriptionsValidees,
+            'paiementsValides'       => $paiementsValides,
         ])->layout('layouts.participant', ['title' => 'Mon Dashboard']);
     }
 }

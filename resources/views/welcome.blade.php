@@ -111,15 +111,6 @@
         .delay-1 { animation-delay: 0.2s; opacity: 0; }
         .delay-2 { animation-delay: 0.4s; opacity: 0; }
         .delay-3 { animation-delay: 0.6s; opacity: 0; }
-        .role-card {
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-        .role-card:hover {
-            border-color: #007A3D;
-            transform: translateY(-4px);
-            box-shadow: 0 15px 30px rgba(0,122,61,0.1);
-        }
         .section-tag {
             display: inline-block;
             padding: 6px 18px;
@@ -159,10 +150,10 @@
                     <i class="fa-solid fa-gauge text-xs"></i> Mon espace
                 </a>
                 @else
-                <a href="{{ route('inscription.participant') }}"
+                <a href="{{ route('inscription.entreprise') }}"
                     class="px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 border-2"
                     style="color: #007A3D; border-color: #007A3D;">
-                    <i class="fa-solid fa-user-plus text-xs"></i> S'inscrire
+                    <i class="fa-solid fa-building text-xs"></i> Inscrire mon entreprise
                 </a>
                 <a href="{{ route('login') }}"
                     class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 flex items-center gap-2"
@@ -213,7 +204,7 @@
                     </div>
                 </div>
 
-                {{-- ← 4 cartes valeurs au lieu des stats --}}
+                {{-- 4 cartes valeurs --}}
                 <div class="grid grid-cols-2 gap-5 fade-up delay-1">
 
                     <div class="glass rounded-2xl p-7 value-card float">
@@ -286,11 +277,11 @@
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
                     @php
                     $etapes = [
-                        ['num' => '01', 'icon' => 'fa-user-plus',      'color' => '#007A3D', 'label' => 'Préinscription',  'desc' => "Le participant s'inscrit en ligne et choisit son chef de délégation"],
-                        ['num' => '02', 'icon' => 'fa-user-check',     'color' => '#2d5a8e', 'label' => 'Validation CDD',  'desc' => 'Le chef de délégation valide les informations du participant'],
-                        ['num' => '03', 'icon' => 'fa-credit-card',    'color' => '#C8102E', 'label' => 'Paiement',        'desc' => 'Paiement sécurisé via Orange Money, Moov Money ou carte bancaire'],
-                        ['num' => '04', 'icon' => 'fa-heart',          'color' => '#8b5cf6', 'label' => 'Souhaits RDV',    'desc' => 'Le participant émet ses souhaits de rencontre par ordre de priorité'],
-                        ['num' => '05', 'icon' => 'fa-calendar-check', 'color' => '#007A3D', 'label' => 'Planning généré', 'desc' => 'Le système génère automatiquement le planning optimisé des RDV'],
+                        ['num' => '01', 'icon' => 'fa-building',       'color' => '#007A3D', 'label' => 'Inscription entreprise', 'desc' => "L'entreprise s'inscrit et renseigne son profil complet sur la plateforme"],
+                        ['num' => '02', 'icon' => 'fa-user-check',     'color' => '#2d5a8e', 'label' => 'Validation CDD',         'desc' => 'Le chef de délégation valide les informations de l\'entreprise'],
+                        ['num' => '03', 'icon' => 'fa-credit-card',    'color' => '#C8102E', 'label' => 'Paiement',               'desc' => 'Paiement sécurisé via Orange Money, Moov Money ou carte bancaire'],
+                        ['num' => '04', 'icon' => 'fa-heart',          'color' => '#8b5cf6', 'label' => 'Souhaits RDV',           'desc' => 'Les participants émettent leurs souhaits de rencontre par priorité'],
+                        ['num' => '05', 'icon' => 'fa-calendar-check', 'color' => '#007A3D', 'label' => 'Planning généré',        'desc' => 'Le système génère automatiquement le planning optimisé des RDV'],
                     ];
                     @endphp
                     @foreach($etapes as $etape)
@@ -346,42 +337,6 @@
         </div>
     </section>
 
-    {{-- RÔLES --}}
-    <section class="py-24 bg-white">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <div class="section-tag text-white" style="background-color: #C8102E;">Les acteurs</div>
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">Un espace pour chaque acteur</h2>
-                <div class="divider mx-auto mb-4"></div>
-                <p class="text-gray-500 text-lg max-w-xl mx-auto">
-                    Chaque utilisateur accède à un espace personnalisé adapté à son rôle dans le forum
-                </p>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                @php
-                $roles = [
-                    ['label' => 'Administrateur', 'icon' => 'fa-shield-halved', 'color' => '#C8102E', 'desc' => 'Gestion complète'],
-                    ['label' => 'Superviseur',    'icon' => 'fa-eye',           'color' => '#2d5a8e', 'desc' => 'Vue globale'],
-                    ['label' => 'CDD',            'icon' => 'fa-user-tie',      'color' => '#007A3D', 'desc' => 'Sa délégation'],
-                    ['label' => 'Entreprise',     'icon' => 'fa-building',      'color' => '#8b5cf6', 'desc' => 'Ses participants'],
-                    ['label' => 'Participant',    'icon' => 'fa-user',          'color' => '#007A3D', 'desc' => 'Ses rendez-vous'],
-                    ['label' => 'Traducteur',     'icon' => 'fa-language',      'color' => '#C8102E', 'desc' => 'Ses missions'],
-                ];
-                @endphp
-                @foreach($roles as $role)
-                <div class="role-card bg-gray-50 rounded-2xl p-6 text-center cursor-default">
-                    <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl mx-auto mb-4"
-                        style="background-color: {{ $role['color'] }}">
-                        <i class="fa-solid {{ $role['icon'] }}"></i>
-                    </div>
-                    <h4 class="font-bold text-gray-900 text-sm mb-1">{{ $role['label'] }}</h4>
-                    <p class="text-gray-400 text-xs">{{ $role['desc'] }}</p>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
     {{-- CTA FINAL --}}
     <section class="py-24 relative overflow-hidden"
         style="background: linear-gradient(135deg, #007A3D 0%, #004d27 50%, #007A3D 100%);">
@@ -411,11 +366,11 @@
                     <i class="fa-solid fa-right-to-bracket"></i>
                     Se connecter
                 </a>
-                <a href="{{ route('inscription.participant') }}"
+                <a href="{{ route('inscription.entreprise') }}"
                     class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
                     style="color: #007A3D;">
-                    <i class="fa-solid fa-user-plus"></i>
-                    S'inscrire
+                    <i class="fa-solid fa-building"></i>
+                    Inscrire mon entreprise
                 </a>
                 @endauth
             </div>
