@@ -33,7 +33,7 @@
         </div>
     </div>
 
-    {{-- Tableau avec scroll horizontal --}}
+    {{-- Tableau --}}
     <div class="bg-white rounded-xl shadow overflow-x-auto">
         <table class="w-full text-left" style="min-width: 900px;">
             <thead style="background-color: #f8f9fa;">
@@ -42,9 +42,10 @@
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Lieu</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Dates</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Inscriptions</th>
-                    <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Paiement & Montant</th>
+                    <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Paiement</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Salle RDV</th>
-                    <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Prix stands</th>
+                    {{-- ← Nouvelle colonne souhaits --}}
+                    <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Souhaits</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
             </thead>
@@ -52,7 +53,6 @@
                 @forelse($evenements as $evenement)
                 <tr class="border-b hover:bg-gray-50 transition">
 
-                    {{-- Nom & Type --}}
                     <td class="px-4 py-4">
                         <p class="font-bold text-gray-800 text-sm">{{ $evenement->nom }}</p>
                         <span class="text-xs px-2 py-0.5 rounded-full font-medium text-white mt-1 inline-block"
@@ -62,7 +62,6 @@
                         <p class="text-xs text-gray-400 mt-0.5">{{ $evenement->annee }}</p>
                     </td>
 
-                    {{-- Lieu & Ville --}}
                     <td class="px-4 py-4 text-sm">
                         <p class="text-gray-700 font-medium">
                             <i class="fa-solid fa-location-dot text-gray-400 mr-1"></i>
@@ -71,7 +70,6 @@
                         <p class="text-xs text-gray-400 mt-0.5">{{ $evenement->lieu }}</p>
                     </td>
 
-                    {{-- Dates --}}
                     <td class="px-4 py-4 text-xs">
                         <p class="text-gray-600">
                             <i class="fa-solid fa-calendar-plus text-green-500 mr-1"></i>
@@ -87,7 +85,6 @@
                         </p>
                     </td>
 
-                    {{-- Inscriptions --}}
                     <td class="px-4 py-4 text-xs">
                         @if($evenement->date_ouverture_inscriptions)
                         <p class="text-green-600">
@@ -123,7 +120,6 @@
                         @endif
                     </td>
 
-                    {{-- Paiement & Montant --}}
                     <td class="px-4 py-4">
                         @if($evenement->type_paiement == 'gratuit')
                         <span class="text-xs px-2 py-0.5 rounded-full font-medium text-white bg-green-500 block w-fit">
@@ -145,7 +141,6 @@
                         @endif
                     </td>
 
-                    {{-- ← Salle RDV --}}
                     <td class="px-4 py-4 text-xs">
                         @if($evenement->nom_salle)
                         <p class="text-gray-700 font-medium">
@@ -161,33 +156,25 @@
                         @endif
                     </td>
 
-                    {{-- Prix stands --}}
+                    {{-- ← Colonne souhaits --}}
                     <td class="px-4 py-4 text-xs">
-                        @if($evenement->prix_stand_standard || $evenement->prix_stand_premium || $evenement->prix_stand_vip)
-                        <p class="text-green-700">
-                            <i class="fa-solid fa-store mr-1"></i>
-                            {{ number_format($evenement->prix_stand_standard, 0, ',', ' ') }} F
-                        </p>
-                        <p class="text-blue-700 mt-0.5">
-                            <i class="fa-solid fa-gem mr-1"></i>
-                            {{ number_format($evenement->prix_stand_premium, 0, ',', ' ') }} F
-                        </p>
-                        <p class="text-yellow-600 mt-0.5">
-                            <i class="fa-solid fa-star mr-1"></i>
-                            {{ number_format($evenement->prix_stand_vip, 0, ',', ' ') }} F
-                        </p>
-                        @else
-                        <span class="text-gray-400 italic">Non définis</span>
-                        @endif
+                        <div class="flex items-center gap-1">
+                            <span class="px-2 py-1 rounded-lg bg-orange-100 text-orange-700 font-bold">
+                                min {{ $evenement->min_souhaits ?? 5 }}
+                            </span>
+                            <span class="text-gray-400">—</span>
+                            <span class="px-2 py-1 rounded-lg bg-blue-100 text-blue-700 font-bold">
+                                max {{ $evenement->max_souhaits ?? 20 }}
+                            </span>
+                        </div>
                     </td>
 
-                    {{-- Actions --}}
                     <td class="px-4 py-4">
                         <div class="flex gap-2">
                             <button wire:click="modifier({{ $evenement->id }})"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
                                 style="background-color: #007A3D;">
-                                <i class="fa-solid fa-pen"></i> Modifier
+                                <i class="fa-solid fa-pen"></i>
                             </button>
                             <button wire:click="supprimer({{ $evenement->id }})"
                                 wire:confirm="Voulez-vous vraiment supprimer cet événement ?"
@@ -372,7 +359,7 @@
                         @error('lieu') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
 
-                    {{-- ← SALLE ET TABLES RDV --}}
+                    {{-- Salle RDV --}}
                     <div class="col-span-2">
                         <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
                             <p class="text-xs font-bold text-blue-700 mb-1 flex items-center gap-2">
@@ -386,34 +373,79 @@
                             </p>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-gray-600 text-xs font-medium mb-1">
-                                        Nom de la salle
-                                    </label>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">Nom de la salle</label>
                                     <input wire:model="nom_salle" type="text"
                                         class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
-                                        placeholder="Ex: Salle B2B, Salle des Conférences...">
+                                        placeholder="Ex: Salle B2B...">
                                     @error('nom_salle') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
-                                    <label class="block text-gray-600 text-xs font-medium mb-1">
-                                        Nombre de tables
-                                    </label>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">Nombre de tables</label>
                                     <input wire:model="nombre_tables" type="number" min="1" max="500"
                                         class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
                                         placeholder="Ex: 20">
                                     @error('nombre_tables') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                 </div>
                             </div>
-                           @if($nom_salle && $nombre_tables)
-<div class="mt-3 bg-white rounded-xl p-3 border border-blue-200 text-xs text-blue-700 flex items-center gap-2">
-    <i class="fa-solid fa-circle-check text-blue-500"></i>
-    Les RDV se tiendront dans
-    <strong>{{ $nom_salle }}</strong>
-    sur
-    <strong>{{ (int) $nombre_tables }} tables</strong>
-    numérotées de 1 à {{ (int) $nombre_tables }}.
-</div>
-@endif
+                            @if($nom_salle && $nombre_tables)
+                            <div class="mt-3 bg-white rounded-xl p-3 border border-blue-200 text-xs text-blue-700 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-blue-500"></i>
+                                Les RDV se tiendront dans <strong>{{ $nom_salle }}</strong>
+                                sur <strong>{{ (int) $nombre_tables }} tables</strong>
+                                numérotées de 1 à {{ (int) $nombre_tables }}.
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- ← BLOC MIN/MAX SOUHAITS --}}
+                    <div class="col-span-2">
+                        <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                            <p class="text-xs font-bold text-orange-700 mb-1 flex items-center gap-2">
+                                <i class="fa-solid fa-heart"></i>
+                                Limites des souhaits de RDV *
+                            </p>
+                            <p class="text-xs text-orange-600 mb-3">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                Définissez le nombre minimum et maximum de souhaits
+                                qu'un participant peut émettre pour cet événement.
+                            </p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">
+                                        <i class="fa-solid fa-arrow-down text-orange-500 mr-1"></i>
+                                        Minimum de souhaits *
+                                    </label>
+                                    <input wire:model="min_souhaits" type="number"
+                                        min="1" max="50"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm bg-white"
+                                        placeholder="Ex: 5">
+                                    @error('min_souhaits')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">
+                                        <i class="fa-solid fa-arrow-up text-blue-500 mr-1"></i>
+                                        Maximum de souhaits *
+                                    </label>
+                                    <input wire:model="max_souhaits" type="number"
+                                        min="1" max="100"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
+                                        placeholder="Ex: 20">
+                                    @error('max_souhaits')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+                            @if($min_souhaits && $max_souhaits)
+                            <div class="mt-3 bg-white rounded-xl p-3 border border-orange-200 text-xs text-orange-700 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-orange-500"></i>
+                                Chaque participant devra émettre entre
+                                <strong>{{ $min_souhaits }}</strong> et
+                                <strong>{{ $max_souhaits }}</strong> souhaits.
+                            </div>
+                            @endif
                         </div>
                     </div>
 
@@ -491,7 +523,6 @@
                             </p>
                             <p class="text-xs text-yellow-600 mb-3">
                                 <i class="fa-solid fa-circle-info mr-1"></i>
-                                Ces prix concernent les stands d'exposition de produits.
                                 Laissez à 0 si les stands sont gratuits.
                             </p>
                             <div class="grid grid-cols-3 gap-3">
@@ -500,12 +531,9 @@
                                         <i class="fa-solid fa-store text-green-600"></i>
                                         <p class="text-xs font-bold text-gray-700">Standard</p>
                                     </div>
-                                    <p class="text-xs text-gray-400 mb-2">
-                                        Espace de base · 1 table · 2 chaises
-                                    </p>
                                     <div class="relative">
                                         <input wire:model="prix_stand_standard" type="number" min="0"
-                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm pr-14"
+                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm pr-14"
                                             placeholder="0">
                                         <span class="absolute right-3 top-2 text-xs text-gray-400">FCFA</span>
                                     </div>
@@ -515,12 +543,9 @@
                                         <i class="fa-solid fa-gem text-blue-600"></i>
                                         <p class="text-xs font-bold text-gray-700">Premium</p>
                                     </div>
-                                    <p class="text-xs text-gray-400 mb-2">
-                                        Espace moyen · Internet · Décoration
-                                    </p>
                                     <div class="relative">
                                         <input wire:model="prix_stand_premium" type="number" min="0"
-                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm pr-14"
+                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm pr-14"
                                             placeholder="0">
                                         <span class="absolute right-3 top-2 text-xs text-gray-400">FCFA</span>
                                     </div>
@@ -530,12 +555,9 @@
                                         <i class="fa-solid fa-star text-yellow-500"></i>
                                         <p class="text-xs font-bold text-gray-700">VIP</p>
                                     </div>
-                                    <p class="text-xs text-gray-400 mb-2">
-                                        Grand espace · Mobilier · Salon VIP
-                                    </p>
                                     <div class="relative">
                                         <input wire:model="prix_stand_vip" type="number" min="0"
-                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-300 text-sm pr-14"
+                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm pr-14"
                                             placeholder="0">
                                         <span class="absolute right-3 top-2 text-xs text-gray-400">FCFA</span>
                                     </div>

@@ -150,17 +150,22 @@
                     <i class="fa-solid fa-gauge text-xs"></i> Mon espace
                 </a>
                 @else
-                <a href="{{ route('inscription.entreprise') }}"
-                    class="px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 border-2"
-                    style="color: #007A3D; border-color: #007A3D;">
-                    <i class="fa-solid fa-building text-xs"></i> Inscrire mon entreprise
-                </a>
-                <a href="{{ route('login') }}"
-                    class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 flex items-center gap-2"
-                    style="background-color: #C8102E;">
-                    <i class="fa-solid fa-right-to-bracket text-xs"></i> Se connecter
-                </a>
-                @endauth
+<a href="{{ route('inscription.participant') }}"
+    class="px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 border-2"
+    style="color: #C8102E; border-color: #C8102E;">
+    <i class="fa-solid fa-user-plus text-xs"></i> S'inscrire
+</a>
+<a href="{{ route('inscription.entreprise') }}"
+    class="px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 border-2"
+    style="color: #007A3D; border-color: #007A3D;">
+    <i class="fa-solid fa-building text-xs"></i> Inscrire mon entreprise
+</a>
+<a href="{{ route('login') }}"
+    class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 flex items-center gap-2"
+    style="background-color: #C8102E;">
+    <i class="fa-solid fa-right-to-bracket text-xs"></i> Se connecter
+</a>
+@endauth
             </div>
             @endif
         </div>
@@ -362,17 +367,23 @@
                     <i class="fa-solid fa-gauge"></i> Mon espace
                 </a>
                 @else
-                <a href="{{ route('login') }}" class="btn-primary shadow-2xl">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    Se connecter
-                </a>
-                <a href="{{ route('inscription.entreprise') }}"
-                    class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
-                    style="color: #007A3D;">
-                    <i class="fa-solid fa-building"></i>
-                    Inscrire mon entreprise
-                </a>
-                @endauth
+<a href="{{ route('login') }}" class="btn-primary shadow-2xl">
+    <i class="fa-solid fa-right-to-bracket"></i>
+    Se connecter
+</a>
+<a href="{{ route('inscription.participant') }}"
+    class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
+    style="color: #C8102E;">
+    <i class="fa-solid fa-user-plus"></i>
+    S'inscrire
+</a>
+<a href="{{ route('inscription.entreprise') }}"
+    class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
+    style="color: #007A3D;">
+    <i class="fa-solid fa-building"></i>
+    Inscrire mon entreprise
+</a>
+@endauth
             </div>
         </div>
     </section>

@@ -9,29 +9,32 @@ use App\Models\TypeEvenement;
 class GestionEvenements extends Component
 {
     public $evenement_id;
-    public $id_type_evenement       = '';
-    public $nouveau_type            = '';
-    public $utiliser_nouveau_type   = '';
-    public $nom                     = '';
-    public $annee                   = '';
-    public $date_debut              = '';
-    public $date_fin                = '';
+    public $id_type_evenement           = '';
+    public $nouveau_type                = '';
+    public $utiliser_nouveau_type       = '';
+    public $nom                         = '';
+    public $annee                       = '';
+    public $date_debut                  = '';
+    public $date_fin                    = '';
     public $date_ouverture_inscriptions = '';
     public $date_cloture_inscriptions   = '';
-    public $heure_debut             = '';
-    public $heure_fin               = '';
-    public $ville                   = '';
-    public $lieu                    = '';
-    public $nom_salle               = '';
-    public $nombre_tables           = 10;
-    public $montant_inscription     = 0;
-    public $type_paiement           = 'par_participant';
-    public $prix_stand_standard     = 0;
-    public $prix_stand_premium      = 0;
-    public $prix_stand_vip          = 0;
-    public $showModal               = false;
-    public $isEditing               = false;
-    public $search                  = '';
+    public $heure_debut                 = '';
+    public $heure_fin                   = '';
+    public $ville                       = '';
+    public $lieu                        = '';
+    public $nom_salle                   = '';
+    public $nombre_tables               = 10;
+    public $montant_inscription         = 0;
+    public $type_paiement               = 'par_participant';
+    public $prix_stand_standard         = 0;
+    public $prix_stand_premium          = 0;
+    public $prix_stand_vip              = 0;
+    // ← Nouveaux champs
+    public $min_souhaits                = 5;
+    public $max_souhaits                = 20;
+    public $showModal                   = false;
+    public $isEditing                   = false;
+    public $search                      = '';
 
     public function openModal()
     {
@@ -69,6 +72,8 @@ class GestionEvenements extends Component
         $this->prix_stand_standard          = 0;
         $this->prix_stand_premium           = 0;
         $this->prix_stand_vip               = 0;
+        $this->min_souhaits                 = 5;  // ← reset
+        $this->max_souhaits                 = 20; // ← reset
         $this->resetErrorBag();
     }
 
@@ -88,12 +93,14 @@ class GestionEvenements extends Component
         $this->ville                        = $e->ville;
         $this->lieu                         = $e->lieu;
         $this->nom_salle                    = $e->nom_salle ?? '';
-        $this->nombre_tables                = (int) ($e->nombre_tables ?? 10); // ← cast en int
+        $this->nombre_tables                = (int) ($e->nombre_tables ?? 10);
         $this->montant_inscription          = $e->montant_inscription;
         $this->type_paiement                = $e->type_paiement;
         $this->prix_stand_standard          = $e->prix_stand_standard ?? 0;
         $this->prix_stand_premium           = $e->prix_stand_premium ?? 0;
         $this->prix_stand_vip               = $e->prix_stand_vip ?? 0;
+        $this->min_souhaits                 = $e->min_souhaits ?? 5;  // ← nouveau
+        $this->max_souhaits                 = $e->max_souhaits ?? 20; // ← nouveau
         $this->isEditing                    = true;
         $this->showModal                    = true;
     }
@@ -117,6 +124,9 @@ class GestionEvenements extends Component
             'prix_stand_vip'              => 'nullable|numeric|min:0',
             'nom_salle'                   => 'nullable|string|max:255',
             'nombre_tables'               => 'nullable|integer|min:1|max:500',
+            // ← Validation min/max souhaits
+            'min_souhaits'                => 'required|integer|min:1|max:50',
+            'max_souhaits'                => 'required|integer|min:1|max:100',
         ];
 
         if ($this->type_paiement !== 'gratuit') {
@@ -147,7 +157,7 @@ class GestionEvenements extends Component
             'ville'                       => $this->ville,
             'lieu'                        => $this->lieu,
             'nom_salle'                   => $this->nom_salle ?: null,
-            'nombre_tables'               => (int) ($this->nombre_tables ?: 10), // ← cast en int
+            'nombre_tables'               => (int) ($this->nombre_tables ?: 10),
             'type_paiement'               => $this->type_paiement,
             'montant_inscription'         => $this->type_paiement === 'gratuit'
                 ? 0
@@ -155,6 +165,9 @@ class GestionEvenements extends Component
             'prix_stand_standard'         => $this->prix_stand_standard ?: 0,
             'prix_stand_premium'          => $this->prix_stand_premium ?: 0,
             'prix_stand_vip'              => $this->prix_stand_vip ?: 0,
+            // ← Sauvegarde min/max souhaits
+            'min_souhaits'                => (int) $this->min_souhaits,
+            'max_souhaits'                => (int) $this->max_souhaits,
         ];
 
         if ($this->isEditing) {

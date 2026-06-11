@@ -1,5 +1,7 @@
 <div>
-    {{-- Message succès --}}
+    {{--
+         MESSAGES
+     --}}
     @if(session('success'))
     <div class="bg-green-100 border border-green-300 text-green-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
         <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
@@ -7,11 +9,14 @@
     </div>
     @endif
 
-    {{-- En-tête --}}
+    {{-- 
+         EN-TÊTE
+     --}}
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
             <h3 class="text-xl font-bold text-gray-700">Liste des entreprises</h3>
-            <span class="text-sm px-3 py-1 rounded-full text-white font-medium" style="background-color: #007A3D;">
+            <span class="text-sm px-3 py-1 rounded-full text-white font-medium"
+                style="background-color: #007A3D;">
                 {{ $entreprises->count() }} entreprise(s)
             </span>
         </div>
@@ -23,7 +28,9 @@
         </button>
     </div>
 
-    {{-- Recherche --}}
+    {{-- 
+         RECHERCHE
+     --}}
     <div class="mb-5">
         <div class="relative w-full md:w-1/3">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
@@ -33,14 +40,17 @@
         </div>
     </div>
 
-    {{-- Tableau --}}
-    <div class="bg-white rounded-xl shadow overflow-hidden">
+    {{-- 
+         TABLEAU
+     --}}
+    <div class="bg-white rounded-xl shadow overflow-x-auto">
         <table class="w-full text-left">
             <thead style="background-color: #f8f9fa;">
                 <tr class="border-b">
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Nom</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Entreprise</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">IFU</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Secteur</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Représentant</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Pays / Ville</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Statut</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
@@ -50,12 +60,20 @@
                 @forelse($entreprises as $entreprise)
                 <tr class="border-b hover:bg-gray-50 transition">
 
-                    {{-- Nom --}}
-                    <td class="px-6 py-4 font-semibold text-gray-800">
-                        {{ $entreprise->nom }}
-                        @if($entreprise->sous_secteur)
-                        <p class="text-xs text-gray-400 font-normal mt-0.5">{{ $entreprise->sous_secteur }}</p>
-                        @endif
+                    {{-- Entreprise --}}
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0"
+                                style="background-color: #007A3D;">
+                                {{ strtoupper(substr($entreprise->nom, 0, 1)) }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">{{ $entreprise->nom }}</p>
+                                @if($entreprise->sous_secteur)
+                                <p class="text-xs text-gray-400 mt-0.5">{{ $entreprise->sous_secteur }}</p>
+                                @endif
+                            </div>
+                        </div>
                     </td>
 
                     {{-- IFU --}}
@@ -76,60 +94,102 @@
                         </span>
                     </td>
 
+                    {{-- Représentant --}}
+                    <td class="px-6 py-4 text-sm">
+                        @if($entreprise->nom_responsable)
+                        <p class="font-medium text-gray-700">
+                            {{ $entreprise->nom_responsable }}
+                            {{ $entreprise->prenom_responsable }}
+                        </p>
+                        @if($entreprise->fonction_responsable)
+                        <p class="text-xs text-gray-400">{{ $entreprise->fonction_responsable }}</p>
+                        @endif
+                        @if($entreprise->email_responsable)
+                        <p class="text-xs text-gray-400">{{ $entreprise->email_responsable }}</p>
+                        @endif
+                        @else
+                        <span class="text-gray-300 text-xs">—</span>
+                        @endif
+                    </td>
+
                     {{-- Pays / Ville --}}
                     <td class="px-6 py-4 text-gray-600 text-sm">
-                        <p><i class="fa-solid fa-flag text-gray-400 mr-1"></i>{{ $entreprise->pays }}</p>
+                        <p>
+                            <i class="fa-solid fa-flag text-gray-400 mr-1"></i>
+                            {{ $entreprise->pays }}
+                        </p>
                         <p class="text-xs text-gray-400 mt-0.5">
-                            <i class="fa-solid fa-location-dot text-gray-300 mr-1"></i>{{ $entreprise->ville }}
+                            <i class="fa-solid fa-location-dot text-gray-300 mr-1"></i>
+                            {{ $entreprise->ville }}
                         </p>
                     </td>
 
                     {{-- Statut --}}
                     <td class="px-6 py-4">
                         @if($entreprise->statut_validation == 'valide')
-                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium" style="background-color: #007A3D;">
-                                <i class="fa-solid fa-circle-check mr-1"></i> Validé
-                            </span>
+                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium"
+                            style="background-color: #007A3D;">
+                            <i class="fa-solid fa-circle-check mr-1"></i> Validée
+                        </span>
                         @elseif($entreprise->statut_validation == 'rejete')
-                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
-                                <i class="fa-solid fa-circle-xmark mr-1"></i> Rejeté
-                            </span>
+                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
+                            <i class="fa-solid fa-circle-xmark mr-1"></i> Rejetée
+                        </span>
                         @else
-                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-yellow-500">
-                                <i class="fa-solid fa-clock mr-1"></i> En attente
-                            </span>
+                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-yellow-500">
+                            <i class="fa-solid fa-clock mr-1"></i> En attente
+                        </span>
                         @endif
                     </td>
 
                     {{-- Actions --}}
                     <td class="px-6 py-4">
                         <div class="flex gap-2 flex-wrap">
+
+                            {{-- Valider / Rejeter si en attente --}}
                             @if($entreprise->statut_validation == 'en_attente')
                             <button wire:click="valider({{ $entreprise->id }})"
+                                wire:confirm="Valider l'entreprise {{ $entreprise->nom }} et notifier le représentant ?"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
                                 style="background-color: #007A3D;">
                                 <i class="fa-solid fa-check"></i> Valider
                             </button>
                             <button wire:click="rejeter({{ $entreprise->id }})"
+                                wire:confirm="Rejeter l'entreprise {{ $entreprise->nom }} ?"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700 flex items-center gap-1">
                                 <i class="fa-solid fa-xmark"></i> Rejeter
                             </button>
                             @endif
+
+                            {{-- Si rejetée → possibilité de revalider --}}
+                            @if($entreprise->statut_validation == 'rejete')
+                            <button wire:click="valider({{ $entreprise->id }})"
+                                wire:confirm="Revalider l'entreprise {{ $entreprise->nom }} ?"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
+                                style="background-color: #007A3D;">
+                                <i class="fa-solid fa-rotate-left"></i> Revalider
+                            </button>
+                            @endif
+
+                            {{-- Modifier --}}
                             <button wire:click="modifier({{ $entreprise->id }})"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-blue-600 transition hover:bg-blue-700 flex items-center gap-1">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
+
+                            {{-- Supprimer --}}
                             <button wire:click="supprimer({{ $entreprise->id }})"
-                                wire:confirm="Voulez-vous vraiment supprimer cette entreprise ?"
+                                wire:confirm="Voulez-vous vraiment supprimer {{ $entreprise->nom }} ?"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-gray-500 transition hover:bg-gray-600 flex items-center gap-1">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
+
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="py-16 text-center text-gray-400">
+                    <td colspan="7" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-building text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucune entreprise pour le moment</p>
                         <button wire:click="openModal"
@@ -144,7 +204,9 @@
         </table>
     </div>
 
-    {{-- MODAL --}}
+    {{-- 
+         MODAL AJOUT / MODIFICATION
+     --}}
     @if($showModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
@@ -155,7 +217,8 @@
                     <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-plus' }}"></i>
                     {{ $isEditing ? 'Modifier l\'entreprise' : 'Nouvelle entreprise' }}
                 </h3>
-                <button wire:click="closeModal" class="text-white/70 hover:text-white text-2xl transition">
+                <button wire:click="closeModal"
+                    class="text-white/70 hover:text-white text-2xl transition">
                     &times;
                 </button>
             </div>
@@ -176,7 +239,7 @@
                         @enderror
                     </div>
 
-                    {{-- ← IFU obligatoire avec format --}}
+                    {{-- IFU --}}
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
                             Numéro IFU *
@@ -190,14 +253,11 @@
                             Format : 8 chiffres suivis d'une lettre (ex: 12345678A)
                         </p>
                         @error('ifu')
-                            <span class="text-red-500 text-xs mt-1">
-                                <i class="fa-solid fa-circle-exclamation mr-1"></i>
-                                {{ $message }}
-                            </span>
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                     </div>
 
-                    {{-- ← Secteur obligatoire --}}
+                    {{-- Secteur --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
                             Secteur d'activité *
@@ -214,7 +274,7 @@
                         @enderror
                     </div>
 
-                    {{-- ← Sous-secteur obligatoire --}}
+                    {{-- Sous-secteur --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
                             Sous-secteur *
@@ -227,7 +287,7 @@
                         @enderror
                     </div>
 
-                    {{-- ← Pays avec ville dynamique --}}
+                    {{-- Pays --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays *</label>
                         <select wire:model.live="pays"
@@ -242,7 +302,7 @@
                         @enderror
                     </div>
 
-                    {{-- ← Ville dynamique --}}
+                    {{-- Ville --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville *</label>
                         @if($pays && count($villesDisponibles) > 1)
@@ -265,7 +325,9 @@
 
                     {{-- Téléphone --}}
                     <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone *</label>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Téléphone *
+                        </label>
                         <input wire:model="telephone" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
                             placeholder="Ex: +226 70 00 00 00">
@@ -277,7 +339,8 @@
                     {{-- Email --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Email <span class="text-gray-400 font-normal">(optionnel)</span>
+                            Email
+                            <span class="text-gray-400 font-normal">(optionnel)</span>
                         </label>
                         <input wire:model="email" type="email"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
@@ -286,6 +349,47 @@
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                     </div>
+
+                    {{-- Statut (si édition) --}}
+                    @if($isEditing)
+                    <div class="col-span-2">
+                        <label class="block text-gray-600 text-sm font-medium mb-3">
+                            Statut de validation
+                        </label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <label class="cursor-pointer">
+                                <input type="radio" wire:model="statut_validation"
+                                    value="en_attente" class="hidden peer">
+                                <div class="p-3 border-2 rounded-xl text-center transition text-sm
+                                    peer-checked:border-yellow-400 peer-checked:bg-yellow-50
+                                    hover:bg-gray-50 border-gray-200 text-gray-600">
+                                    <i class="fa-solid fa-clock text-yellow-500 mr-1"></i>
+                                    En attente
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" wire:model="statut_validation"
+                                    value="valide" class="hidden peer">
+                                <div class="p-3 border-2 rounded-xl text-center transition text-sm
+                                    peer-checked:border-green-400 peer-checked:bg-green-50
+                                    hover:bg-gray-50 border-gray-200 text-gray-600">
+                                    <i class="fa-solid fa-circle-check text-green-500 mr-1"></i>
+                                    Validée
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" wire:model="statut_validation"
+                                    value="rejete" class="hidden peer">
+                                <div class="p-3 border-2 rounded-xl text-center transition text-sm
+                                    peer-checked:border-red-400 peer-checked:bg-red-50
+                                    hover:bg-gray-50 border-gray-200 text-gray-600">
+                                    <i class="fa-solid fa-circle-xmark text-red-500 mr-1"></i>
+                                    Rejetée
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    @endif
 
                 </div>
 
@@ -314,4 +418,5 @@
         </div>
     </div>
     @endif
+
 </div>

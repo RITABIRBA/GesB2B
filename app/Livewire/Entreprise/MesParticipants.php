@@ -5,256 +5,204 @@ namespace App\Livewire\Entreprise;
 use Livewire\Component;
 use App\Models\Participant;
 use App\Models\Entreprise;
-use App\Models\Evenement;
-use App\Models\Inscription;
-use App\Models\Paiement;
-use App\Models\Recu;
-use App\Models\Badge;
-use App\Models\TypeBadge;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
+/**
+ * Gestion des Membres de l'Entreprise
+ *
+ * Le représentant peut :
+ * → Voir tous les membres de son entreprise
+ * → Ajouter de nouveaux membres
+ * → Valider ou rejeter les demandes d'adhésion
+ * → Un code d'accès est généré pour chaque membre
+ */
 class MesParticipants extends Component
 {
+    
+    // PROPRIÉTÉS
+    
+
+    /** ID du membre en cours de modification */
     public $participant_id;
-    public $id_evenement = '';
-    public $nom = '';
-    public $prenom = '';
-    public $genre = '';
-    public $fonction = '';
-    public $email = '';
-    public $telephone = '';
-    public $role = 'exposant';
-    public $showModal = false;
-    public $isEditing = false;
-    public $search = '';
 
-    // Paiement groupé
-    public $showPaiementGroupeModal = false;
-    public $id_evenement_paiement   = '';
-    public $mode_paiement           = 'orange_money';
-    public $telephone_paiement      = '';
-    public $otp_code                = '';
-    public $otp_saisi               = '';
-    public $etape_paiement          = 1;
-    public $carte_numero            = '';
-    public $carte_nom               = '';
-    public $carte_expiration        = '';
-    public $carte_cvv               = '';
-    public $montant_total           = 0;
-    public $participants_a_payer    = [];
+    /** Formulaire d'ajout/modification de membre */
+    public string $nom           = '';
+    public string $prenom        = '';
+    public string $genre         = '';
+    public string $fonction      = '';
+    public string $fonction_autre = ''; // ← Saisie libre si "Autre"
+    public string $email         = '';
+    public string $telephone     = '';
 
-    public $roles = ['exposant', 'participant'];
+    /** Contrôle du modal */
+    public bool $showModal  = false;
+    public bool $isEditing  = false;
 
-    private function getEntreprise()
+    /** Recherche */
+    public string $search = '';
+
+    /** Modal affichage du code d'accès généré */
+    public bool  $showCodeModal = false;
+    public array $nouveauMembre = [];
+
+    /** Liste des fonctions disponibles */
+    public array $fonctions = [
+        'Directeur Général',
+        'Directeur Commercial',
+        'PDG',
+        'Gérant',
+        'Responsable Export',
+        'Responsable Partenariats',
+        'Chargé de Développement',
+        'Commercial',
+        'Technicien',
+        'Représentant',
+        'Autre',
+    ];
+
+    
+    // HELPERS PRIVÉS
+    
+
+    /**
+     * Récupère l'entreprise du représentant connecté.
+     */
+    private function getEntreprise(): ?Entreprise
     {
-        return Entreprise::where('email_responsable', auth()->user()->email)->first()
-            ?? Entreprise::where('nom', auth()->user()->name)->first();
+        return Entreprise::where('email_responsable', auth()->user()->email)->first();
     }
 
-    // =========================================================
-    // VALIDATION ADHÉSION
-    // =========================================================
-
-    public function accepterAdhesion($id)
+    /**
+     * Génère un code d'accès unique pour un membre.
+     * Format : 3 premières lettres du nom + 4 chiffres aléatoires
+     * Exemple : DIA7823
+     */
+    private function genererCodeAcces(string $nom): string
     {
-        Participant::findOrFail($id)->update([
-            'statut_adhesion' => 'accepte',
-        ]);
-        session()->flash('success', 'Demande d\'adhésion acceptée !');
+        do {
+            $code = strtoupper(substr($nom, 0, 3) . rand(1000, 9999));
+        } while (Participant::where('code_acces', $code)->exists());
+
+        return $code;
     }
 
-    public function rejeterAdhesion($id)
-    {
-        Participant::findOrFail($id)->update([
-            'statut_adhesion' => 'rejete',
-            'id_entreprise'   => null,
-        ]);
-        session()->flash('success', 'Demande d\'adhésion rejetée.');
-    }
 
-    // =========================================================
-    // MODAL PARTICIPANT
-    // =========================================================
+    // MODAL AJOUT / MODIFICATION
+    
 
-    public function openModal()
+    public function openModal(): void
     {
         $this->resetFields();
         $this->showModal = true;
         $this->isEditing = false;
     }
 
-    public function closeModal()
+    public function closeModal(): void
     {
         $this->showModal = false;
         $this->resetFields();
     }
 
-    public function resetFields()
+    public function closeCodeModal(): void
     {
-        $this->participant_id = null;
-        $this->id_evenement   = '';
-        $this->nom            = '';
-        $this->prenom         = '';
-        $this->genre          = '';
-        $this->fonction       = '';
-        $this->email          = '';
-        $this->telephone      = '';
-        $this->role           = 'exposant';
+        $this->showCodeModal = false;
+        $this->nouveauMembre = [];
+    }
+
+    public function resetFields(): void
+    {
+        $this->participant_id  = null;
+        $this->nom             = '';
+        $this->prenom          = '';
+        $this->genre           = '';
+        $this->fonction        = '';
+        $this->fonction_autre  = '';
+        $this->email           = '';
+        $this->telephone       = '';
         $this->resetErrorBag();
     }
 
-    // =========================================================
-    // PAIEMENT GROUPÉ
-    // =========================================================
+    
+    // MODIFIER UN MEMBRE
+    
 
-    public function openPaiementGroupe($id_evenement)
+    public function modifier(int $id): void
     {
-        $entreprise = $this->getEntreprise();
-        if (!$entreprise) return;
+        $membre = Participant::findOrFail($id);
 
-        $evenement = Evenement::find($id_evenement);
-        if (!$evenement) return;
+        $this->participant_id = $membre->id;
+        $this->nom            = $membre->nom;
+        $this->prenom         = $membre->prenom;
+        $this->genre          = $membre->genre ?? '';
+        $this->email          = $membre->email ?? '';
+        $this->telephone      = $membre->telephone ?? '';
+        $this->fonction_autre = '';
 
-        $this->participants_a_payer = Inscription::with('participant')
-            ->whereHas('participant', fn($q) =>
-                $q->where('id_entreprise', $entreprise->id)
-                  ->where('id_evenement', $id_evenement)
-            )
-            ->where('statut_paiement', '!=', 'paye')
-            ->get();
-
-        $this->montant_total           = $evenement->montant_inscription;
-        $this->id_evenement_paiement   = $id_evenement;
-        $this->etape_paiement          = 1;
-        $this->mode_paiement           = 'orange_money';
-        $this->showPaiementGroupeModal = true;
-    }
-
-    public function closePaiementGroupe()
-    {
-        $this->showPaiementGroupeModal = false;
-        $this->etape_paiement          = 1;
-        $this->participants_a_payer    = [];
-        $this->montant_total           = 0;
-        $this->telephone_paiement      = '';
-        $this->otp_saisi               = '';
-        $this->otp_code                = '';
-    }
-
-    public function envoyerOtp()
-    {
-        $this->validate([
-            'telephone_paiement' => 'required|string|min:8|max:15',
-        ]);
-        $this->otp_code       = rand(100000, 999999);
-        $this->etape_paiement = 3;
-    }
-
-    public function confirmerOtp()
-    {
-        $this->validate(['otp_saisi' => 'required|string']);
-
-        if ($this->otp_saisi != $this->otp_code) {
-            $this->addError('otp_saisi', 'Code OTP incorrect.');
-            return;
+        // ← Gère la fonction "Autre"
+        if (in_array($membre->fonction, $this->fonctions)) {
+            $this->fonction = $membre->fonction ?? '';
+        } else {
+            $this->fonction       = 'Autre';
+            $this->fonction_autre = $membre->fonction ?? '';
         }
 
-        $this->enregistrerPaiementGroupe();
+        $this->isEditing = true;
+        $this->showModal = true;
     }
 
-    public function payerCarte()
+    
+    // VALIDER / REJETER ADHÉSION
+    
+
+    /**
+     * Valide la demande d'adhésion d'un membre.
+     * Le membre peut maintenant accéder à la plateforme.
+     */
+    public function accepterAdhesion(int $id): void
     {
-        $this->validate([
-            'carte_numero'     => 'required|string|min:16|max:19',
-            'carte_nom'        => 'required|string|max:255',
-            'carte_expiration' => 'required|string',
-            'carte_cvv'        => 'required|string|min:3|max:4',
+        Participant::findOrFail($id)->update([
+            'statut_adhesion'   => 'accepte',
+            'statut_historique' => 'actif',
         ]);
-
-        $this->enregistrerPaiementGroupe();
+        session()->flash('success', 'Adhésion acceptée ! Le membre peut maintenant accéder à la plateforme.');
     }
 
-    private function enregistrerPaiementGroupe()
+    /**
+     * Rejette la demande d'adhésion d'un membre.
+     */
+    public function rejeterAdhesion(int $id): void
     {
-        foreach ($this->participants_a_payer as $inscription) {
-            $paiement = Paiement::create([
-                'id_inscription' => $inscription->id,
-                'montant'        => $this->montant_total,
-                'date_paiement'  => now()->toDateString(),
-                'mode_paiement'  => $this->mode_paiement,
-                'statut'         => 'valide',
-            ]);
+        Participant::findOrFail($id)->update([
+            'statut_adhesion'   => 'rejete',
+            'statut_historique' => 'inactif',
+        ]);
+        session()->flash('success', 'Demande d\'adhésion rejetée.');
+    }
 
-            $inscription->update([
-                'statut_paiement' => 'paye',
-                'statut_presence' => 'present',
-            ]);
+    
+    // SAUVEGARDER (AJOUT OU MODIFICATION)
+    
 
-            Recu::create([
-                'id_paiement' => $paiement->id,
-                'date'        => now()->toDateString(),
-                'montant'     => $this->montant_total,
-            ]);
-
-            $participant = $inscription->participant;
-            if ($participant) {
-                $badgeExiste = Badge::where('id_participant', $participant->id)->exists();
-                if (!$badgeExiste) {
-                    $typeBadge = TypeBadge::firstOrCreate(
-                        ['libelle' => ucfirst($participant->role)],
-                        ['description' => 'Badge ' . ucfirst($participant->role)]
-                    );
-
-                    Badge::create([
-                        'id_participant' => $participant->id,
-                        'id_type_badge'  => $typeBadge->id,
-                        'qr_code'        => strtoupper(
-                            substr($participant->nom, 0, 2) .
-                            substr($participant->prenom ?? 'XX', 0, 2) .
-                            '-' . $this->id_evenement_paiement .
-                            '-' . Str::random(6)
-                        ),
-                    ]);
-                }
-            }
+    public function sauvegarder(): void
+    {
+        // ← Si "Autre" on utilise la saisie libre
+        if ($this->fonction === 'Autre' && $this->fonction_autre) {
+            $this->fonction = $this->fonction_autre;
         }
 
-        $nb = count($this->participants_a_payer);
-        $this->closePaiementGroupe();
-        session()->flash('success', "Paiement groupé confirmé ! {$nb} participant(s) validés !");
-    }
-
-    // =========================================================
-    // GESTION PARTICIPANTS
-    // =========================================================
-
-    public function modifier($id)
-    {
-        $p = Participant::findOrFail($id);
-        $this->participant_id = $p->id;
-        $this->id_evenement   = $p->id_evenement;
-        $this->nom            = $p->nom;
-        $this->prenom         = $p->prenom;
-        $this->genre          = $p->genre;
-        $this->fonction       = $p->fonction;
-        $this->email          = $p->email;
-        $this->telephone      = $p->telephone;
-        $this->role           = $p->role;
-        $this->isEditing      = true;
-        $this->showModal      = true;
-    }
-
-    public function sauvegarder()
-    {
         $this->validate([
-            'id_evenement' => 'required',
-            'nom'          => 'required|string|max:255',
-            'prenom'       => 'required|string|max:255',
-            'email'        => 'nullable|email|max:255',
-            'telephone'    => 'required|string|max:20',
-            'role'         => 'required',
+            'nom'       => 'required|string|max:255',
+            'prenom'    => 'required|string|max:255',
+            'fonction'  => 'required|string|max:255',
+            'telephone' => 'required|string|max:20',
+            'email'     => 'nullable|email|max:255',
+        ], [
+            'nom.required'       => 'Le nom est obligatoire.',
+            'prenom.required'    => 'Le prénom est obligatoire.',
+            'fonction.required'  => 'La fonction est obligatoire.',
+            'telephone.required' => 'Le téléphone est obligatoire.',
+            'email.email'        => 'L\'adresse email n\'est pas valide.',
         ]);
 
         $entreprise = $this->getEntreprise();
@@ -264,131 +212,133 @@ class MesParticipants extends Component
             return;
         }
 
-        $code = strtoupper(substr($this->nom, 0, 3) . rand(1000, 9999));
-
-        $data = [
-            'id_entreprise'     => $entreprise->id,
-            'id_cdd'            => $entreprise->id_cdd,
-            'id_evenement'      => $this->id_evenement,
-            'nom'               => $this->nom,
-            'prenom'            => $this->prenom,
-            'genre'             => $this->genre ?: null,
-            'fonction'          => $this->fonction ?: null,
-            'email'             => $this->email ?: null,
-            'telephone'         => $this->telephone,
-            'role'              => $this->role,
-            'secteur_activite'  => $entreprise->secteur_activite,
-            'statut_historique' => 'actif',
-            'statut_adhesion'   => 'accepte',
-        ];
-
         if ($this->isEditing) {
-            Participant::findOrFail($this->participant_id)->update($data);
-            session()->flash('success', 'Participant modifié.');
-        } else {
-            $data['code_acces'] = $code;
-            $participant = Participant::create($data);
+            // ← Modification d'un membre existant
+            Participant::findOrFail($this->participant_id)->update([
+                'nom'       => $this->nom,
+                'prenom'    => $this->prenom,
+                'genre'     => $this->genre ?: null,
+                'fonction'  => $this->fonction,
+                'email'     => $this->email ?: null,
+                'telephone' => $this->telephone,
+            ]);
 
-            // ← Crée le compte USER si email fourni
+            session()->flash('success', 'Membre modifié avec succès.');
+            $this->closeModal();
+
+        } else {
+            // ← Ajout d'un nouveau membre
+
+            // ← Génère un code d'accès unique
+            $code_acces = $this->genererCodeAcces($this->nom);
+
+            // ← Crée le membre
+            $membre = Participant::create([
+                'id_entreprise'     => $entreprise->id,
+                'id_cdd'            => $entreprise->id_cdd,
+                'nom'               => $this->nom,
+                'prenom'            => $this->prenom,
+                'genre'             => $this->genre ?: null,
+                'fonction'          => $this->fonction,
+                'email'             => $this->email ?: null,
+                'telephone'         => $this->telephone,
+                'code_acces'        => $code_acces,
+                'role'              => 'membre',
+                'participation_rdv' => true,
+                'statut_historique' => 'actif',
+                'statut_adhesion'   => 'accepte',
+                // ← Le membre hérite du secteur de l'entreprise
+                'secteur_activite'  => $entreprise->secteur_activite,
+                'sous_secteur'      => $entreprise->sous_secteur,
+                'pays'              => $entreprise->pays,
+                'ville'             => $entreprise->ville,
+            ]);
+
+            // ← Crée un compte USER si email fourni
             if ($this->email) {
                 $userExiste = User::where('email', $this->email)->exists();
                 if (!$userExiste) {
                     $user = User::create([
                         'name'     => $this->nom . ' ' . $this->prenom,
                         'email'    => $this->email,
-                        'password' => Hash::make($code),
+                        'password' => Hash::make($code_acces),
                     ]);
                     $user->assignRole('participant');
                 }
             }
 
-            // ← Crée automatiquement l'inscription
-            $evenement = Evenement::find($this->id_evenement);
-            if ($evenement) {
-                $inscriptionExiste = Inscription::where('id_participant', $participant->id)
-                    ->where('id_evenement', $this->id_evenement)
-                    ->exists();
+            // ← Stocke les infos du nouveau membre pour affichage
+            $this->nouveauMembre = [
+                'nom'        => $this->nom,
+                'prenom'     => $this->prenom,
+                'fonction'   => $this->fonction,
+                'email'      => $this->email,
+                'telephone'  => $this->telephone,
+                'code_acces' => $code_acces,
+            ];
 
-                if (!$inscriptionExiste) {
-                    // ← Détermine le montant et statut selon type paiement
-                    $montant = $evenement->montant_inscription ?? 0;
-                    $statut  = 'en_attente';
+            $this->closeModal();
+            $this->showCodeModal = true;
+        }
+    }
 
-                    if ($evenement->type_paiement == 'gratuit') {
-                        $montant = 0;
-                        $statut  = 'paye';
-                    } elseif ($evenement->type_paiement == 'par_entreprise') {
-                        // ← L'entreprise paie → pas de paiement individuel
-                        $montant = 0;
-                        $statut  = 'en_attente'; // ← En attente du paiement groupé
-                    }
+    
+    // SUPPRIMER UN MEMBRE
+    
 
-                    Inscription::create([
-                        'id_participant'   => $participant->id,
-                        'id_evenement'     => $this->id_evenement,
-                        'date_inscription' => now()->toDateString(),
-                        'montant_paye'     => $montant,
-                        'statut_paiement'  => $statut,
-                        'statut_presence'  => 'absent',
-                    ]);
-                }
-            }
+    public function supprimer(int $id): void
+    {
+        $membre     = Participant::findOrFail($id);
+        $entreprise = $this->getEntreprise();
 
-            session()->flash('success', "Participant ajouté ! Code : {$code}");
+        // ← Sécurité : ne peut supprimer que ses propres membres
+        if ($membre->id_entreprise !== $entreprise?->id) {
+            session()->flash('error', 'Action non autorisée.');
+            return;
         }
 
-        $this->closeModal();
+        // ← Ne peut pas supprimer le représentant
+        if ($membre->role === 'representant') {
+            session()->flash('error', 'Vous ne pouvez pas supprimer le représentant.');
+            return;
+        }
+
+        $membre->delete();
+        session()->flash('success', 'Membre supprimé.');
     }
 
-    public function supprimer($id)
-    {
-        Participant::findOrFail($id)->delete();
-        session()->flash('success', 'Participant supprimé.');
-    }
-
-    // =========================================================
-    // RENDU
-    // =========================================================
+    
+    // RENDER
+    
 
     public function render()
     {
         $entreprise = $this->getEntreprise();
 
-        $evenements_avec_impayés = collect();
-        if ($entreprise) {
-            $evenements_avec_impayés = Evenement::whereHas('inscriptions', fn($q) =>
-                $q->whereHas('participant', fn($q) =>
-                    $q->where('id_entreprise', $entreprise->id)
+        // ← Membres actifs et acceptés
+        $membres = $entreprise
+            ? Participant::where('id_entreprise', $entreprise->id)
+                ->whereIn('statut_adhesion', ['accepte', null])
+                ->when($this->search, fn($q) =>
+                    $q->where('nom', 'like', '%' . $this->search . '%')
+                      ->orWhere('prenom', 'like', '%' . $this->search . '%')
+                      ->orWhere('fonction', 'like', '%' . $this->search . '%')
                 )
-                ->where('statut_paiement', '!=', 'paye')
-            )
-            ->where('type_paiement', 'par_entreprise')
-            ->get();
-        }
+                ->orderBy('nom')
+                ->get()
+            : collect();
+
+        // ← Demandes d'adhésion en attente
+        $demandesEnAttente = $entreprise
+            ? Participant::where('id_entreprise', $entreprise->id)
+                ->where('statut_adhesion', 'en_attente')
+                ->get()
+            : collect();
 
         return view('livewire.entreprise.mes-participants', [
-            'participants' => $entreprise
-                ? Participant::where('id_entreprise', $entreprise->id)
-                    ->when($this->search, fn($q) =>
-                        $q->where('nom', 'like', '%'.$this->search.'%')
-                          ->orWhere('prenom', 'like', '%'.$this->search.'%')
-                    )
-                    ->latest()
-                    ->get()
-                : collect(),
-
-            'demandesEnAttente' => $entreprise
-                ? Participant::where('id_entreprise', $entreprise->id)
-                    ->where('statut_adhesion', 'en_attente')
-                    ->get()
-                : collect(),
-
-            'evenements' => Evenement::where('date_fin', '>=', now()->toDateString())
-                ->orderBy('nom')
-                ->get(),
-
-            'entreprise'              => $entreprise,
-            'evenements_avec_impayés' => $evenements_avec_impayés,
-        ])->layout('layouts.entreprise', ['title' => 'Mes Participants']);
+            'membres'           => $membres,
+            'demandesEnAttente' => $demandesEnAttente,
+            'entreprise'        => $entreprise,
+        ])->layout('layouts.entreprise', ['title' => 'Mes Membres']);
     }
 }
