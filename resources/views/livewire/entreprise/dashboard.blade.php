@@ -1,8 +1,25 @@
 <div>
 
-    {{-- 
+    {{-- ============================================================
+         MESSAGES INLINE
+    ============================================================ --}}
+    @if($alertSuccess)
+    <div class="bg-green-100 border border-green-300 text-green-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
+        <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
+        {{ $alertSuccess }}
+    </div>
+    @endif
+
+    @if($alertError)
+    <div class="bg-red-100 border border-red-300 text-red-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
+        <i class="fa-solid fa-circle-xmark text-red-500 text-xl"></i>
+        {{ $alertError }}
+    </div>
+    @endif
+
+    {{-- ============================================================
          INFO ENTREPRISE
-     --}}
+    ============================================================ --}}
     @if($entreprise)
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center gap-6">
@@ -70,11 +87,11 @@
     </div>
     @endif
 
-    {{-- 
+    {{-- ============================================================
          NOTIFICATION PAIEMENT LIGDICASH
-         → Affiché quand l'entreprise est validée et qu'il y a
-           un paiement en attente
-     --}}
+         → Affiché quand l'entreprise est validée
+           et qu'aucun paiement n'a encore été soumis
+    ============================================================ --}}
     @if($paiementEnAttente)
     <div class="rounded-xl shadow p-6 mb-6 border-l-4"
         style="background: linear-gradient(135deg, #007A3D, #005a2d); border-color: #C8102E;">
@@ -108,9 +125,141 @@
     </div>
     @endif
 
-    {{-- 
+    {{-- ============================================================
+         REÇU DE PAIEMENT
+         → Affiché quand le paiement a déjà été soumis
+    ============================================================ --}}
+    @if(isset($recuPaiement) && $recuPaiement)
+    <div class="bg-white rounded-xl shadow p-6 mb-6 border-l-4"
+        style="border-color: #007A3D;">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style="background-color: #e6f4ed;">
+                    <i class="fa-solid fa-receipt text-2xl" style="color: #007A3D;"></i>
+                </div>
+                <div>
+                    <p class="font-bold text-gray-800 text-lg">Paiement soumis</p>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        Numéro de reçu :
+                        <span class="font-mono font-bold text-gray-700">
+                            REC-{{ str_pad($recuPaiement->id, 6, '0', STR_PAD_LEFT) }}
+                        </span>
+                        · {{ $recuPaiement->date }}
+                    </p>
+                    <p class="text-lg font-bold mt-1" style="color: #007A3D;">
+                        {{ number_format($recuPaiement->montant, 0, ',', ' ') }} FCFA
+                    </p>
+
+                    {{-- ← Statut paiement --}}
+                    @if($statutPaiement == 'valide')
+                    <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                        <i class="fa-solid fa-circle-check mr-1"></i>
+                        Paiement confirmé ✅
+                    </span>
+                    @elseif($statutPaiement == 'rejete')
+                    <span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium">
+                        <i class="fa-solid fa-circle-xmark mr-1"></i>
+                        Paiement rejeté
+                    </span>
+                    @else
+                    <span class="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+                        <i class="fa-solid fa-clock mr-1"></i>
+                        En attente de confirmation
+                    </span>
+                    @endif
+
+                </div>
+            </div>
+            <button onclick="imprimerRecu()"
+                class="px-5 py-2.5 rounded-xl text-white text-sm font-medium transition hover:opacity-90 flex items-center gap-2 flex-shrink-0"
+                style="background-color: #007A3D;">
+                <i class="fa-solid fa-print"></i>
+                Imprimer le reçu
+            </button>
+        </div>
+    </div>
+
+    {{-- Zone d'impression cachée --}}
+    <div id="zone-recu" style="display:none;">
+        <div style="max-width:500px; margin:auto; font-family:Arial,sans-serif; padding:40px;">
+            <div style="text-align:center; margin-bottom:30px;">
+                <h2 style="color:#007A3D; font-size:24px; margin:0;">GesB2B — CCI-BF</h2>
+                <p style="color:#666; margin:5px 0;">Chambre de Commerce et d'Industrie du Burkina Faso</p>
+                <p style="color:#999; font-size:12px; margin:5px 0;">Reçu de paiement officiel</p>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:20px; margin-bottom:20px; text-align:center;">
+                <p style="color:#999; font-size:12px; margin:0 0 5px;">Numéro de reçu</p>
+                <p style="font-family:monospace; font-size:22px; font-weight:bold; margin:0; color:#333;">
+                    REC-{{ str_pad($recuPaiement->id, 6, '0', STR_PAD_LEFT) }}
+                </p>
+            </div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:12px 0; color:#666; font-size:14px;">Entreprise</td>
+                    <td style="padding:12px 0; font-weight:bold; text-align:right; color:#333;">
+                        {{ $entreprise->nom }}
+                    </td>
+                </tr>
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:12px 0; color:#666; font-size:14px;">Représentant</td>
+                    <td style="padding:12px 0; font-weight:bold; text-align:right; color:#333;">
+                        {{ $representant->nom }} {{ $representant->prenom }}
+                    </td>
+                </tr>
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:12px 0; color:#666; font-size:14px;">Mode de paiement</td>
+                    <td style="padding:12px 0; font-weight:bold; text-align:right; color:#333;">
+                        LigdiCash
+                    </td>
+                </tr>
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:12px 0; color:#666; font-size:14px;">Statut</td>
+                    <td style="padding:12px 0; font-weight:bold; text-align:right; color:#333;">
+                        @if($statutPaiement == 'valide') Confirmé ✅
+                        @elseif($statutPaiement == 'rejete') Rejeté ❌
+                        @else En attente ⏳
+                        @endif
+                    </td>
+                </tr>
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:12px 0; color:#666; font-size:14px;">Date</td>
+                    <td style="padding:12px 0; font-weight:bold; text-align:right; color:#333;">
+                        {{ $recuPaiement->date }}
+                    </td>
+                </tr>
+                <tr style="background:#e6f4ed;">
+                    <td style="padding:16px 12px; font-weight:bold; font-size:16px; color:#333;">
+                        Montant payé
+                    </td>
+                    <td style="padding:16px 12px; font-weight:bold; font-size:22px; text-align:right; color:#007A3D;">
+                        {{ number_format($recuPaiement->montant, 0, ',', ' ') }} FCFA
+                    </td>
+                </tr>
+            </table>
+            <div style="text-align:center; margin-top:30px; padding-top:20px; border-top:1px solid #eee; color:#999; font-size:12px;">
+                <p style="margin:0;">Reçu officiel CCI-BF — GesB2B Platform</p>
+                <p style="margin:5px 0 0;">Ce reçu est généré automatiquement.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function imprimerRecu() {
+        var contenu = document.getElementById('zone-recu').innerHTML;
+        var fenetre = window.open('', '_blank');
+        fenetre.document.write('<html><head><title>Reçu GesB2B — CCI-BF</title></head><body>' + contenu + '</body></html>');
+        fenetre.document.close();
+        fenetre.focus();
+        fenetre.print();
+        fenetre.close();
+    }
+    </script>
+    @endif
+
+    {{-- ============================================================
          NOTIFICATIONS SYSTÈME
- --}}
+    ============================================================ --}}
     @if($notifications->count() > 0)
     <div class="bg-white rounded-xl shadow p-5 mb-6">
         <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
@@ -136,9 +285,9 @@
     </div>
     @endif
 
-    {{-- 
+    {{-- ============================================================
          DEMANDES D'ADHÉSION EN ATTENTE
-    --}}
+    ============================================================ --}}
     @if($demandesEnAttente > 0)
     <div class="bg-white rounded-xl shadow p-5 mb-6 border-l-4" style="border-color: #C8102E;">
         <div class="flex items-center justify-between">
@@ -153,7 +302,6 @@
                     </p>
                     <p class="text-sm text-gray-400 mt-0.5">
                         Des personnes souhaitent rejoindre votre entreprise.
-                        Vérifiez s'ils font bien partie de votre équipe.
                     </p>
                 </div>
             </div>
@@ -167,9 +315,9 @@
     </div>
     @endif
 
-    {{--
+    {{-- ============================================================
          STATISTIQUES
-    --}}
+    ============================================================ --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
         <div class="bg-white rounded-xl shadow p-6 flex items-center gap-4 border-l-4 hover:shadow-lg transition"
@@ -210,9 +358,9 @@
 
     </div>
 
-    {{-- 
+    {{-- ============================================================
          ÉVÉNEMENTS DISPONIBLES
-     --}}
+    ============================================================ --}}
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center justify-between mb-5">
             <h3 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
@@ -310,9 +458,9 @@
         @endforelse
     </div>
 
-    {{-- 
+    {{-- ============================================================
          DERNIERS MEMBRES
-     --}}
+    ============================================================ --}}
     <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
@@ -355,7 +503,7 @@
                 </span>
                 @else
                 <span class="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <i class="fa-solid fa-clock"></i>
                 </span>
                 @endif
             </div>
@@ -374,18 +522,13 @@
         @endforelse
     </div>
 
-    {{-- 
+    {{-- ============================================================
          MODAL PAIEMENT LIGDICASH
-         NOTE INTÉGRATION RÉELLE :
-         → POST https://api.ligdicash.com/pay/v1/gate/push-in/plain/execute
-         → Headers : Authorization: Bearer {apiToken}
-         → Docs : https://developers.ligdicash.com
-    --}}
+    ============================================================ --}}
     @if($showModalPaiement)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]">
 
-            {{-- Header --}}
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <div class="flex items-center gap-3">
@@ -407,27 +550,24 @@
                 <div class="bg-gray-50 rounded-xl p-4 mb-6 text-center border border-gray-200">
                     <p class="text-xs text-gray-500 mb-1">Montant à payer</p>
                     <p class="text-3xl font-bold" style="color: #007A3D;">
-                        {{ number_format($montantPaiement, 0, ',', ' ') }} FCFA
+                        {{ number_format($montant_paiement, 0, ',', ' ') }} FCFA
                     </p>
                 </div>
 
-                {{-- Simulation notice --}}
+                {{-- Notice simulation --}}
                 <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-5 text-xs text-yellow-700 flex items-start gap-2">
                     <i class="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0"></i>
                     <div>
                         <p class="font-bold mb-1">Mode simulation</p>
                         L'intégration LigdiCash sera activée dès réception des clés API.
-                        Les paiements réels se feront via Orange Money ou Moov Africa.
                     </div>
                 </div>
 
                 @if($etape_paiement == 1)
-                {{-- Étape 1 : Choix opérateur --}}
                 <p class="text-sm font-semibold text-gray-700 mb-4">
                     Choisissez votre opérateur :
                 </p>
-                <div class="space-y-3">
-
+                <div class="space-y-3 mb-5">
                     <button type="button" wire:click="$set('mode_paiement', 'orange_money')"
                         class="w-full border-2 rounded-xl p-4 transition flex items-center gap-4
                             {{ $mode_paiement === 'orange_money' ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:bg-orange-50' }}">
@@ -435,7 +575,7 @@
                             style="background-color: #FF6600;">OM</div>
                         <div class="text-left">
                             <p class="font-bold text-gray-800">Orange Money</p>
-                            <p class="text-xs text-gray-400">Composez *144*4*6# pour obtenir votre OTP</p>
+                            <p class="text-xs text-gray-400">Composez *144*4*6# pour votre OTP</p>
                         </div>
                         @if($mode_paiement === 'orange_money')
                         <i class="fa-solid fa-circle-check ml-auto text-orange-500"></i>
@@ -451,7 +591,7 @@
                             style="background-color: #0066CC;">MM</div>
                         <div class="text-left">
                             <p class="font-bold text-gray-800">Moov Africa</p>
-                            <p class="text-xs text-gray-400">Paiement via votre compte Moov Money</p>
+                            <p class="text-xs text-gray-400">Paiement via Moov Money</p>
                         </div>
                         @if($mode_paiement === 'moov_money')
                         <i class="fa-solid fa-circle-check ml-auto text-blue-500"></i>
@@ -459,10 +599,9 @@
                         <i class="fa-solid fa-chevron-right ml-auto text-gray-400"></i>
                         @endif
                     </button>
-
                 </div>
 
-                <div class="mt-5">
+                <div class="mb-5">
                     <label class="block text-gray-600 text-sm font-medium mb-1.5">
                         Votre numéro de téléphone *
                     </label>
@@ -475,7 +614,7 @@
                 </div>
 
                 @if($mode_paiement == 'orange_money')
-                <div class="bg-orange-50 border border-orange-200 rounded-xl p-3 mt-3 text-xs text-orange-700 flex items-start gap-2">
+                <div class="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-5 text-xs text-orange-700 flex items-start gap-2">
                     <i class="fa-solid fa-circle-info mt-0.5 flex-shrink-0"></i>
                     Composez <strong>*144*4*6#</strong> sur votre téléphone Orange
                     pour générer votre OTP avant de continuer.
@@ -483,14 +622,13 @@
                 @endif
 
                 <button wire:click="envoyerOtp"
-                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg mt-5 flex items-center justify-center gap-2"
+                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg flex items-center justify-center gap-2"
                     style="background-color: #007A3D;">
                     <i class="fa-solid fa-paper-plane"></i>
                     Continuer et recevoir mon OTP
                 </button>
 
                 @elseif($etape_paiement == 2)
-                {{-- Étape 2 : Saisie OTP --}}
                 <div class="text-center mb-6">
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
                         style="background-color: #e6f4ed;">
@@ -502,7 +640,7 @@
                     </p>
                 </div>
 
-                <div>
+                <div class="mb-4">
                     <label class="block text-gray-600 text-sm font-medium mb-1.5">
                         Code OTP reçu *
                     </label>
@@ -514,23 +652,30 @@
                     @enderror
                 </div>
 
-                {{-- Simulation : affiche le code --}}
-                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center text-xs text-yellow-700 mt-3">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center text-xs text-yellow-700 mb-5">
                     <i class="fa-solid fa-triangle-exclamation mr-1"></i>
                     <strong>Simulation :</strong> Votre code OTP est
                     <span class="font-mono font-bold text-red-600 text-lg ml-1">{{ $otp_code }}</span>
                 </div>
 
-                <div class="flex gap-3 mt-5">
+                <div class="flex gap-3">
                     <button wire:click="$set('etape_paiement', 1)"
                         class="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
                         <i class="fa-solid fa-arrow-left mr-1"></i> Retour
                     </button>
                     <button wire:click="confirmerOtp"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
                         class="flex-1 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm flex items-center justify-center gap-2"
                         style="background-color: #007A3D;">
-                        <i class="fa-solid fa-check"></i>
-                        Confirmer le paiement
+                        <span wire:loading.remove wire:target="confirmerOtp">
+                            <i class="fa-solid fa-check mr-1"></i>
+                            Confirmer le paiement
+                        </span>
+                        <span wire:loading wire:target="confirmerOtp">
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            Traitement...
+                        </span>
                     </button>
                 </div>
                 @endif

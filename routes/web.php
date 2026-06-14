@@ -48,6 +48,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/badges',          \App\Livewire\Admin\GestionBadges::class)->name('admin.badges');
         Route::get('/notifications',   \App\Livewire\Admin\GestionNotifications::class)->name('admin.notifications');
         Route::get('/utilisateurs',    \App\Livewire\Admin\GestionUtilisateurs::class)->name('admin.utilisateurs');
+        Route::get('/chefs-delegation', \App\Livewire\Admin\GestionChefsDelegation::class)->name('admin.chefs-delegation');
     });
 
     // ============================================================

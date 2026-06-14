@@ -51,12 +51,12 @@
             @php
             $navItems = [
                 ['route' => 'participant.dashboard',   'icon' => 'fa-gauge',          'label' => 'Dashboard'],
-                ['route' => 'participant.profil',      'icon' => 'fa-user',           'label' => 'Mon Profil'],
-                ['route' => 'participant.inscription', 'icon' => 'fa-clipboard-list', 'label' => 'Mon Inscription'],
-                ['route' => 'participant.souhaits',    'icon' => 'fa-heart',          'label' => 'Mes Souhaits'],
-                ['route' => 'participant.rendez-vous', 'icon' => 'fa-handshake',      'label' => 'Mes RDV'],
-                ['route' => 'participant.planning',    'icon' => 'fa-calendar-check', 'label' => 'Mon Planning'],
-                ['route' => 'participant.badge',       'icon' => 'fa-id-badge',       'label' => 'Mon Badge'],
+                ['route' => 'participant.profil',      'icon' => 'fa-user',           'label' => ' Profil'],
+                ['route' => 'participant.inscription', 'icon' => 'fa-clipboard-list', 'label' => ' Inscription'],
+                ['route' => 'participant.souhaits',    'icon' => 'fa-heart',          'label' => ' Souhaits'],
+                ['route' => 'participant.rendez-vous', 'icon' => 'fa-handshake',      'label' => ' RDV'],
+                ['route' => 'participant.planning',    'icon' => 'fa-calendar-check', 'label' => ' Planning'],
+                ['route' => 'participant.badge',       'icon' => 'fa-id-badge',       'label' => ' Badge'],
                 ['route' => 'participant.catalogue',   'icon' => 'fa-book-open',      'label' => 'Catalogue'],
             ];
             @endphp

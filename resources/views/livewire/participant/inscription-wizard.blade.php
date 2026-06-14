@@ -1,24 +1,20 @@
 <div>
 
-    {{-- 
-         BARRE DE PROGRESSION
-    --}}
+    {{-- BARRE DE PROGRESSION --}}
     @if($etape > 0)
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center justify-between">
-
             @php
             $etapes = [
-                1 => 'Détails',
-                2 => $estMembre ? 'Mes infos' : 'Infos & Entreprise',
-                3 => 'Partenaire',
-                4 => 'Disponibilités',
-                5 => 'Confirmation',
+                1 => 'Événement',
+                2 => 'Infos',
+                3 => 'Activité',
+                4 => 'Partenariat',
+                5 => 'Dispo & CDD',
+                6 => 'Confirmation',
             ];
             @endphp
-
             @foreach($etapes as $num => $label)
-
             <div class="flex flex-col items-center flex-1">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition
                     {{ $etape >= $num ? 'text-white border-transparent' : 'text-gray-400 border-gray-300' }}"
@@ -34,22 +30,17 @@
                     {{ $label }}
                 </p>
             </div>
-
             @if($num < count($etapes))
             <div class="flex-1 h-0.5 mb-4 {{ $etape > $num ? '' : 'bg-gray-200' }}"
                 style="{{ $etape > $num ? 'background-color: #C8102E;' : '' }}">
             </div>
             @endif
-
             @endforeach
-
         </div>
     </div>
     @endif
 
-    {{-- 
-         ÉTAPE 0 — ACCUEIL
-    --}}
+    {{-- ÉTAPE 0 — ACCUEIL --}}
     @if($etape == 0)
     <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
         <div class="p-8 text-white text-center"
@@ -63,15 +54,13 @@
                 <i class="fa-solid fa-location-dot mr-1"></i>{{ $evenement->ville }}
                 <span class="mx-2">•</span>
                 <i class="fa-solid fa-calendar mr-1"></i>
-                {{ \Carbon\Carbon::parse($evenement->date_debut)->locale('fr')->translatedFormat('d/m/Y') }}
+                {{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }}
                 @if($evenement->date_debut != $evenement->date_fin)
-                → {{ \Carbon\Carbon::parse($evenement->date_fin)->locale('fr')->translatedFormat('d/m/Y') }}
+                → {{ \Carbon\Carbon::parse($evenement->date_fin)->format('d/m/Y') }}
                 @endif
             </p>
         </div>
         <div class="p-8">
-
-            {{-- Info selon le mode --}}
             @if($estMembre && $entreprise)
             <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0"
@@ -81,80 +70,34 @@
                 <div>
                     <p class="text-xs text-gray-400">Vous représentez</p>
                     <p class="font-bold text-gray-800">{{ $entreprise->nom }}</p>
-                    <p class="text-xs text-gray-500">
-                        {{ $entreprise->secteur_activite }}
-                        · {{ $entreprise->ville }}, {{ $entreprise->pays }}
-                    </p>
+                    <p class="text-xs text-gray-500">{{ $entreprise->secteur_activite }} · {{ $entreprise->ville }}</p>
                 </div>
             </div>
             @endif
 
             <p class="text-gray-600 text-center mb-6">
-                Vous allez suivre <strong>5 étapes</strong> pour finaliser votre inscription.
+                Vous allez suivre <strong>6 étapes</strong> pour finaliser votre inscription.
             </p>
 
             <div class="space-y-3 mb-8">
-
+                @foreach([
+                    [1, 'Détails de l\'événement', 'Consultez les informations', 'fa-calendar'],
+                    [2, 'Informations personnelles', 'Nom, prénom, fonction, contact', 'fa-user'],
+                    [3, 'Activité professionnelle', 'Secteur, description, objectif', 'fa-briefcase'],
+                    [4, 'Recherche de partenariat', 'Type, profil, secteurs (max 3)', 'fa-handshake'],
+                    [5, 'Disponibilités & CDD', 'Jours disponibles et chef de délégation', 'fa-calendar-days'],
+                    [6, 'Confirmation', 'Récapitulatif et validation', 'fa-circle-check'],
+                ] as [$num, $titre, $desc, $icon])
                 <div class="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50">
                     <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                        style="background-color: #C8102E;">1</div>
+                        style="background-color: #C8102E;">{{ $num }}</div>
                     <div>
-                        <p class="font-semibold text-gray-800">Détails de l'événement</p>
-                        <p class="text-xs text-gray-500">Consultez les informations de l'événement</p>
+                        <p class="font-semibold text-gray-800">{{ $titre }}</p>
+                        <p class="text-xs text-gray-500">{{ $desc }}</p>
                     </div>
-                    <i class="fa-solid fa-calendar text-gray-300 ml-auto text-xl"></i>
+                    <i class="fa-solid {{ $icon }} text-gray-300 ml-auto text-xl"></i>
                 </div>
-
-                <div class="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                        style="background-color: #C8102E;">2</div>
-                    <div>
-                        <p class="font-semibold text-gray-800">
-                            @if($estMembre) Vos informations personnelles
-                            @else Vos informations + entreprise
-                            @endif
-                        </p>
-                        <p class="text-xs text-gray-500">
-                            @if($estMembre)
-                            Vérifiez vos informations (infos entreprise déjà remplies)
-                            @else
-                            Complétez votre profil et les infos de votre entreprise
-                            @endif
-                        </p>
-                    </div>
-                    <i class="fa-solid fa-user text-gray-300 ml-auto text-xl"></i>
-                </div>
-
-                <div class="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                        style="background-color: #C8102E;">3</div>
-                    <div>
-                        <p class="font-semibold text-gray-800">Profil partenaire recherché</p>
-                        <p class="text-xs text-gray-500">Définissez le type de partenaire que vous cherchez</p>
-                    </div>
-                    <i class="fa-solid fa-handshake text-gray-300 ml-auto text-xl"></i>
-                </div>
-
-                <div class="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                        style="background-color: #C8102E;">4</div>
-                    <div>
-                        <p class="font-semibold text-gray-800">Disponibilités</p>
-                        <p class="text-xs text-gray-500">Précisez les jours où vous serez présent</p>
-                    </div>
-                    <i class="fa-solid fa-calendar-days text-gray-300 ml-auto text-xl"></i>
-                </div>
-
-                <div class="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                        style="background-color: #C8102E;">5</div>
-                    <div>
-                        <p class="font-semibold text-gray-800">Confirmation</p>
-                        <p class="text-xs text-gray-500">Récapitulatif et validation finale</p>
-                    </div>
-                    <i class="fa-solid fa-circle-check text-gray-300 ml-auto text-xl"></i>
-                </div>
-
+                @endforeach
             </div>
 
             <button wire:click="commencer"
@@ -164,19 +107,15 @@
                 Commencer l'inscription
             </button>
 
-            <a href="{{ route($loop ?? 'dashboard') }}"
-                onclick="window.history.back(); return false;"
+            <a href="javascript:history.back()"
                 class="block text-center mt-4 text-sm text-gray-400 hover:text-gray-600">
                 <i class="fa-solid fa-arrow-left mr-1"></i> Retour
             </a>
-
         </div>
     </div>
     @endif
 
-    {{--
-         ÉTAPE 1 — DÉTAILS ÉVÉNEMENT
-    = --}}
+    {{-- ÉTAPE 1 — DÉTAILS ÉVÉNEMENT --}}
     @if($etape == 1)
     <div class="bg-white rounded-2xl shadow-lg p-8">
         <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -184,7 +123,6 @@
             Détails de l'événement
         </h3>
         <div class="space-y-4">
-
             <div class="bg-green-50 border border-green-200 rounded-xl p-5">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
@@ -200,66 +138,263 @@
                     </div>
                 </div>
             </div>
-
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-gray-50 rounded-xl p-4">
-                    <p class="text-xs text-gray-500 mb-1">
-                        <i class="fa-solid fa-calendar mr-1"></i> Date
-                    </p>
+                    <p class="text-xs text-gray-500 mb-1"><i class="fa-solid fa-calendar mr-1"></i> Date</p>
                     <p class="font-semibold text-gray-800">
-                        {{ \Carbon\Carbon::parse($evenement->date_debut)->locale('fr')->translatedFormat('d/m/Y') }}
+                        {{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }}
                         @if($evenement->date_debut != $evenement->date_fin)
-                        → {{ \Carbon\Carbon::parse($evenement->date_fin)->locale('fr')->translatedFormat('d/m/Y') }}
+                        → {{ \Carbon\Carbon::parse($evenement->date_fin)->format('d/m/Y') }}
                         @endif
                     </p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-4">
-                    <p class="text-xs text-gray-500 mb-1">
-                        <i class="fa-solid fa-clock mr-1"></i> Horaire
-                    </p>
-                    <p class="font-semibold text-gray-800">
-                        {{ $evenement->heure_debut }} — {{ $evenement->heure_fin }}
-                    </p>
+                    <p class="text-xs text-gray-500 mb-1"><i class="fa-solid fa-clock mr-1"></i> Horaire</p>
+                    <p class="font-semibold text-gray-800">{{ $evenement->heure_debut }} — {{ $evenement->heure_fin }}</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-4">
-                    <p class="text-xs text-gray-500 mb-1">
-                        <i class="fa-solid fa-location-dot mr-1"></i> Lieu
-                    </p>
+                    <p class="text-xs text-gray-500 mb-1"><i class="fa-solid fa-location-dot mr-1"></i> Lieu</p>
                     <p class="font-semibold text-gray-800">{{ $evenement->lieu }}</p>
                     <p class="text-xs text-gray-400">{{ $evenement->ville }}</p>
                 </div>
                 @if($evenement->nom_salle)
                 <div class="bg-blue-50 rounded-xl p-4">
-                    <p class="text-xs text-blue-500 mb-1">
-                        <i class="fa-solid fa-door-open mr-1"></i> Salle RDV
-                    </p>
+                    <p class="text-xs text-blue-500 mb-1"><i class="fa-solid fa-door-open mr-1"></i> Salle RDV</p>
                     <p class="font-semibold text-gray-800">{{ $evenement->nom_salle }}</p>
                     <p class="text-xs text-gray-400">{{ $evenement->nombre_tables }} tables</p>
                 </div>
                 @endif
             </div>
-
-            <div class="rounded-xl p-4
-                {{ $evenement->type_paiement == 'gratuit'
-                    ? 'bg-green-50 border border-green-200'
-                    : 'bg-yellow-50 border border-yellow-200' }}">
-                <p class="text-xs font-semibold mb-1
-                    {{ $evenement->type_paiement == 'gratuit' ? 'text-green-700' : 'text-yellow-700' }}">
-                    <i class="fa-solid fa-money-bill mr-1"></i> Paiement
-                </p>
+            <div class="rounded-xl p-4 {{ $evenement->type_paiement == 'gratuit' ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200' }}">
                 @if($evenement->type_paiement == 'gratuit')
-                <p class="font-bold text-green-700">
-                    <i class="fa-solid fa-gift mr-1"></i> Événement gratuit
-                </p>
-                @elseif($evenement->type_paiement == 'par_participant')
-                <p class="font-bold text-yellow-700">
-                    {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA par participant
-                </p>
+                <p class="font-bold text-green-700"><i class="fa-solid fa-gift mr-1"></i> Événement gratuit</p>
                 @else
                 <p class="font-bold text-yellow-700">
-                    {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA par entreprise
+                    {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA
                 </p>
                 @endif
+            </div>
+        </div>
+        <div class="flex justify-between mt-8">
+            <button wire:click="precedent"
+                class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Précédent
+            </button>
+            <button wire:click="suivant"
+                class="px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
+                style="background-color: #C8102E;">
+                Continuer <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+    @endif
+
+    {{-- ÉTAPE 2 — INFORMATIONS PERSONNELLES --}}
+    @if($etape == 2)
+    <div class="bg-white rounded-2xl shadow-lg p-8">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <i class="fa-solid fa-user" style="color: #C8102E;"></i>
+            Informations personnelles
+        </h3>
+
+        {{-- Entreprise en lecture seule pour membres --}}
+        @if($estMembre && $entreprise)
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5">
+            <p class="text-xs font-bold text-green-700 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-building"></i> Votre entreprise
+            </p>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                    <p class="text-xs text-gray-400">Entreprise</p>
+                    <p class="font-semibold text-gray-800">{{ $entreprise->nom }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400">Secteur</p>
+                    <p class="font-semibold text-gray-800">{{ $entreprise->secteur_activite }}</p>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom *</label>
+                <input wire:model="nom" type="text"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Prénom *</label>
+                <input wire:model="prenom" type="text"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                @error('prenom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Genre *</label>
+                <select wire:model="genre"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                    <option value="">-- Choisir --</option>
+                    <option value="homme">Homme</option>
+                    <option value="femme">Femme</option>
+                </select>
+                @error('genre') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone *</label>
+                <input wire:model="telephone" type="text"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                    placeholder="+226 70 00 00 00">
+                @error('telephone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            @if(!$estMembre)
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Email *</label>
+                <input wire:model="email" type="email"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            @endif
+            <div class="{{ $estMembre ? '' : '' }}">
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Fonction *</label>
+                <select wire:model.live="fonction"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                    <option value="">-- Choisir --</option>
+                    @foreach($fonctions as $f)
+                    <option value="{{ $f }}">{{ $f }}</option>
+                    @endforeach
+                </select>
+                @if($fonction == 'Autre')
+                <input wire:model="fonction_autre" type="text"
+                    class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                    placeholder="Précisez votre fonction...">
+                @endif
+                @error('fonction') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+
+            @if(!$estMembre)
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays *</label>
+                <select wire:model.live="pays"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                    <option value="">-- Choisir --</option>
+                    @foreach($pays_liste as $p)
+                    <option value="{{ $p }}">{{ $p }}</option>
+                    @endforeach
+                </select>
+                @error('pays') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville *</label>
+                @if($pays && count($villesDisponibles) > 1)
+                <select wire:model="ville"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                    <option value="">-- Choisir --</option>
+                    @foreach($villesDisponibles as $v)
+                    <option value="{{ $v }}">{{ $v }}</option>
+                    @endforeach
+                </select>
+                @else
+                <input wire:model="ville" type="text"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                @endif
+                @error('ville') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            @endif
+        </div>
+
+        <div class="flex justify-between mt-8">
+            <button wire:click="precedent"
+                class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Précédent
+            </button>
+            <button wire:click="suivant"
+                class="px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
+                style="background-color: #C8102E;">
+                Continuer <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+    @endif
+
+    {{-- ÉTAPE 3 — ACTIVITÉ PROFESSIONNELLE --}}
+    @if($etape == 3)
+    <div class="bg-white rounded-2xl shadow-lg p-8">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <i class="fa-solid fa-briefcase" style="color: #C8102E;"></i>
+            Activité professionnelle
+        </h3>
+
+        <div class="grid grid-cols-2 gap-4">
+
+            @if(!$estMembre)
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Secteur d'activité *</label>
+                <select wire:model.live="secteur_activite"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                    <option value="">-- Choisir --</option>
+                    @foreach($secteurs as $s)
+                    <option value="{{ $s }}">{{ $s }}</option>
+                    @endforeach
+                </select>
+                @if($secteur_activite === 'Autre')
+                <input wire:model="secteur_activite_autre" type="text"
+                    class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                    placeholder="Précisez le secteur...">
+                @endif
+                @error('secteur_activite') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Sous-secteur</label>
+                <input wire:model="sous_secteur" type="text"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                    placeholder="Ex: Céréales...">
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Année de création *</label>
+                <input wire:model="annee_creation" type="number" min="1900" max="{{ date('Y') }}"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                @error('annee_creation') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Nombre de salariés *</label>
+                <input wire:model="nombre_salaries" type="number" min="1"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                @error('nombre_salaries') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">CA export (%) *</label>
+                <input wire:model="chiffre_affaires" type="number" min="0" max="100"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                @error('chiffre_affaires') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div class="col-span-2">
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Description des activités *</label>
+                <textarea wire:model="description_activites" rows="3"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm resize-none"
+                    placeholder="Décrivez vos activités principales..."></textarea>
+                @error('description_activites') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            <div class="col-span-2">
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Principaux produits / Savoir-faire</label>
+                <textarea wire:model="principaux_produits" rows="2"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm resize-none"
+                    placeholder="Ex: Riz, logiciels, textile..."></textarea>
+            </div>
+            @endif
+
+            {{-- Objectif de participation (pour tous) --}}
+            <div class="col-span-2">
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                    Objectif de participation
+                    <span class="text-gray-400 font-normal">(200 caractères max)</span>
+                </label>
+                <textarea wire:model="objectif_participation" rows="3" maxlength="200"
+                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm resize-none"
+                    placeholder="Qu'espérez-vous trouver à cet événement ?"></textarea>
+                <p class="text-xs text-gray-400 mt-1 text-right">
+                    {{ strlen($objectif_participation) }} / 200
+                </p>
+                @error('objectif_participation') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
 
         </div>
@@ -278,312 +413,112 @@
     </div>
     @endif
 
-    {{-- 
-         ÉTAPE 2 — MES INFORMATIONS
-         → MODE MEMBRE : infos personnelles uniquement
-         → MODE REPRÉSENTANT : infos personnelles + entreprise
-     --}}
-    @if($etape == 2)
-    <div class="bg-white rounded-2xl shadow-lg p-8">
-        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <i class="fa-solid fa-user" style="color: #C8102E;"></i>
-            @if($estMembre) Vos informations personnelles
-            @else Vos informations
-            @endif
-        </h3>
-
-        <div class="space-y-5">
-
-            {{-- ← Bloc entreprise affiché en lecture seule pour les membres --}}
-            @if($estMembre && $entreprise)
-            <div class="bg-green-50 border border-green-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-green-700 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-building"></i>
-                    Votre entreprise
-                    <span class="font-normal text-green-500">(informations déjà enregistrées)</span>
-                </p>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <p class="text-xs text-gray-400">Entreprise</p>
-                        <p class="font-semibold text-gray-800">{{ $entreprise->nom }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400">Secteur</p>
-                        <p class="font-semibold text-gray-800">
-                            {{ $entreprise->secteur_activite }}
-                            @if($entreprise->sous_secteur)
-                            / {{ $entreprise->sous_secteur }}
-                            @endif
-                        </p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400">Pays / Ville</p>
-                        <p class="font-semibold text-gray-800">
-                            {{ $entreprise->ville }}, {{ $entreprise->pays }}
-                        </p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400">Année création</p>
-                        <p class="font-semibold text-gray-800">{{ $entreprise->annee_creation ?? '-' }}</p>
-                    </div>
-                </div>
-            </div>
-            @endif
-
-            {{-- Infos personnelles --}}
-            <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
-                <p class="text-xs font-bold text-blue-700 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-user-tie"></i>
-                    Informations personnelles
-                </p>
-                <div class="grid grid-cols-2 gap-4">
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom *</label>
-                        <input wire:model="nom" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                        @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Prénom *</label>
-                        <input wire:model="prenom" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                        @error('prenom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    @if(!$estMembre)
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Email *</label>
-                        <input wire:model="email" type="email"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-                            placeholder="votre@email.com">
-                        @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-                    @endif
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone *</label>
-                        <input wire:model="telephone" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-                            placeholder="+226 70 00 00 00">
-                        @error('telephone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="{{ $estMembre ? 'col-span-2' : 'col-span-2' }}">
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Fonction *</label>
-                        <select wire:model.live="fonction"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                            <option value="">-- Choisir --</option>
-                            @foreach($fonctions as $f)
-                            <option value="{{ $f }}">{{ $f }}</option>
-                            @endforeach
-                        </select>
-                        @if($fonction == 'Autre')
-                        <input wire:model="fonction_autre" type="text"
-                            class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-                            placeholder="Précisez votre fonction...">
-                        @endif
-                        @error('fonction') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                </div>
-            </div>
-
-            {{-- ← Infos entreprise UNIQUEMENT pour le représentant --}}
-            @if(!$estMembre)
-            <div class="bg-green-50 border border-green-200 rounded-xl p-5">
-                <p class="text-xs font-bold text-green-700 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-building"></i>
-                    Informations sur votre entreprise
-                </p>
-                <div class="grid grid-cols-2 gap-4">
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays *</label>
-                        <select wire:model.live="pays"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                            <option value="">-- Choisir --</option>
-                            @foreach($pays_liste as $p)
-                            <option value="{{ $p }}">{{ $p }}</option>
-                            @endforeach
-                        </select>
-                        @error('pays') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville *</label>
-                        @if($pays && count($villesDisponibles) > 1)
-                        <select wire:model="ville"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                            <option value="">-- Choisir --</option>
-                            @foreach($villesDisponibles as $v)
-                            <option value="{{ $v }}">{{ $v }}</option>
-                            @endforeach
-                        </select>
-                        @else
-                        <input wire:model="ville" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                        @endif
-                        @error('ville') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Secteur d'activité *</label>
-                        <select wire:model="secteur_activite"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                            <option value="">-- Choisir --</option>
-                            @foreach($secteurs as $s)
-                            <option value="{{ $s }}">{{ $s }}</option>
-                            @endforeach
-                        </select>
-                        @error('secteur_activite') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Sous-secteur *</label>
-                        <input wire:model="sous_secteur" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-                            placeholder="Ex: Agro-alimentaire...">
-                        @error('sous_secteur') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="col-span-2">
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Description des activités *
-                        </label>
-                        <textarea wire:model="description_activites" rows="3"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white resize-none"
-                            placeholder="Décrivez vos activités principales..."></textarea>
-                        @error('description_activites') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="col-span-2">
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            Principaux produits / Savoir-faire
-                            <span class="text-gray-400 font-normal">(optionnel)</span>
-                        </label>
-                        <textarea wire:model="principaux_produits" rows="2"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white resize-none"
-                            placeholder="Ex: Logiciels, Céréales..."></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Année de création *</label>
-                        <input wire:model="annee_creation" type="number"
-                            min="1900" max="{{ date('Y') }}"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                        @error('annee_creation') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Nombre de salariés *</label>
-                        <input wire:model="nombre_salaries" type="number" min="1"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                        @error('nombre_salaries') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="col-span-2">
-                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            CA export % *
-                        </label>
-                        <div class="relative">
-                            <input wire:model="chiffre_affaires" type="number"
-                                min="0" max="100" step="0.1"
-                                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white pr-10">
-                            <span class="absolute right-4 top-3 text-gray-400 text-sm">%</span>
-                        </div>
-                        @error('chiffre_affaires') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-
-                </div>
-            </div>
-            @endif
-
-        </div>
-
-        <div class="flex justify-between mt-8">
-            <button wire:click="precedent"
-                class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium flex items-center gap-2">
-                <i class="fa-solid fa-arrow-left"></i> Précédent
-            </button>
-            <button wire:click="suivant"
-                wire:loading.attr="disabled"
-                class="px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
-                style="background-color: #C8102E;">
-                <span wire:loading.remove wire:target="suivant">
-                    Continuer <i class="fa-solid fa-arrow-right"></i>
-                </span>
-                <span wire:loading wire:target="suivant">
-                    <i class="fa-solid fa-spinner fa-spin"></i>
-                </span>
-            </button>
-        </div>
-    </div>
-    @endif
-
-    {{-- 
-         ÉTAPE 3 — PROFIL PARTENAIRE
-     --}}
-    @if($etape == 3)
+    {{-- ÉTAPE 4 — RECHERCHE DE PARTENARIAT --}}
+    @if($etape == 4)
     <div class="bg-white rounded-2xl shadow-lg p-8">
         <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
             <i class="fa-solid fa-handshake" style="color: #C8102E;"></i>
-            Profil partenaire recherché
+            Recherche de partenariat
         </h3>
         <p class="text-gray-500 text-sm mb-6">
             Ces informations permettront au système de vous proposer les meilleurs matchs.
         </p>
-        <div class="space-y-5">
 
-            <div>
-                <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                    Secteur d'activité recherché *
-                </label>
-                <select wire:model="secteur_recherche"
-                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
-                    <option value="">-- Choisir --</option>
-                    @foreach($secteurs as $s)
-                    <option value="{{ $s }}">{{ $s }}</option>
-                    @endforeach
-                </select>
-                @error('secteur_recherche') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-            </div>
+        <div class="space-y-6">
 
+            {{-- Zone géographique --}}
             <div>
-                <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                    Zone géographique ciblée *
-                </label>
+                <label class="block text-gray-600 text-sm font-medium mb-1.5">Zone géographique ciblée *</label>
                 <select wire:model="zone_geographique"
                     class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
                     <option value="">-- Choisir --</option>
-                    @foreach($zones as $z)
+                    @foreach($zonesGeographiques as $z)
                     <option value="{{ $z }}">{{ $z }}</option>
                     @endforeach
                 </select>
                 @error('zone_geographique') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
             </div>
 
+            {{-- Type de partenariat (max 3) --}}
             <div>
-                <label class="block text-gray-600 text-sm font-medium mb-3">
-                    Type de partenaire recherché *
+                <label class="block text-gray-600 text-sm font-medium mb-2">
+                    Type de partenariat recherché *
+                    <span class="text-gray-400 font-normal">(max 3 — {{ count($types_partenariat) }}/3)</span>
                 </label>
-                <div class="grid grid-cols-3 gap-3">
-                    @foreach($types_partenaires as $type)
-                    <label class="cursor-pointer">
-                        <input type="radio" wire:model="type_partenaire"
-                            value="{{ $type }}" class="hidden peer">
-                        <div class="p-3 border-2 rounded-xl text-center transition text-sm
-                            peer-checked:border-red-400 peer-checked:bg-red-50 peer-checked:text-red-700
-                            hover:bg-gray-50 border-gray-200 text-gray-600">
-                            {{ $type }}
-                        </div>
-                    </label>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach($typesPartenariatOptions as $option)
+                    <button type="button"
+                        wire:click="toggleTypePartenariat('{{ $option }}')"
+                        class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
+                            {{ in_array($option, $types_partenariat)
+                                ? 'border-green-400 bg-green-50 text-green-700 font-medium'
+                                : (count($types_partenariat) >= 3 && !in_array($option, $types_partenariat)
+                                    ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                    : 'border-gray-200 hover:border-green-300 text-gray-600') }}">
+                        <i class="fa-solid {{ in_array($option, $types_partenariat) ? 'fa-circle-check text-green-500' : 'fa-circle text-gray-300' }}"></i>
+                        {{ $option }}
+                    </button>
                     @endforeach
                 </div>
-                @error('type_partenaire')
-                    <span class="text-red-500 text-xs mt-2 block">{{ $message }}</span>
-                @enderror
+                @if(in_array('Autre', $types_partenariat))
+                <input wire:model="type_partenariat_autre" type="text"
+                    class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                    placeholder="Précisez le type de partenariat...">
+                @endif
+                @error('types_partenariat') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+            </div>
+
+            {{-- Profil partenaire (max 3) --}}
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-2">
+                    Profil de partenaire recherché *
+                    <span class="text-gray-400 font-normal">(max 3 — {{ count($profils_partenaire) }}/3)</span>
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach($profilsPartenariatOptions as $option)
+                    <button type="button"
+                        wire:click="toggleProfilPartenaire('{{ $option }}')"
+                        class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
+                            {{ in_array($option, $profils_partenaire)
+                                ? 'border-blue-400 bg-blue-50 text-blue-700 font-medium'
+                                : (count($profils_partenaire) >= 3 && !in_array($option, $profils_partenaire)
+                                    ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                    : 'border-gray-200 hover:border-blue-300 text-gray-600') }}">
+                        <i class="fa-solid {{ in_array($option, $profils_partenaire) ? 'fa-circle-check text-blue-500' : 'fa-circle text-gray-300' }}"></i>
+                        {{ $option }}
+                    </button>
+                    @endforeach
+                </div>
+                @error('profils_partenaire') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+            </div>
+
+            {{-- Secteurs recherchés (max 3) --}}
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-2">
+                    Secteurs d'activité recherchés *
+                    <span class="text-gray-400 font-normal">(max 3 — {{ count($secteurs_recherche) }}/3)</span>
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach($secteurs as $option)
+                    <button type="button"
+                        wire:click="toggleSecteurRecherche('{{ $option }}')"
+                        class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
+                            {{ in_array($option, $secteurs_recherche)
+                                ? 'border-red-400 bg-red-50 text-red-700 font-medium'
+                                : (count($secteurs_recherche) >= 3 && !in_array($option, $secteurs_recherche)
+                                    ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                    : 'border-gray-200 hover:border-red-300 text-gray-600') }}">
+                        <i class="fa-solid {{ in_array($option, $secteurs_recherche) ? 'fa-circle-check text-red-500' : 'fa-circle text-gray-300' }}"></i>
+                        {{ $option }}
+                    </button>
+                    @endforeach
+                </div>
+                @if(in_array('Autre', $secteurs_recherche))
+                <input wire:model="secteur_recherche_autre" type="text"
+                    class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                    placeholder="Précisez le secteur recherché...">
+                @endif
+                @error('secteurs_recherche') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
             </div>
 
         </div>
@@ -602,59 +537,71 @@
     </div>
     @endif
 
-    {{-- 
-         ÉTAPE 4 — DISPONIBILITÉS
-     --}}
-    @if($etape == 4)
+    {{-- ÉTAPE 5 — DISPONIBILITÉS + CDD --}}
+    @if($etape == 5)
     <div class="bg-white rounded-2xl shadow-lg p-8">
-        <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <i class="fa-solid fa-calendar-days" style="color: #C8102E;"></i>
-            Vos disponibilités
+            Disponibilités & Chef de Délégation
         </h3>
-        <p class="text-gray-500 text-sm mb-6">
-            Cochez les jours où vous serez présent au forum.
-            Le système ne programmera des RDV que sur ces jours.
-        </p>
 
-        @if($isMultiJours)
-        <div class="grid grid-cols-3 gap-3 mb-6">
-            @foreach($joursEvenement as $jour)
-            <label class="cursor-pointer">
-                <input type="checkbox"
-                    wire:model="disponibilites"
-                    value="{{ $jour }}"
-                    class="hidden peer">
-                <div class="p-4 border-2 rounded-xl text-center transition
-                    peer-checked:border-green-400 peer-checked:bg-green-50
-                    hover:bg-gray-50 border-gray-200">
-                    <p class="font-semibold text-sm text-gray-800">
-                        {{ \Carbon\Carbon::parse($jour)->locale('fr')->translatedFormat('l') }}
-                    </p>
-                    <p class="text-xs text-gray-400 mt-0.5">
-                        {{ \Carbon\Carbon::parse($jour)->format('d/m/Y') }}
-                    </p>
-                </div>
-            </label>
-            @endforeach
-        </div>
-        @error('disponibilites')
-        <p class="text-red-500 text-xs mb-4">{{ $message }}</p>
-        @enderror
-        @else
-        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-            <p class="text-sm text-blue-700 flex items-center gap-2">
-                <i class="fa-solid fa-circle-info"></i>
-                Événement sur 1 jour —
-                <strong>
-                    {{ \Carbon\Carbon::parse($evenement->date_debut)->locale('fr')->translatedFormat('l d/m/Y') }}
-                </strong>
+        {{-- Disponibilités --}}
+        <div class="mb-6">
+            <p class="text-sm font-semibold text-gray-700 mb-3">
+                Jours de disponibilité
+                <span class="text-gray-400 font-normal">(optionnel)</span>
             </p>
+            @if($isMultiJours)
+            <div class="grid grid-cols-3 gap-3">
+                @foreach($joursEvenement as $jour)
+                <label class="cursor-pointer">
+                    <input type="checkbox" wire:model="disponibilites" value="{{ $jour }}" class="hidden peer">
+                    <div class="p-4 border-2 rounded-xl text-center transition
+                        peer-checked:border-green-400 peer-checked:bg-green-50 hover:bg-gray-50 border-gray-200">
+                        <p class="font-semibold text-sm text-gray-800">
+                            {{ \Carbon\Carbon::parse($jour)->locale('fr')->translatedFormat('l') }}
+                        </p>
+                        <p class="text-xs text-gray-400 mt-0.5">{{ \Carbon\Carbon::parse($jour)->format('d/m/Y') }}</p>
+                    </div>
+                </label>
+                @endforeach
+            </div>
+            @else
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p class="text-sm text-blue-700">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    Événement sur 1 jour —
+                    <strong>{{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }}</strong>
+                </p>
+            </div>
+            @endif
+            @error('disponibilites') <p class="text-red-500 text-xs mt-2">{{ $message }}</p> @enderror
         </div>
-        @endif
 
-        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-start gap-2">
-            <i class="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0"></i>
-            Si vous ne cochez rien, vous serez considéré disponible tous les jours de l'événement.
+        {{-- Chef de délégation --}}
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+            <p class="text-sm font-bold text-blue-700 mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-user-tie"></i>
+                Chef de Délégation
+                <span class="font-normal text-blue-500">(optionnel)</span>
+            </p>
+            <p class="text-xs text-blue-600 mb-3">
+                Un Chef de Délégation peut vous aider à compléter votre inscription
+                et valider votre préinscription.
+            </p>
+            <select wire:model="id_chef_delegation"
+                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
+                <option value="">-- Aucun Chef de Délégation --</option>
+                @foreach($chefsDelegation as $cdd)
+                <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
+                @endforeach
+            </select>
+            @if($id_chef_delegation)
+            <div class="mt-2 flex items-center gap-2 text-blue-700 text-xs bg-white border border-blue-200 rounded-lg px-3 py-2">
+                <i class="fa-solid fa-circle-check text-blue-500"></i>
+                Vous avez sélectionné un CDD. Il recevra une notification pour valider votre préinscription.
+            </div>
+            @endif
         </div>
 
         <div class="flex justify-between mt-8">
@@ -671,145 +618,115 @@
     </div>
     @endif
 
-    {{-- 
-         ÉTAPE 5 — CONFIRMATION
-     --}}
-    @if($etape == 5)
+    {{-- ÉTAPE 6 — CONFIRMATION --}}
+    @if($etape == 6)
     <div class="bg-white rounded-2xl shadow-lg p-8">
         <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
             <i class="fa-solid fa-circle-check" style="color: #007A3D;"></i>
             Récapitulatif
         </h3>
-        <p class="text-gray-500 text-sm mb-6">
-            Vérifiez vos informations avant de confirmer votre inscription.
-        </p>
+        <p class="text-gray-500 text-sm mb-6">Vérifiez vos informations avant de confirmer.</p>
 
         <div class="space-y-4">
 
             {{-- Événement --}}
             <div class="bg-green-50 border border-green-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-green-700 mb-2">
-                    <i class="fa-solid fa-calendar mr-1"></i> Événement
-                </p>
+                <p class="text-xs font-bold text-green-700 mb-1"><i class="fa-solid fa-calendar mr-1"></i> Événement</p>
                 <p class="font-bold text-gray-800">{{ $evenement->nom }}</p>
-                <p class="text-xs text-gray-500 mt-1">
-                    {{ \Carbon\Carbon::parse($evenement->date_debut)->locale('fr')->translatedFormat('d/m/Y') }}
-                    — {{ $evenement->ville }}
-                </p>
+                <p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }} — {{ $evenement->ville }}</p>
             </div>
 
             {{-- Infos personnelles --}}
             <div class="bg-gray-50 rounded-xl p-4">
-                <p class="text-xs font-bold text-gray-600 mb-3">
-                    <i class="fa-solid fa-user mr-1"></i> Vos informations
-                </p>
+                <p class="text-xs font-bold text-gray-600 mb-3"><i class="fa-solid fa-user mr-1"></i> Informations personnelles</p>
                 <div class="grid grid-cols-2 gap-3 text-sm">
                     <div>
                         <span class="text-gray-400 text-xs">Nom complet</span>
-                        <p class="font-semibold text-gray-800">{{ $nom }} {{ $prenom }}</p>
+                        <p class="font-semibold">{{ $nom }} {{ $prenom }}</p>
                     </div>
                     <div>
                         <span class="text-gray-400 text-xs">Fonction</span>
-                        <p class="font-semibold text-gray-800">{{ $fonction }}</p>
+                        <p class="font-semibold">{{ $fonction }}</p>
                     </div>
                     <div>
                         <span class="text-gray-400 text-xs">Téléphone</span>
-                        <p class="font-semibold text-gray-800">{{ $telephone }}</p>
+                        <p class="font-semibold">{{ $telephone }}</p>
                     </div>
                     @if($email)
                     <div>
                         <span class="text-gray-400 text-xs">Email</span>
-                        <p class="font-semibold text-gray-800">{{ $email }}</p>
+                        <p class="font-semibold">{{ $email }}</p>
                     </div>
                     @endif
                 </div>
             </div>
 
-            {{-- Infos entreprise --}}
-            @if($estMembre && $entreprise)
-            <div class="bg-green-50 border border-green-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-green-700 mb-3">
-                    <i class="fa-solid fa-building mr-1"></i> Votre entreprise
-                </p>
-                <div class="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                        <span class="text-gray-400 text-xs">Entreprise</span>
-                        <p class="font-semibold text-gray-800">{{ $entreprise->nom }}</p>
-                    </div>
-                    <div>
-                        <span class="text-gray-400 text-xs">Secteur</span>
-                        <p class="font-semibold text-gray-800">
-                            {{ $entreprise->secteur_activite }}
-                            @if($entreprise->sous_secteur) / {{ $entreprise->sous_secteur }} @endif
-                        </p>
-                    </div>
-                    <div>
-                        <span class="text-gray-400 text-xs">Pays / Ville</span>
-                        <p class="font-semibold text-gray-800">
-                            {{ $entreprise->ville }}, {{ $entreprise->pays }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-            @else
+            {{-- Activité --}}
+            @if($objectif_participation || $secteur_activite)
             <div class="bg-gray-50 rounded-xl p-4">
-                <p class="text-xs font-bold text-gray-600 mb-3">
-                    <i class="fa-solid fa-building mr-1"></i> Votre entreprise
-                </p>
+                <p class="text-xs font-bold text-gray-600 mb-3"><i class="fa-solid fa-briefcase mr-1"></i> Activité</p>
                 <div class="grid grid-cols-2 gap-3 text-sm">
+                    @if($secteur_activite)
                     <div>
                         <span class="text-gray-400 text-xs">Secteur</span>
-                        <p class="font-semibold text-gray-800">
-                            {{ $secteur_activite }} — {{ $sous_secteur }}
-                        </p>
+                        <p class="font-semibold">{{ $secteur_activite }}</p>
                     </div>
-                    <div>
-                        <span class="text-gray-400 text-xs">Pays / Ville</span>
-                        <p class="font-semibold text-gray-800">{{ $pays }} / {{ $ville }}</p>
+                    @endif
+                    @if($objectif_participation)
+                    <div class="col-span-2">
+                        <span class="text-gray-400 text-xs">Objectif</span>
+                        <p class="font-semibold">{{ $objectif_participation }}</p>
                     </div>
-                    <div>
-                        <span class="text-gray-400 text-xs">Année / Salariés</span>
-                        <p class="font-semibold text-gray-800">{{ $annee_creation }} / {{ $nombre_salaries }}</p>
-                    </div>
-                    <div>
-                        <span class="text-gray-400 text-xs">CA export</span>
-                        <p class="font-semibold text-gray-800">{{ $chiffre_affaires }}%</p>
-                    </div>
+                    @endif
                 </div>
             </div>
             @endif
 
-            {{-- Partenaire recherché --}}
+            {{-- Partenariat --}}
             <div class="bg-blue-50 rounded-xl p-4">
-                <p class="text-xs font-bold text-blue-700 mb-3">
-                    <i class="fa-solid fa-handshake mr-1"></i> Partenaire recherché
-                </p>
-                <div class="flex flex-wrap gap-2">
-                    <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
-                        <i class="fa-solid fa-tag mr-1"></i>{{ $secteur_recherche }}
-                    </span>
-                    <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
-                        <i class="fa-solid fa-location-dot mr-1"></i>{{ $zone_geographique }}
-                    </span>
-                    <span class="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
-                        <i class="fa-solid fa-handshake mr-1"></i>{{ $type_partenaire }}
-                    </span>
+                <p class="text-xs font-bold text-blue-700 mb-3"><i class="fa-solid fa-handshake mr-1"></i> Partenariat recherché</p>
+                <div class="space-y-2">
+                    @if($zone_geographique)
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-xs text-gray-500 mr-2">Zone :</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">{{ $zone_geographique }}</span>
+                    </div>
+                    @endif
+                    @if(!empty($types_partenariat))
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-xs text-gray-500 mr-2">Type :</span>
+                        @foreach($types_partenariat as $t)
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">{{ $t }}</span>
+                        @endforeach
+                    </div>
+                    @endif
+                    @if(!empty($profils_partenaire))
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-xs text-gray-500 mr-2">Profil :</span>
+                        @foreach($profils_partenaire as $p)
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">{{ $p }}</span>
+                        @endforeach
+                    </div>
+                    @endif
+                    @if(!empty($secteurs_recherche))
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-xs text-gray-500 mr-2">Secteurs :</span>
+                        @foreach($secteurs_recherche as $s)
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">{{ $s }}</span>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
             </div>
 
-            {{-- Disponibilités --}}
-            @if(!empty($disponibilites))
-            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-yellow-700 mb-2">
-                    <i class="fa-solid fa-calendar-days mr-1"></i> Disponibilités
+            {{-- CDD --}}
+            @if($id_chef_delegation)
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p class="text-xs font-bold text-blue-700 mb-1">
+                    <i class="fa-solid fa-user-tie mr-1"></i> Chef de Délégation
                 </p>
-                <div class="flex flex-wrap gap-2">
-                    @foreach($disponibilites as $dispo)
-                    <span class="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
-                        {{ \Carbon\Carbon::parse($dispo)->locale('fr')->translatedFormat('l d/m/Y') }}
-                    </span>
-                    @endforeach
-                </div>
+                @php $cddChoisi = $chefsDelegation->find($id_chef_delegation); @endphp
+                <p class="font-semibold text-gray-800">{{ $cddChoisi?->name ?? '-' }}</p>
             </div>
             @endif
 
@@ -819,7 +736,7 @@
                 <i class="fa-solid fa-circle-check text-green-500 text-2xl"></i>
                 <div>
                     <p class="font-bold text-green-700">Événement gratuit</p>
-                    <p class="text-xs text-green-600">Votre inscription sera validée automatiquement.</p>
+                    <p class="text-xs text-green-600">Inscription validée automatiquement.</p>
                 </div>
             </div>
             @else
@@ -829,9 +746,7 @@
                     <p class="font-bold text-yellow-700">
                         {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA
                     </p>
-                    <p class="text-xs text-yellow-600">
-                        Le paiement sera requis après confirmation.
-                    </p>
+                    <p class="text-xs text-yellow-600">Le paiement sera requis après confirmation.</p>
                 </div>
             </div>
             @endif
@@ -849,12 +764,10 @@
                 class="px-8 py-3 rounded-xl text-white font-bold transition hover:opacity-90 text-sm shadow-lg flex items-center gap-2"
                 style="background-color: #007A3D;">
                 <span wire:loading.remove>
-                    <i class="fa-solid fa-circle-check mr-1"></i>
-                    Confirmer l'inscription
+                    <i class="fa-solid fa-circle-check mr-1"></i> Confirmer l'inscription
                 </span>
                 <span wire:loading>
-                    <i class="fa-solid fa-spinner fa-spin mr-1"></i>
-                    Confirmation...
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Confirmation...
                 </span>
             </button>
         </div>

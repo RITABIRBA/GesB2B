@@ -11,13 +11,10 @@ use App\Models\Evenement;
 use App\Models\Inscription;
 use App\Models\Notification;
 use App\Models\Paiement;
+use App\Models\Recu;
 
 class Dashboard extends Component
 {
-    
-    // MODAL PAIEMENT LIGDICASH
-    
-
     public bool   $showModalPaiement  = false;
     public string $mode_paiement      = 'orange_money';
     public string $telephone_paiement = '';
@@ -25,16 +22,18 @@ class Dashboard extends Component
     public string $otp_saisi          = '';
     public int    $etape_paiement     = 1;
     public float  $montant_paiement   = 0;
-    public $inscription_id            = null;
+    public int    $inscription_id     = 0;
 
-    
-    // MODAL PAIEMENT
-    
+    public string $alertSuccess = '';
+    public string $alertError   = '';
 
     public function openModalPaiement(): void
     {
-        // ← Récupère le montant depuis la première inscription en attente
+        $this->alertSuccess = '';
+        $this->alertError   = '';
+
         $entreprise = Entreprise::where('email_responsable', auth()->user()->email)->first();
+
         $representant = $entreprise
             ? Participant::where('id_entreprise', $entreprise->id)
                 ->where('role', 'representant')
@@ -50,6 +49,9 @@ class Dashboard extends Component
             if ($inscription) {
                 $this->inscription_id   = $inscription->id;
                 $this->montant_paiement = $inscription->evenement->montant_inscription ?? 0;
+            } else {
+                $this->inscription_id   = 0;
+                $this->montant_paiement = 0;
             }
         }
 
@@ -66,69 +68,79 @@ class Dashboard extends Component
     {
         $this->showModalPaiement = false;
         $this->etape_paiement    = 1;
+        $this->inscription_id    = 0;
+        $this->otp_code          = '';
+        $this->otp_saisi         = '';
     }
 
     public function envoyerOtp(): void
     {
         $this->validate([
             'telephone_paiement' => 'required|string|min:8|max:15',
+        ], [
+            'telephone_paiement.required' => 'Le numéro de téléphone est obligatoire.',
+            'telephone_paiement.min'      => 'Numéro trop court.',
         ]);
+
         $this->otp_code       = (string) rand(100000, 999999);
         $this->etape_paiement = 2;
     }
 
+    /**
+     * Vérifie l'OTP et enregistre le paiement LigdiCash.
+     *
+     * NOTE INTÉGRATION RÉELLE LIGDICASH :
+     * POST https://api.ligdicash.com/pay/v1/gate/push-in/plain/execute
+     * Headers : Authorization: Bearer {apiToken}
+     * Body    : { amount, customer_phone_number, otp, description }
+     * Docs    : https://developers.ligdicash.com
+     */
     public function confirmerOtp(): void
     {
-        $this->validate(['otp_saisi' => 'required|string']);
+        $this->validate([
+            'otp_saisi' => 'required|string',
+        ]);
 
-        if ($this->otp_saisi != $this->otp_code) {
-            $this->addError('otp_saisi', 'Code OTP incorrect.');
+        if (trim($this->otp_saisi) !== trim($this->otp_code)) {
+            $this->addError('otp_saisi', 'Code OTP incorrect. Essayez encore.');
             return;
         }
 
-        $this->enregistrerPaiement();
-    }
+        if (!$this->inscription_id) {
+            $this->alertError = 'Aucune inscription en attente de paiement trouvée.';
+            $this->closeModalPaiement();
+            return;
+        }
 
-    /**
-     * Enregistre le paiement LigdiCash.
-     *
-     * NOTE POUR L'INTÉGRATION RÉELLE :
-     * Remplacer cette méthode par un appel API LigdiCash.
-     * Documentation : https://developers.ligdicash.com
-     *
-     * Exemple d'appel API :
-     * POST https://api.ligdicash.com/pay/v1/gate/push-in/plain/execute
-     * Headers : Authorization: Bearer {token}
-     * Body : { amount, customer_phone_number, otp, ... }
-     */
-    private function enregistrerPaiement(): void
-    {
-        if ($this->inscription_id) {
-            $inscription = Inscription::findOrFail($this->inscription_id);
-
-            Paiement::create([
+        try {
+            $paiement = Paiement::create([
                 'id_inscription' => $this->inscription_id,
                 'montant'        => $this->montant_paiement,
                 'date_paiement'  => now()->toDateString(),
                 'mode_paiement'  => 'ligdicash_' . $this->mode_paiement,
                 'statut'         => 'en_attente',
             ]);
+
+            Recu::create([
+                'id_paiement' => $paiement->id,
+                'montant'     => $this->montant_paiement,
+                'date'        => now()->toDateString(),
+            ]);
+
+            $this->closeModalPaiement();
+
+            $this->alertSuccess = 'Paiement LigdiCash soumis ! Reçu généré : REC-'
+                . str_pad($paiement->id, 6, '0', STR_PAD_LEFT);
+
+        } catch (\Exception $e) {
+            $this->alertError = 'Erreur : ' . $e->getMessage();
         }
-
-        $this->closeModalPaiement();
-        session()->flash('success', 'Paiement LigdiCash soumis ! En attente de confirmation.');
     }
-
-    
-    // RENDER
-    
 
     public function render()
     {
-        // ← Récupère l'entreprise du représentant connecté
         $entreprise = Entreprise::where('email_responsable', auth()->user()->email)->first();
 
-        // ← Récupère le représentant connecté
         $representant = $entreprise
             ? Participant::where('id_entreprise', $entreprise->id)
                 ->where(function ($q) {
@@ -138,7 +150,6 @@ class Dashboard extends Component
                 ->first()
             : null;
 
-        // ← Statistiques
         $totalMembres = $entreprise
             ? Participant::where('id_entreprise', $entreprise->id)->count()
             : 0;
@@ -158,7 +169,6 @@ class Dashboard extends Component
             })->count()
             : 0;
 
-        // ← Derniers membres acceptés
         $derniersMembres = $entreprise
             ? Participant::where('id_entreprise', $entreprise->id)
                 ->whereIn('statut_adhesion', ['accepte', null])
@@ -167,14 +177,12 @@ class Dashboard extends Component
                 ->get()
             : collect();
 
-        // ← Demandes d'adhésion en attente
         $demandesEnAttente = $entreprise
             ? Participant::where('id_entreprise', $entreprise->id)
                 ->where('statut_adhesion', 'en_attente')
                 ->count()
             : 0;
 
-        // ← Notifications non lues pour le représentant
         $notifications = $representant
             ? Notification::where('id_participant', $representant->id)
                 ->orderBy('created_at', 'desc')
@@ -182,25 +190,39 @@ class Dashboard extends Component
                 ->get()
             : collect();
 
-        // ← Vérifie si l'entreprise est validée et a des paiements en attente
+        // Logique paiement et reçu
         $paiementEnAttente = false;
         $montantPaiement   = 0;
+        $recuPaiement      = null;
+        $statutPaiement    = null;
 
         if ($entreprise && $entreprise->statut_validation == 'valide' && $representant) {
-            $inscriptionEnAttente = Inscription::where('id_participant', $representant->id)
-                ->where('statut_paiement', 'en_attente')
+
+            $inscription = Inscription::where('id_participant', $representant->id)
+                ->whereIn('statut_paiement', ['en_attente', 'paye'])
                 ->with('evenement')
+                ->latest()
                 ->first();
 
-            if ($inscriptionEnAttente && $inscriptionEnAttente->evenement?->type_paiement != 'gratuit') {
-                $paiementEnAttente = true;
-                $montantPaiement   = $inscriptionEnAttente->evenement->montant_inscription ?? 0;
+            if ($inscription && $inscription->evenement?->type_paiement != 'gratuit') {
+
+                $dernierPaiement = Paiement::where('id_inscription', $inscription->id)
+                    ->with('recu')
+                    ->latest()
+                    ->first();
+
+                if (!$dernierPaiement) {
+                    $paiementEnAttente = true;
+                    $montantPaiement   = $inscription->evenement->montant_inscription ?? 0;
+                } else {
+                    $recuPaiement   = $dernierPaiement->recu ?? null;
+                    $statutPaiement = $dernierPaiement->statut;
+                }
             }
         }
 
         $today = now()->toDateString();
 
-        // ← Événements disponibles
         $evenementsDisponibles = Evenement::where('date_fin', '>=', $today)
             ->where(fn($q) =>
                 $q->whereNull('date_ouverture_inscriptions')
@@ -232,6 +254,8 @@ class Dashboard extends Component
             'notifications'         => $notifications,
             'paiementEnAttente'     => $paiementEnAttente,
             'montantPaiement'       => $montantPaiement,
+            'recuPaiement'          => $recuPaiement,
+            'statutPaiement'        => $statutPaiement,
             'evenementsDisponibles' => $evenementsDisponibles,
         ])->layout('layouts.entreprise', ['title' => 'Dashboard Entreprise']);
     }

@@ -7,119 +7,103 @@ use App\Models\Participant;
 use App\Models\Evenement;
 use App\Models\Inscription;
 use App\Models\Entreprise;
+use App\Models\User;
 
-/**
- * Wizard d'inscription à un événement
- *
- * DEUX MODES selon si le participant appartient à une entreprise :
- *
- * MODE MEMBRE (appartient déjà à une entreprise) :
- * → Étape 1 : Présentation de l'événement
- * → Étape 2 : Infos personnelles (pré-remplies)
- * → Étape 3 : Profil partenaire recherché
- * → Étape 4 : Disponibilités
- * → Étape 5 : Confirmation
- *
- * MODE REPRÉSENTANT (inscrit son entreprise) :
- * → Étape 1 : Présentation de l'événement
- * → Étape 2 : Infos personnelles + entreprise (pré-remplies)
- * → Étape 3 : Profil partenaire recherché
- * → Étape 4 : Disponibilités
- * → Étape 5 : Confirmation
- */
 class InscriptionWizard extends Component
 {
-    
-    // NAVIGATION
-    
-
+    // Navigation
     public int $etape = 0;
 
-    
-    // ÉVÉNEMENT
-    
-
+    // Événement
     public $id_evenement;
     public $evenement = null;
 
-    
-    // MODE : membre ou représentant
-    
-
-    /** true si le participant appartient déjà à une entreprise */
+    // Mode
     public bool $estMembre = false;
+    public $entreprise     = null;
 
-    /** L'entreprise du participant (si membre) */
-    public $entreprise = null;
-
-
-    // INFOS PERSONNELLES (commun aux 2 modes)
-    
-
-    public string $nom           = '';
-    public string $prenom        = '';
-    public string $email         = '';
-    public string $telephone     = '';
-    public string $fonction      = '';
+    // Étape 2 : Infos personnelles
+    public string $nom            = '';
+    public string $prenom         = '';
+    public string $genre          = '';
+    public string $email          = '';
+    public string $telephone      = '';
+    public string $fonction       = '';
     public string $fonction_autre = '';
-    public array  $disponibilites = [];
+    public string $pays           = '';
+    public string $ville          = '';
 
-    
-    // INFOS ENTREPRISE (uniquement pour le représentant)
-    
+    // Étape 3 : Activité professionnelle
+    public string $secteur_activite        = '';
+    public string $secteur_activite_autre  = '';
+    public string $sous_secteur            = '';
+    public string $description_activites   = '';
+    public string $principaux_produits     = '';
+    public string $annee_creation          = '';
+    public string $nombre_salaries         = '';
+    public string $chiffre_affaires        = '';
+    public string $objectif_participation  = '';
 
-    public string $pays                  = '';
-    public string $ville                 = '';
-    public string $secteur_activite      = '';
-    public string $sous_secteur          = '';
-    public string $description_activites = '';
-    public string $principaux_produits   = '';
-    public string $annee_creation        = '';
-    public string $nombre_salaries       = '';
-    public string $chiffre_affaires      = '';
+    // Étape 4 : Recherche de partenariat
+    public string $zone_geographique       = '';
+    public array  $types_partenariat       = [];
+    public string $type_partenariat_autre  = '';
+    public array  $profils_partenaire      = [];
+    public array  $secteurs_recherche      = [];
+    public string $secteur_recherche_autre = '';
 
-    
-    // PROFIL PARTENAIRE RECHERCHÉ (commun aux 2 modes)
-    
+    // Étape 5 : Disponibilités + CDD
+    public array $disponibilites    = [];
+    public $id_chef_delegation      = '';
 
-    public string $secteur_recherche = '';
-    public string $zone_geographique = '';
-    public string $type_partenaire   = '';
-
-    
-    // LISTES DE RÉFÉRENCE
-    
-
+    // Listes
     public array $secteurs = [
-        'Agriculture', 'Industrie', 'Commerce', 'Services',
-        'Technologie', 'Transport', 'Construction', 'Tourisme',
-        'Santé', 'Education', 'Finance', 'Energie', 'Mines',
-        'Artisanat', 'Autre',
-    ];
-
-    public array $zones = [
-        'Burkina Faso',
-        'Afrique de l\'Ouest',
-        'Afrique Centrale',
-        'Afrique de l\'Est',
-        'Afrique du Nord',
-        'Afrique Australe',
-        'Europe',
-        'Amérique',
-        'Asie',
-        'Monde entier',
-    ];
-
-    public array $types_partenaires = [
-        'Fournisseur',
-        'Client',
-        'Distributeur',
-        'Partenaire financier',
-        'Investisseur',
-        'Sous-traitant',
-        'Revendeur',
-        'Partenaire technique',
+        'Agriculture et agro-alimentaire',
+        'Environnement',
+        'Industrie textile',
+        'Biens de consommation',
+        'Energie',
+        'Formation',
+        'Tourisme',
+        'TIC',
+        'Sous-traitance',
+        'Artisanat',
+        'Distribution',
+        'Prestation',
+        'Industrie manufacturière',
+        'Enseignement',
+        'Services aux entreprises',
+        'BTP',
+        'Activités médicales et pharmaceutiques',
         'Autre',
+    ];
+
+    public array $typesPartenariatOptions = [
+        'Alliance commerciale',
+        'Alliance financière',
+        'Alliance industrielle',
+        'Autre',
+    ];
+
+    public array $profilsPartenariatOptions = [
+        'Consultant',
+        'Distributeur',
+        'Exportateur',
+        'Fabricant / Producteur',
+        'Investisseur',
+        'Importateur',
+        'Prestataire de service',
+        'Sous-traitant',
+        'Innovation',
+        'R&D',
+    ];
+
+    public array $zonesGeographiques = [
+        'Locale',
+        'Nationale',
+        'Régionale (CEDEAO)',
+        'Africaine',
+        'Internationale',
     ];
 
     public array $fonctions = [
@@ -141,27 +125,23 @@ class InscriptionWizard extends Component
     ];
 
     public array $villes_par_pays = [
-        'Burkina Faso'   => ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou', 'Banfora', 'Ouahigouya', 'Kaya', 'Tenkodogo', 'Fada N\'Gourma', 'Dédougou', 'Autre'],
-        'Côte d\'Ivoire' => ['Abidjan', 'Bouaké', 'Daloa', 'San-Pédro', 'Yamoussoukro', 'Korhogo', 'Man', 'Autre'],
-        'Mali'           => ['Bamako', 'Sikasso', 'Mopti', 'Koutiala', 'Kayes', 'Ségou', 'Autre'],
-        'Sénégal'        => ['Dakar', 'Thiès', 'Kaolack', 'Ziguinchor', 'Saint-Louis', 'Autre'],
-        'Ghana'          => ['Accra', 'Kumasi', 'Tamale', 'Cape Coast', 'Autre'],
-        'Togo'           => ['Lomé', 'Sokodé', 'Kara', 'Atakpamé', 'Autre'],
-        'Bénin'          => ['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Autre'],
-        'Niger'          => ['Niamey', 'Zinder', 'Maradi', 'Tahoua', 'Autre'],
+        'Burkina Faso'   => ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou', 'Banfora', 'Ouahigouya', 'Autre'],
+        'Côte d\'Ivoire' => ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'Autre'],
+        'Mali'           => ['Bamako', 'Sikasso', 'Mopti', 'Kayes', 'Autre'],
+        'Sénégal'        => ['Dakar', 'Thiès', 'Kaolack', 'Saint-Louis', 'Autre'],
+        'Ghana'          => ['Accra', 'Kumasi', 'Tamale', 'Autre'],
+        'Togo'           => ['Lomé', 'Sokodé', 'Kara', 'Autre'],
+        'Bénin'          => ['Cotonou', 'Porto-Novo', 'Parakou', 'Autre'],
+        'Niger'          => ['Niamey', 'Zinder', 'Maradi', 'Autre'],
         'Guinée'         => ['Conakry', 'Nzérékoré', 'Kankan', 'Autre'],
-        'Cameroun'       => ['Yaoundé', 'Douala', 'Garoua', 'Bamenda', 'Autre'],
-        'Nigeria'        => ['Lagos', 'Kano', 'Ibadan', 'Abuja', 'Autre'],
-        'France'         => ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Autre'],
+        'Cameroun'       => ['Yaoundé', 'Douala', 'Garoua', 'Autre'],
+        'Nigeria'        => ['Lagos', 'Kano', 'Abuja', 'Autre'],
+        'France'         => ['Paris', 'Lyon', 'Marseille', 'Autre'],
         'Allemagne'      => ['Berlin', 'Hambourg', 'Munich', 'Autre'],
-        'États-Unis'     => ['New York', 'Los Angeles', 'Chicago', 'Washington', 'Autre'],
+        'États-Unis'     => ['New York', 'Los Angeles', 'Chicago', 'Autre'],
         'Chine'          => ['Pékin', 'Shanghai', 'Guangzhou', 'Autre'],
         'Autre'          => ['Autre'],
     ];
-
-    
-    // HELPERS
-    
 
     public function getVillesDisponibles(): array
     {
@@ -173,9 +153,50 @@ class InscriptionWizard extends Component
         $this->ville = '';
     }
 
-    /**
-     * Retourne le dashboard selon le rôle.
-     */
+    public function toggleTypePartenariat(string $type): void
+    {
+        if (in_array($type, $this->types_partenariat)) {
+            $this->types_partenariat = array_values(
+                array_filter($this->types_partenariat, fn($t) => $t !== $type)
+            );
+        } elseif (count($this->types_partenariat) < 3) {
+            $this->types_partenariat[] = $type;
+        }
+    }
+
+    public function toggleProfilPartenaire(string $profil): void
+    {
+        if (in_array($profil, $this->profils_partenaire)) {
+            $this->profils_partenaire = array_values(
+                array_filter($this->profils_partenaire, fn($p) => $p !== $profil)
+            );
+        } elseif (count($this->profils_partenaire) < 3) {
+            $this->profils_partenaire[] = $profil;
+        }
+    }
+
+    public function toggleSecteurRecherche(string $secteur): void
+    {
+        if (in_array($secteur, $this->secteurs_recherche)) {
+            $this->secteurs_recherche = array_values(
+                array_filter($this->secteurs_recherche, fn($s) => $s !== $secteur)
+            );
+        } elseif (count($this->secteurs_recherche) < 3) {
+            $this->secteurs_recherche[] = $secteur;
+        }
+    }
+
+    public function toggleDisponibilite(string $jour): void
+    {
+        if (in_array($jour, $this->disponibilites)) {
+            $this->disponibilites = array_values(
+                array_filter($this->disponibilites, fn($d) => $d !== $jour)
+            );
+        } else {
+            $this->disponibilites[] = $jour;
+        }
+    }
+
     private function getDashboardRoute(): string
     {
         $user = auth()->user();
@@ -185,9 +206,6 @@ class InscriptionWizard extends Component
         return 'dashboard';
     }
 
-    /**
-     * Retourne le layout selon le rôle.
-     */
     private function getLayout(): string
     {
         $user = auth()->user();
@@ -197,10 +215,6 @@ class InscriptionWizard extends Component
         return 'layouts.participant';
     }
 
-    
-    // MOUNT
-    
-
     public function mount($evenement): void
     {
         $this->id_evenement = $evenement;
@@ -209,13 +223,14 @@ class InscriptionWizard extends Component
         $participant = Participant::findForUser(auth()->user());
 
         if ($participant) {
-            // ← Pré-remplit les infos personnelles
             $this->nom       = $participant->nom;
             $this->prenom    = $participant->prenom;
             $this->email     = $participant->email ?? '';
             $this->telephone = $participant->telephone ?? '';
+            $this->genre     = $participant->genre ?? '';
+            $this->pays      = $participant->pays ?? '';
+            $this->ville     = $participant->ville ?? '';
 
-            // ← Gestion fonction avec saisie libre
             if (in_array($participant->fonction, $this->fonctions)) {
                 $this->fonction = $participant->fonction ?? '';
             } else {
@@ -223,62 +238,47 @@ class InscriptionWizard extends Component
                 $this->fonction_autre = $participant->fonction ?? '';
             }
 
-            // ← Pré-remplit le profil partenaire
-            $this->secteur_recherche = $participant->secteur_recherche ?? '';
-            $this->zone_geographique = $participant->zone_geographique ?? '';
-            $this->type_partenaire   = $participant->type_partenaire ?? '';
+            // Secteur activité
+            if (in_array($participant->secteur_activite, $this->secteurs)) {
+                $this->secteur_activite = $participant->secteur_activite ?? '';
+            } else {
+                $this->secteur_activite       = 'Autre';
+                $this->secteur_activite_autre = $participant->secteur_activite ?? '';
+            }
 
-            /// ← Vérifie si le participant appartient à une entreprise
-if ($participant->id_entreprise) {
-    $this->estMembre  = true;
-    $entreprise = Entreprise::find($participant->id_entreprise);
+            $this->sous_secteur            = $participant->sous_secteur ?? '';
+            $this->description_activites   = $participant->description_activites ?? '';
+            $this->principaux_produits     = $participant->principaux_produits ?? '';
+            $this->annee_creation          = $participant->annee_creation ?? '';
+            $this->nombre_salaries         = $participant->nombre_salaries ?? '';
+            $this->chiffre_affaires        = $participant->chiffre_affaires ?? '';
+            $this->objectif_participation  = $participant->objectif_participation ?? '';
+            $this->zone_geographique       = $participant->zone_geographique ?? '';
+            $this->types_partenariat       = $participant->types_partenariat ?? [];
+            $this->type_partenariat_autre  = $participant->type_partenariat_autre ?? '';
+            $this->profils_partenaire      = $participant->profils_partenaire ?? [];
+            $this->secteurs_recherche      = $participant->secteurs_recherche ?? [];
+            $this->secteur_recherche_autre = $participant->secteur_recherche_autre ?? '';
+            $this->disponibilites          = $participant->disponibilites ?? [];
+            $this->id_chef_delegation      = $participant->id_chef_delegation ?? '';
 
-    // ← Récupère l'annee_creation depuis le représentant
-    $representant = Participant::where('id_entreprise', $participant->id_entreprise)
-        ->where('role', 'representant')
-        ->first();
-
-    if ($entreprise) {
-        $entreprise->annee_creation  = $representant->annee_creation ?? null;
-        $entreprise->nombre_salaries = $representant->nombre_salaries ?? null;
-        $entreprise->chiffre_affaires = $representant->chiffre_affaires ?? null;
-    }
-
-    $this->entreprise = $entreprise;
-}
-            else {
-                // ← Représentant : pré-remplit les infos entreprise
-                $this->estMembre             = false;
-                $this->pays                  = $participant->pays ?? '';
-                $this->ville                 = $participant->ville ?? '';
-                $this->secteur_activite      = $participant->secteur_activite ?? '';
-                $this->sous_secteur          = $participant->sous_secteur ?? '';
-                $this->description_activites = $participant->description_activites ?? '';
-                $this->principaux_produits   = $participant->principaux_produits ?? '';
-                $this->annee_creation        = $participant->annee_creation ?? '';
-                $this->nombre_salaries       = $participant->nombre_salaries ?? '';
-                $this->chiffre_affaires      = $participant->chiffre_affaires ?? '';
+            if ($participant->id_entreprise) {
+                $this->estMembre  = true;
+                $this->entreprise = Entreprise::find($participant->id_entreprise);
             }
         }
     }
 
-    
-    // JOURS DE L'ÉVÉNEMENT
-    
-
     public function getJoursEvenement(): array
     {
         if (!$this->evenement) return [];
-
         $jours = [];
         $debut = \Carbon\Carbon::parse($this->evenement->date_debut);
         $fin   = \Carbon\Carbon::parse($this->evenement->date_fin);
-
         while ($debut->lte($fin)) {
             $jours[] = $debut->format('Y-m-d');
             $debut->addDay();
         }
-
         return $jours;
     }
 
@@ -286,9 +286,6 @@ if ($participant->id_entreprise) {
     {
         return count($this->getJoursEvenement()) > 1;
     }
-
-    // NAVIGATION
-    
 
     public function commencer(): void
     {
@@ -298,100 +295,94 @@ if ($participant->id_entreprise) {
     public function suivant(): void
     {
         if ($this->etape == 1) {
-            // ← Étape 1 → 2 : toujours
             $this->etape = 2;
 
         } elseif ($this->etape == 2) {
-
-            // Si "Autre" on utilise la saisie libre
-            if ($this->fonction == 'Autre') {
+            // Si "Autre" → utilise la saisie libre
+            if ($this->fonction === 'Autre') {
                 $this->fonction = $this->fonction_autre;
             }
 
-            if ($this->estMembre) {
-                // ← MODE MEMBRE : valide uniquement les infos personnelles
+            $regles = [
+                'nom'       => 'required|string|max:255',
+                'prenom'    => 'required|string|max:255',
+                'telephone' => 'required|string|max:20',
+                'fonction'  => 'required|string|max:255',
+                'genre'     => 'required|in:homme,femme',
+            ];
+
+            if (!$this->estMembre) {
+                $regles['pays']  = 'required|string|max:255';
+                $regles['ville'] = 'required|string|max:255';
+            }
+
+            $this->validate($regles);
+            $this->etape = 3;
+
+        } elseif ($this->etape == 3) {
+            // Si "Autre" → utilise la saisie libre
+            $secteurFinal = $this->secteur_activite === 'Autre'
+                ? $this->secteur_activite_autre
+                : $this->secteur_activite;
+
+            if (!$this->estMembre) {
                 $this->validate([
-                    'nom'       => 'required|string|max:255',
-                    'prenom'    => 'required|string|max:255',
-                    'telephone' => 'required|string|max:20',
-                    'fonction'  => 'required|string|max:255',
-                ], [
-                    'nom.required'       => 'Le nom est obligatoire.',
-                    'prenom.required'    => 'Le prénom est obligatoire.',
-                    'telephone.required' => 'Le téléphone est obligatoire.',
-                    'fonction.required'  => 'La fonction est obligatoire.',
-                ]);
-            } else {
-                // ← MODE REPRÉSENTANT : valide infos personnelles + entreprise
-                $this->validate([
-                    'nom'                   => 'required|string|max:255',
-                    'prenom'                => 'required|string|max:255',
-                    'email'                 => 'required|email|max:255',
-                    'telephone'             => 'required|string|max:20',
-                    'fonction'              => 'required|string|max:255',
-                    'pays'                  => 'required|string|max:255',
-                    'ville'                 => 'required|string|max:255',
-                    'secteur_activite'      => 'required|string|max:255',
-                    'sous_secteur'          => 'required|string|max:255',
+                    'secteur_activite'      => 'required',
                     'description_activites' => 'required|string',
                     'annee_creation'        => 'required|integer|min:1900|max:' . date('Y'),
                     'nombre_salaries'       => 'required|integer|min:1',
                     'chiffre_affaires'      => 'required|numeric|min:0|max:100',
-                ], [
-                    'email.required'                 => 'L\'email est obligatoire.',
-                    'telephone.required'             => 'Le téléphone est obligatoire.',
-                    'fonction.required'              => 'La fonction est obligatoire.',
-                    'pays.required'                  => 'Le pays est obligatoire.',
-                    'ville.required'                 => 'La ville est obligatoire.',
-                    'secteur_activite.required'      => 'Le secteur est obligatoire.',
-                    'sous_secteur.required'          => 'Le sous-secteur est obligatoire.',
-                    'description_activites.required' => 'La description est obligatoire.',
-                    'annee_creation.required'        => 'L\'année de création est obligatoire.',
-                    'nombre_salaries.required'       => 'Le nombre de salariés est obligatoire.',
-                    'chiffre_affaires.required'      => 'Le chiffre d\'affaires est obligatoire.',
-                    'chiffre_affaires.max'           => 'Le chiffre d\'affaires ne peut pas dépasser 100%.',
+                    'objectif_participation' => 'nullable|string|max:200',
+                ]);
+            } else {
+                $this->validate([
+                    'objectif_participation' => 'nullable|string|max:200',
                 ]);
             }
 
-            $this->etape = 3;
-
-        } elseif ($this->etape == 3) {
-            // ← Étape 3 : profil partenaire
-            $this->validate([
-                'secteur_recherche' => 'required|string|max:255',
-                'zone_geographique' => 'required|string|max:255',
-                'type_partenaire'   => 'required|string|max:255',
-            ], [
-                'secteur_recherche.required' => 'Le secteur recherché est obligatoire.',
-                'zone_geographique.required' => 'La zone géographique est obligatoire.',
-                'type_partenaire.required'   => 'Le type de partenaire est obligatoire.',
-            ]);
+            // Sauvegarde le secteur final
+            if ($this->secteur_activite === 'Autre') {
+                $this->secteur_activite = $secteurFinal;
+            }
 
             $this->etape = 4;
 
         } elseif ($this->etape == 4) {
-            // ← Étape 4 : disponibilités (optionnel)
-            if ($this->getIsMultiJours() && empty($this->disponibilites)) {
-                $this->addError('disponibilites', 'Veuillez sélectionner au moins un jour.');
+            $this->validate([
+                'zone_geographique' => 'required|string|max:255',
+            ], [
+                'zone_geographique.required' => 'La zone géographique est obligatoire.',
+            ]);
+
+            if (empty($this->types_partenariat)) {
+                $this->addError('types_partenariat', 'Choisissez au moins un type de partenariat.');
+                return;
+            }
+            if (empty($this->profils_partenaire)) {
+                $this->addError('profils_partenaire', 'Choisissez au moins un profil de partenaire.');
+                return;
+            }
+            if (empty($this->secteurs_recherche)) {
+                $this->addError('secteurs_recherche', 'Choisissez au moins un secteur recherché.');
                 return;
             }
 
             $this->etape = 5;
+
+        } elseif ($this->etape == 5) {
+            if ($this->getIsMultiJours() && empty($this->disponibilites)) {
+                $this->addError('disponibilites', 'Veuillez sélectionner au moins un jour.');
+                return;
+            }
+            $this->etape = 6;
         }
     }
 
     public function precedent(): void
     {
-        if ($this->etape > 1) {
-            $this->etape--;
-        } else {
-            $this->etape = 0;
-        }
+        if ($this->etape > 1) $this->etape--;
+        else $this->etape = 0;
     }
-
-    
-    // CONFIRMATION FINALE
-    
 
     public function confirmer()
     {
@@ -402,7 +393,6 @@ if ($participant->id_entreprise) {
             return;
         }
 
-        // ← Vérifie si déjà inscrit
         $existe = Inscription::where('id_participant', $participant->id)
             ->where('id_evenement', $this->id_evenement)
             ->exists();
@@ -412,50 +402,36 @@ if ($participant->id_entreprise) {
             return redirect()->route($this->getDashboardRoute());
         }
 
-        if ($this->estMembre) {
-            // ← MODE MEMBRE : met à jour seulement les infos personnelles
-            // Les infos entreprise restent inchangées
-            $participant->update([
-                'nom'              => $this->nom,
-                'prenom'           => $this->prenom,
-                'telephone'        => $this->telephone,
-                'fonction'         => $this->fonction,
-                'zone_geographique'=> $this->zone_geographique,
-                'type_partenaire'  => $this->type_partenaire,
-                'secteur_recherche'=> $this->secteur_recherche,
-                'disponibilites'   => !empty($this->disponibilites)
-                    ? json_encode($this->disponibilites)
-                    : null,
-                'id_evenement'     => $this->id_evenement,
-            ]);
-        } else {
-            // ← MODE REPRÉSENTANT : met à jour toutes les infos
-            $participant->update([
-                'nom'                   => $this->nom,
-                'prenom'                => $this->prenom,
-                'email'                 => $this->email,
-                'telephone'             => $this->telephone,
-                'fonction'              => $this->fonction,
-                'pays'                  => $this->pays,
-                'ville'                 => $this->ville,
-                'secteur_activite'      => $this->secteur_activite,
-                'sous_secteur'          => $this->sous_secteur,
-                'description_activites' => $this->description_activites,
-                'principaux_produits'   => $this->principaux_produits,
-                'annee_creation'        => $this->annee_creation,
-                'nombre_salaries'       => $this->nombre_salaries,
-                'chiffre_affaires'      => $this->chiffre_affaires,
-                'zone_geographique'     => $this->zone_geographique,
-                'type_partenaire'       => $this->type_partenaire,
-                'secteur_recherche'     => $this->secteur_recherche,
-                'disponibilites'        => !empty($this->disponibilites)
-                    ? json_encode($this->disponibilites)
-                    : null,
-                'id_evenement'          => $this->id_evenement,
-            ]);
-        }
+        $participant->update([
+            'nom'                    => $this->nom,
+            'prenom'                 => $this->prenom,
+            'genre'                  => $this->genre,
+            'telephone'              => $this->telephone,
+            'fonction'               => $this->fonction,
+            'pays'                   => $this->pays ?: $participant->pays,
+            'ville'                  => $this->ville ?: $participant->ville,
+            'secteur_activite'       => $this->secteur_activite ?: $participant->secteur_activite,
+            'sous_secteur'           => $this->sous_secteur ?: null,
+            'description_activites'  => $this->description_activites ?: null,
+            'principaux_produits'    => $this->principaux_produits ?: null,
+            'annee_creation'         => $this->annee_creation ?: null,
+            'nombre_salaries'        => $this->nombre_salaries ?: null,
+            'chiffre_affaires'       => $this->chiffre_affaires ?: null,
+            'objectif_participation' => $this->objectif_participation ?: null,
+            'zone_geographique'      => $this->zone_geographique,
+            'types_partenariat'      => $this->types_partenariat ?: null,
+            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat)
+                ? $this->type_partenariat_autre : null,
+            'profils_partenaire'     => $this->profils_partenaire ?: null,
+            'secteurs_recherche'     => $this->secteurs_recherche ?: null,
+            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche)
+                ? $this->secteur_recherche_autre : null,
+            'disponibilites'         => !empty($this->disponibilites)
+                ? $this->disponibilites : null,
+            'id_chef_delegation'     => $this->id_chef_delegation ?: null,
+            'id_evenement'           => $this->id_evenement,
+        ]);
 
-        // ← Détermine montant et statut paiement
         $montant = $this->evenement->montant_inscription ?? 0;
         $statut  = 'en_attente';
 
@@ -468,18 +444,31 @@ if ($participant->id_entreprise) {
             $statut  = 'en_attente';
         }
 
-        // ← Crée l'inscription
         Inscription::create([
-            'id_participant'    => $participant->id,
-            'id_evenement'      => $this->id_evenement,
-            'date_inscription'  => now()->toDateString(),
-            'montant_paye'      => $montant,
-            'statut_paiement'   => $statut,
-            'statut_presence'   => 'absent',
-            'secteur_recherche' => $this->secteur_recherche,
-            'type_partenaire'   => $this->type_partenaire,
-            'zone_geographique' => $this->zone_geographique,
+            'id_participant'   => $participant->id,
+            'id_evenement'     => $this->id_evenement,
+            'date_inscription' => now()->toDateString(),
+            'montant_paye'     => $montant,
+            'statut_paiement'  => $statut,
+            'statut_presence'  => 'absent',
         ]);
+
+        // Notification au CDD si choisi
+        if ($this->id_chef_delegation) {
+            $cddParticipant = Participant::where('email',
+                User::find($this->id_chef_delegation)?->email
+            )->first();
+
+            if ($cddParticipant) {
+                \App\Models\Notification::create([
+                    'id_participant' => $cddParticipant->id,
+                    'contenu'        => $participant->nom . ' ' . $participant->prenom
+                        . ' vous a choisi comme Chef de Délégation. Veuillez valider sa préinscription.',
+                    'date_envoie'    => now()->toDateString(),
+                    'type'           => 'systeme',
+                ]);
+            }
+        }
 
         if ($statut == 'paye') {
             session()->flash('success', 'Inscription confirmée ! Bienvenue à ' . $this->evenement->nom . ' !');
@@ -490,16 +479,15 @@ if ($participant->id_entreprise) {
         return redirect()->route($this->getDashboardRoute());
     }
 
-    
-    // RENDER
-    
-
     public function render()
     {
         return view('livewire.participant.inscription-wizard', [
             'joursEvenement'    => $this->getJoursEvenement(),
             'isMultiJours'      => $this->getIsMultiJours(),
             'villesDisponibles' => $this->getVillesDisponibles(),
+            'chefsDelegation'   => User::whereHas('roles', fn($q) =>
+                $q->where('name', 'cdd')
+            )->orderBy('name')->get(),
         ])->layout($this->getLayout(), [
             'title' => 'Inscription — ' . ($this->evenement->nom ?? '')
         ]);

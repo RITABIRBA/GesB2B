@@ -9,36 +9,53 @@ class Participant extends Model
     protected $table = 'participants';
 
     protected $fillable = [
-        'id_cdd',
         'id_entreprise',
         'id_evenement',
+        'id_chef_delegation',
         'nom',
-        'ifu',
         'prenom',
         'genre',
         'fonction',
-        'participation_rdv',
-        'secteur_activite',
-        'sous_secteur',           // ← nouveau
-        'description_activites',  // ← nouveau
-        'principaux_produits',    // ← nouveau
-        'annee_creation',         // ← nouveau
-        'nombre_salaries',        // ← nouveau
-        'chiffre_affaires',       // ← nouveau
-        'type_partenaire',        // ← nouveau
-        'zone_geographique',      // ← nouveau
-        'disponibilites',         // ← nouveau
-        'pays',                   // ← nouveau
-        'ville',                  // ← nouveau
+        'ifu',
         'email',
         'telephone',
+        'pays',
+        'ville',
         'code_acces',
         'role',
         'statut_historique',
         'statut_adhesion',
+        'participation_rdv',
+        'secteur_activite',
+        'sous_secteur',
+        'description_activites',
+        'principaux_produits',
+        'annee_creation',
+        'nombre_salaries',
+        'chiffre_affaires',
+        'type_partenaire',
+        'zone_geographique',
+        'disponibilites',
+        // Nouveaux champs
+        'types_partenariat',
+        'type_partenariat_autre',
+        'profils_partenaire',
+        'secteurs_recherche',
+        'secteur_recherche_autre',
+        'objectif_participation',
     ];
 
-    // ← Helper statique pour trouver le participant connecté
+    protected $casts = [
+        'disponibilites'    => 'array',
+        'types_partenariat' => 'array',
+        'profils_partenaire' => 'array',
+        'secteurs_recherche' => 'array',
+        'participation_rdv'  => 'boolean',
+    ];
+
+    /**
+     * Helper statique pour trouver le participant connecté.
+     */
     public static function findForUser($user): ?self
     {
         if (!$user) return null;
@@ -65,6 +82,16 @@ class Participant extends Model
     public function evenement()
     {
         return $this->belongsTo(Evenement::class, 'id_evenement');
+    }
+
+    public function chefDelegation()
+    {
+        return $this->belongsTo(Participant::class, 'id_chef_delegation');
+    }
+
+    public function participantsSousDelegation()
+    {
+        return $this->hasMany(Participant::class, 'id_chef_delegation');
     }
 
     public function badge()

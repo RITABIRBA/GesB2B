@@ -1,5 +1,4 @@
 <div>
-    {{-- Message succès --}}
     @if(session('success'))
     <div class="bg-green-100 border border-green-300 text-green-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
         <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
@@ -35,7 +34,7 @@
 
     {{-- Tableau --}}
     <div class="bg-white rounded-xl shadow overflow-x-auto">
-        <table class="w-full text-left" style="min-width: 900px;">
+        <table class="w-full text-left" style="min-width: 1100px;">
             <thead style="background-color: #f8f9fa;">
                 <tr class="border-b">
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Nom & Type</th>
@@ -44,8 +43,8 @@
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Inscriptions</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Paiement</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Salle RDV</th>
-                    {{-- ← Nouvelle colonne souhaits --}}
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Souhaits</th>
+                    <th class="px-4 py-4 text-gray-500 font-semibold text-sm">RDV</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
             </thead>
@@ -99,8 +98,8 @@
                         </p>
                         @endif
                         @php
-                            $today = now()->toDateString();
-                            $ouvert = !$evenement->date_ouverture_inscriptions
+                            $today   = now()->toDateString();
+                            $ouvert  = !$evenement->date_ouverture_inscriptions
                                 || $today >= $evenement->date_ouverture_inscriptions;
                             $nonClos = !$evenement->date_cloture_inscriptions
                                 || $today <= $evenement->date_cloture_inscriptions;
@@ -156,7 +155,7 @@
                         @endif
                     </td>
 
-                    {{-- ← Colonne souhaits --}}
+                    {{-- Souhaits --}}
                     <td class="px-4 py-4 text-xs">
                         <div class="flex items-center gap-1">
                             <span class="px-2 py-1 rounded-lg bg-orange-100 text-orange-700 font-bold">
@@ -169,16 +168,28 @@
                         </div>
                     </td>
 
+                    {{-- RDV --}}
+                    <td class="px-4 py-4 text-xs">
+                        <div class="space-y-1">
+                            <span class="px-2 py-1 rounded-lg bg-purple-100 text-purple-700 font-bold block w-fit">
+                                {{ $evenement->duree_rdv ?? 20 }} min / RDV
+                            </span>
+                            <span class="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 block w-fit">
+                                + {{ $evenement->duree_pause ?? 5 }} min pause
+                            </span>
+                        </div>
+                    </td>
+
                     <td class="px-4 py-4">
                         <div class="flex gap-2">
                             <button wire:click="modifier({{ $evenement->id }})"
-                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90"
                                 style="background-color: #007A3D;">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
                             <button wire:click="supprimer({{ $evenement->id }})"
                                 wire:confirm="Voulez-vous vraiment supprimer cet événement ?"
-                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700 flex items-center gap-1">
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
@@ -186,7 +197,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="py-16 text-center text-gray-400">
+                    <td colspan="9" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-calendar-xmark text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun événement pour le moment</p>
                         <button wire:click="openModal"
@@ -210,7 +221,7 @@
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-plus' }}"></i>
-                    {{ $isEditing ? 'Modifier l\'événement' : 'Nouvel événement' }}
+                    {{ $isEditing ? "Modifier l'événement" : 'Nouvel événement' }}
                 </h3>
                 <button wire:click="closeModal" class="text-white/70 hover:text-white text-2xl transition">
                     &times;
@@ -369,20 +380,20 @@
                             </p>
                             <p class="text-xs text-blue-600 mb-3">
                                 <i class="fa-solid fa-circle-info mr-1"></i>
-                                La salle et le numéro de table seront communiqués aux participants lors de leurs RDV.
+                                La salle et le numéro de table seront communiqués aux participants.
                             </p>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-gray-600 text-xs font-medium mb-1">Nom de la salle</label>
                                     <input wire:model="nom_salle" type="text"
-                                        class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
-                                        placeholder="Ex: Salle B2B...">
+                                        class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm"
+                                        placeholder="Ex: Salle B2B">
                                     @error('nom_salle') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-gray-600 text-xs font-medium mb-1">Nombre de tables</label>
                                     <input wire:model="nombre_tables" type="number" min="1" max="500"
-                                        class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+                                        class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm"
                                         placeholder="Ex: 20">
                                     @error('nombre_tables') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                 </div>
@@ -398,7 +409,7 @@
                         </div>
                     </div>
 
-                    {{-- ← BLOC MIN/MAX SOUHAITS --}}
+                    {{-- Min/Max souhaits --}}
                     <div class="col-span-2">
                         <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
                             <p class="text-xs font-bold text-orange-700 mb-1 flex items-center gap-2">
@@ -407,49 +418,98 @@
                             </p>
                             <p class="text-xs text-orange-600 mb-3">
                                 <i class="fa-solid fa-circle-info mr-1"></i>
-                                Définissez le nombre minimum et maximum de souhaits
-                                qu'un participant peut émettre pour cet événement.
+                                Nombre minimum et maximum de souhaits par participant.
                             </p>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-gray-600 text-xs font-medium mb-1">
-                                        <i class="fa-solid fa-arrow-down text-orange-500 mr-1"></i>
                                         Minimum de souhaits *
                                     </label>
-                                    <input wire:model="min_souhaits" type="number"
-                                        min="1" max="50"
+                                    <input wire:model="min_souhaits" type="number" min="1" max="50"
                                         class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm bg-white"
                                         placeholder="Ex: 5">
-                                    @error('min_souhaits')
-                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                                    @enderror
+                                    @error('min_souhaits') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-gray-600 text-xs font-medium mb-1">
-                                        <i class="fa-solid fa-arrow-up text-blue-500 mr-1"></i>
                                         Maximum de souhaits *
                                     </label>
-                                    <input wire:model="max_souhaits" type="number"
-                                        min="1" max="100"
+                                    <input wire:model="max_souhaits" type="number" min="1" max="100"
                                         class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
                                         placeholder="Ex: 20">
-                                    @error('max_souhaits')
-                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                                    @enderror
+                                    @error('max_souhaits') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                 </div>
                             </div>
                             @if($min_souhaits && $max_souhaits)
                             <div class="mt-3 bg-white rounded-xl p-3 border border-orange-200 text-xs text-orange-700 flex items-center gap-2">
                                 <i class="fa-solid fa-circle-check text-orange-500"></i>
-                                Chaque participant devra émettre entre
-                                <strong>{{ $min_souhaits }}</strong> et
-                                <strong>{{ $max_souhaits }}</strong> souhaits.
+                                Entre <strong>{{ $min_souhaits }}</strong> et
+                                <strong>{{ $max_souhaits }}</strong> souhaits par participant.
                             </div>
                             @endif
                         </div>
                     </div>
 
-                    {{-- TYPE DE PAIEMENT --}}
+                    {{-- Durée RDV --}}
+                    <div class="col-span-2">
+                        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                            <p class="text-xs font-bold text-purple-700 mb-1 flex items-center gap-2">
+                                <i class="fa-solid fa-clock"></i>
+                                Configuration des rendez-vous *
+                            </p>
+                            <p class="text-xs text-purple-600 mb-3">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                Ces paramètres servent à générer automatiquement le planning des RDV.
+                            </p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">
+                                        Durée d'un RDV (minutes) *
+                                    </label>
+                                    <input wire:model="duree_rdv" type="number" min="5" max="120"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm bg-white"
+                                        placeholder="Ex: 20">
+                                    @error('duree_rdv') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">
+                                        Pause entre RDV (minutes) *
+                                    </label>
+                                    <input wire:model="duree_pause" type="number" min="0" max="60"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm bg-white"
+                                        placeholder="Ex: 5">
+                                    @error('duree_pause') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            {{-- Aperçu du nombre de RDV possibles --}}
+                            @if($duree_rdv && $heure_debut && $heure_fin)
+                            @php
+                                try {
+                                    $debut      = \Carbon\Carbon::createFromFormat('H:i', substr($heure_debut, 0, 5));
+                                    $fin        = \Carbon\Carbon::createFromFormat('H:i', substr($heure_fin, 0, 5));
+                                    $dureeTotal = $debut->diffInMinutes($fin);
+                                    $dureeSlot  = (int)$duree_rdv + (int)$duree_pause;
+                                    $nbRdv      = $dureeSlot > 0 ? floor($dureeTotal / $dureeSlot) : 0;
+                                    $nbRdvTotal = $nbRdv * (int)($nombre_tables ?: 1);
+                                } catch (\Exception $e) {
+                                    $nbRdv = 0; $nbRdvTotal = 0;
+                                }
+                            @endphp
+                            @if($nbRdv > 0)
+                            <div class="mt-3 bg-white rounded-xl p-3 border border-purple-200 text-xs text-purple-700">
+                                <i class="fa-solid fa-circle-check text-purple-500 mr-1"></i>
+                                Avec ces paramètres :
+                                <strong>{{ $nbRdv }} créneaux</strong> par table
+                                · <strong>{{ $nbRdvTotal }} RDV</strong> au total
+                                ({{ $nombre_tables ?: 1 }} table(s) × {{ $nbRdv }} créneaux)
+                            </div>
+                            @endif
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Type paiement --}}
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-3">
                             <i class="fa-solid fa-money-bill mr-1" style="color: #007A3D;"></i>
@@ -458,138 +518,61 @@
                         <div class="grid grid-cols-3 gap-3">
                             <button type="button"
                                 wire:click="$set('type_paiement', 'gratuit')"
-                                class="border-2 rounded-xl p-4 text-left transition
-                                    {{ $type_paiement === 'gratuit' ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:bg-gray-50' }}">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <i class="fa-solid fa-gift text-green-500"></i>
-                                    <p class="font-semibold text-sm text-gray-800">Gratuit</p>
-                                </div>
-                                <p class="text-xs text-gray-400">Aucun frais d'inscription</p>
+                                class="border-2 rounded-xl p-4 text-left transition flex flex-col justify-between h-24
+                                {{ $type_paiement == 'gratuit' ? 'border-green-600 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-gift text-lg"></i>
+                                <span class="text-sm font-semibold">Gratuit</span>
                             </button>
+
                             <button type="button"
                                 wire:click="$set('type_paiement', 'par_participant')"
-                                class="border-2 rounded-xl p-4 text-left transition
-                                    {{ $type_paiement === 'par_participant' ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50' }}">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <i class="fa-solid fa-user text-blue-500"></i>
-                                    <p class="font-semibold text-sm text-gray-800">Par participant</p>
-                                </div>
-                                <p class="text-xs text-gray-400">Chaque participant paie individuellement</p>
+                                class="border-2 rounded-xl p-4 text-left transition flex flex-col justify-between h-24
+                                {{ $type_paiement == 'par_participant' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-user text-lg"></i>
+                                <span class="text-sm font-semibold">Par participant</span>
                             </button>
+
                             <button type="button"
                                 wire:click="$set('type_paiement', 'par_entreprise')"
-                                class="border-2 rounded-xl p-4 text-left transition
-                                    {{ $type_paiement === 'par_entreprise' ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:bg-gray-50' }}">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <i class="fa-solid fa-building text-purple-500"></i>
-                                    <p class="font-semibold text-sm text-gray-800">Par entreprise</p>
-                                </div>
-                                <p class="text-xs text-gray-400">L'entreprise paie un montant global</p>
+                                class="border-2 rounded-xl p-4 text-left transition flex flex-col justify-between h-24
+                                {{ $type_paiement == 'par_entreprise' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50' }}">
+                                <i class="fa-solid fa-building text-lg"></i>
+                                <span class="text-sm font-semibold">Par entreprise</span>
                             </button>
                         </div>
+                        @error('type_paiement') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
-                    {{-- Montant --}}
-                    @if($type_paiement !== 'gratuit')
+                    {{-- Montant (Affiché uniquement si Payant) --}}
+                    @if($type_paiement && $type_paiement !== 'gratio' && $type_paiement !== 'gratuit')
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                            @if($type_paiement === 'par_participant')
-                                Montant par participant (FCFA) *
-                            @else
-                                Montant global par entreprise (FCFA) *
-                            @endif
+                            Montant de l'inscription (FCFA) *
                         </label>
-                        <input wire:model="montant_inscription" type="number" min="1"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                        <input wire:model="montant_inscription" type="number" min="0"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
                             placeholder="Ex: 50000">
                         @error('montant_inscription') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
-                    @else
-                    <div class="col-span-2">
-                        <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700 flex items-center gap-2">
-                            <i class="fa-solid fa-circle-check"></i>
-                            Événement gratuit — Les participants seront validés directement.
-                        </div>
-                    </div>
                     @endif
 
-                    {{-- PRIX DES STANDS --}}
-                    <div class="col-span-2">
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                            <p class="text-xs font-bold text-yellow-700 mb-1 flex items-center gap-2">
-                                <i class="fa-solid fa-store"></i>
-                                Prix des stands d'exposition
-                                <span class="text-yellow-500 font-normal">(optionnel)</span>
-                            </p>
-                            <p class="text-xs text-yellow-600 mb-3">
-                                <i class="fa-solid fa-circle-info mr-1"></i>
-                                Laissez à 0 si les stands sont gratuits.
-                            </p>
-                            <div class="grid grid-cols-3 gap-3">
-                                <div class="bg-white rounded-xl border border-gray-200 p-3">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <i class="fa-solid fa-store text-green-600"></i>
-                                        <p class="text-xs font-bold text-gray-700">Standard</p>
-                                    </div>
-                                    <div class="relative">
-                                        <input wire:model="prix_stand_standard" type="number" min="0"
-                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm pr-14"
-                                            placeholder="0">
-                                        <span class="absolute right-3 top-2 text-xs text-gray-400">FCFA</span>
-                                    </div>
-                                </div>
-                                <div class="bg-white rounded-xl border border-blue-200 p-3">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <i class="fa-solid fa-gem text-blue-600"></i>
-                                        <p class="text-xs font-bold text-gray-700">Premium</p>
-                                    </div>
-                                    <div class="relative">
-                                        <input wire:model="prix_stand_premium" type="number" min="0"
-                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm pr-14"
-                                            placeholder="0">
-                                        <span class="absolute right-3 top-2 text-xs text-gray-400">FCFA</span>
-                                    </div>
-                                </div>
-                                <div class="bg-white rounded-xl border border-yellow-200 p-3">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <i class="fa-solid fa-star text-yellow-500"></i>
-                                        <p class="text-xs font-bold text-gray-700">VIP</p>
-                                    </div>
-                                    <div class="relative">
-                                        <input wire:model="prix_stand_vip" type="number" min="0"
-                                            class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm pr-14"
-                                            placeholder="0">
-                                        <span class="absolute right-3 top-2 text-xs text-gray-400">FCFA</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                {{-- Boutons --}}
-                <div class="flex justify-end gap-3 mt-7">
-                    <button wire:click="closeModal"
-                        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
-                        <i class="fa-solid fa-xmark mr-1"></i> Annuler
-                    </button>
-                    <button wire:click="sauvegarder"
-                        wire:loading.attr="disabled"
-                        wire:loading.class="opacity-70 cursor-not-allowed"
-                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
-                        style="background-color: #C8102E;">
-                        <span wire:loading.remove>
-                            <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-floppy-disk' }} mr-1"></i>
-                            {{ $isEditing ? 'Modifier' : 'Enregistrer' }}
-                        </span>
-                        <span wire:loading>
-                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
-                            Enregistrement...
-                        </span>
-                    </button>
                 </div>
             </div>
+
+            {{-- Actions du Modal (Footer) --}}
+            <div class="px-8 py-4 bg-gray-50 border-t flex justify-end gap-3 rounded-b-2xl">
+                <button type="button" wire:click="closeModal"
+                    class="px-5 py-2 rounded-xl text-gray-500 hover:bg-gray-100 transition text-sm font-medium">
+                    Annuler
+                </button>
+                <button type="button" wire:click="enregistrer"
+                    class="px-6 py-2 rounded-xl text-white font-medium text-sm transition hover:opacity-90 shadow"
+                    style="background-color: #007A3D;">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i>
+                    {{ $isEditing ? 'Enregistrer les modifications' : 'Créer l\'événement' }}
+                </button>
+            </div>
+
         </div>
     </div>
     @endif

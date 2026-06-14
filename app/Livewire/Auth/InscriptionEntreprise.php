@@ -55,11 +55,18 @@ class InscriptionEntreprise extends Component
     public string $chiffre_affaires      = '';
 
    
-    // ÉTAPE 3 — PROFIL PARTENAIRE RECHERCHÉ
+    // ÉTAPE 3 — PROFIL PARTENAIRE RECHERCHÉ (max 3 chacun)
     
-    public string $secteur_recherche = '';
+    public array  $secteurs_recherche      = [];
+    public string $secteur_recherche_autre = '';
+
     public string $zone_geographique = '';
-    public string $type_partenaire   = '';
+
+    public array  $types_partenariat       = [];
+    public string $type_partenariat_autre  = '';
+
+    public array  $profils_partenaire      = [];
+    public string $profil_partenaire_autre = '';
 
     
     // ÉTAPE 4 — DISPONIBILITÉS
@@ -114,6 +121,18 @@ class InscriptionEntreprise extends Component
         'Autre',
     ];
 
+    public array $profilsPartenariatOptions = [
+        'PME',
+        'Grande entreprise',
+        'Multinationale',
+        'Startup / Jeune entreprise',
+        'Coopérative',
+        'Institution publique',
+        'ONG / Association',
+        'Particulier',
+        'Autre',
+    ];
+
     public array $pays_liste = [
         'Burkina Faso', 'Côte d\'Ivoire', 'Mali', 'Sénégal',
         'Ghana', 'Togo', 'Bénin', 'Niger', 'Guinée', 'Cameroun',
@@ -165,6 +184,49 @@ class InscriptionEntreprise extends Component
     {
         if ($this->fonction_responsable !== 'Autre') {
             $this->fonction_autre = '';
+        }
+    }
+
+    
+    // TOGGLES — ÉTAPE 3 (max 3 chacun)
+    
+
+    public function toggleSecteurRecherche(string $option): void
+    {
+        if (in_array($option, $this->secteurs_recherche)) {
+            $this->secteurs_recherche = array_values(array_diff($this->secteurs_recherche, [$option]));
+        } elseif (count($this->secteurs_recherche) < 3) {
+            $this->secteurs_recherche[] = $option;
+        }
+
+        if (!in_array('Autre', $this->secteurs_recherche)) {
+            $this->secteur_recherche_autre = '';
+        }
+    }
+
+    public function toggleTypePartenariat(string $option): void
+    {
+        if (in_array($option, $this->types_partenariat)) {
+            $this->types_partenariat = array_values(array_diff($this->types_partenariat, [$option]));
+        } elseif (count($this->types_partenariat) < 3) {
+            $this->types_partenariat[] = $option;
+        }
+
+        if (!in_array('Autre', $this->types_partenariat)) {
+            $this->type_partenariat_autre = '';
+        }
+    }
+
+    public function toggleProfilPartenaire(string $option): void
+    {
+        if (in_array($option, $this->profils_partenaire)) {
+            $this->profils_partenaire = array_values(array_diff($this->profils_partenaire, [$option]));
+        } elseif (count($this->profils_partenaire) < 3) {
+            $this->profils_partenaire[] = $option;
+        }
+
+        if (!in_array('Autre', $this->profils_partenaire)) {
+            $this->profil_partenaire_autre = '';
         }
     }
 
@@ -244,14 +306,32 @@ class InscriptionEntreprise extends Component
         } elseif ($this->etape === 3) {
 
             $this->validate([
-                'secteur_recherche' => 'required|string|max:255',
-                'zone_geographique' => 'required|string|max:255',
-                'type_partenaire'   => 'required|string|max:255',
+                'zone_geographique'  => 'required|string|max:255',
+                'secteurs_recherche' => 'required|array|min:1|max:3',
+                'types_partenariat'  => 'required|array|min:1|max:3',
+                'profils_partenaire' => 'nullable|array|max:3',
             ], [
-                'secteur_recherche.required' => 'Le secteur recherché est obligatoire.',
-                'zone_geographique.required' => 'La zone géographique est obligatoire.',
-                'type_partenaire.required'   => 'Le type de partenaire est obligatoire.',
+                'zone_geographique.required'  => 'La zone géographique est obligatoire.',
+                'secteurs_recherche.required' => 'Sélectionnez au moins un secteur recherché.',
+                'secteurs_recherche.min'      => 'Sélectionnez au moins un secteur recherché.',
+                'types_partenariat.required'  => 'Sélectionnez au moins un type de partenariat.',
+                'types_partenariat.min'       => 'Sélectionnez au moins un type de partenariat.',
             ]);
+
+            if (in_array('Autre', $this->secteurs_recherche) && !$this->secteur_recherche_autre) {
+                $this->addError('secteur_recherche_autre', 'Précisez le secteur recherché.');
+                return;
+            }
+
+            if (in_array('Autre', $this->types_partenariat) && !$this->type_partenariat_autre) {
+                $this->addError('type_partenariat_autre', 'Précisez le type de partenariat.');
+                return;
+            }
+
+            if (in_array('Autre', $this->profils_partenaire) && !$this->profil_partenaire_autre) {
+                $this->addError('profil_partenaire_autre', 'Précisez le profil de partenaire.');
+                return;
+            }
 
             $this->etape = 4;
 
@@ -335,6 +415,22 @@ class InscriptionEntreprise extends Component
             );
         } while (Participant::where('code_acces', $code_acces)->exists());
 
+        // ← Remplace "Autre" par la saisie libre dans les sélections
+        $secteursRecherche = $this->secteurs_recherche;
+        if (($idx = array_search('Autre', $secteursRecherche)) !== false && $this->secteur_recherche_autre) {
+            $secteursRecherche[$idx] = $this->secteur_recherche_autre;
+        }
+
+        $typesPartenariat = $this->types_partenariat;
+        if (($idx = array_search('Autre', $typesPartenariat)) !== false && $this->type_partenariat_autre) {
+            $typesPartenariat[$idx] = $this->type_partenariat_autre;
+        }
+
+        $profilsPartenaire = $this->profils_partenaire;
+        if (($idx = array_search('Autre', $profilsPartenaire)) !== false && $this->profil_partenaire_autre) {
+            $profilsPartenaire[$idx] = $this->profil_partenaire_autre;
+        }
+
         // ← Crée le PARTICIPANT représentant
         Participant::create([
             'id_entreprise'         => $entreprise->id,
@@ -353,9 +449,10 @@ class InscriptionEntreprise extends Component
             'annee_creation'        => $this->annee_creation,
             'nombre_salaries'       => $this->nombre_salaries,
             'chiffre_affaires'      => $this->chiffre_affaires,
-            'secteur_recherche'     => $this->secteur_recherche,
+            'secteurs_recherche'    => json_encode($secteursRecherche),
             'zone_geographique'     => $this->zone_geographique,
-            'type_partenaire'       => $this->type_partenaire,
+            'types_partenariat'     => json_encode($typesPartenariat),
+            'profils_partenaire'    => json_encode($profilsPartenaire),
             'disponibilites'        => !empty($this->disponibilites)
                 ? json_encode($this->disponibilites)
                 : null,
@@ -377,13 +474,14 @@ class InscriptionEntreprise extends Component
     public function render()
     {
         return view('livewire.auth.inscription-entreprise', [
-            'secteurs'          => $this->secteurs,
-            'zones'             => $this->zones,
-            'types_partenaires' => $this->types_partenaires,
-            'pays_liste'        => $this->pays_liste,
-            'fonctions'         => $this->fonctions,
-            'villesDisponibles' => $this->getVillesDisponibles(),
-            'cdds'              => User::role('cdd')->orderBy('name')->get(),
+            'secteurs'                 => $this->secteurs,
+            'zones'                    => $this->zones,
+            'types_partenaires'        => $this->types_partenaires,
+            'profilsPartenariatOptions'=> $this->profilsPartenariatOptions,
+            'pays_liste'               => $this->pays_liste,
+            'fonctions'                => $this->fonctions,
+            'villesDisponibles'        => $this->getVillesDisponibles(),
+            'cdds'                     => User::role('cdd')->orderBy('name')->get(),
         ])->layout('layouts.guest');
     }
 }

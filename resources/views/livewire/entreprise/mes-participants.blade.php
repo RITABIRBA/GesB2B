@@ -31,7 +31,8 @@
                     Demandes d'adhésion en attente
                 </p>
                 <p class="text-sm text-gray-400">
-                    {{ $demandesEnAttente->count() }} personne(s) souhaitent rejoindre votre entreprise
+                    {{ $demandesEnAttente->count() }} personne(s) souhaitent rejoindre votre entreprise.
+                    Vérifiez s'ils font bien partie de votre équipe.
                 </p>
             </div>
         </div>
@@ -222,7 +223,7 @@
                         </span>
                         @else
                         <span class="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700 font-medium">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Incomplet
+                            <i class="fa-solid fa-clock mr-1"></i> En attente de connexion
                         </span>
                         @endif
                     </td>
@@ -272,7 +273,6 @@
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
 
-            {{-- Header --}}
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
@@ -286,14 +286,12 @@
 
             <div class="p-8">
 
-                {{-- Info si ajout --}}
                 @if(!$isEditing)
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-700 flex items-start gap-2">
                     <i class="fa-solid fa-circle-info mt-0.5 flex-shrink-0"></i>
                     <div>
                         Un <strong>code d'accès</strong> sera généré automatiquement.
-                        Le membre se connectera avec ce code et complètera son profil
-                        (secteur recherché, disponibilités, etc.).
+                        Le membre se connectera avec ce code et complètera son profil.
                     </div>
                 </div>
                 @endif
@@ -348,7 +346,7 @@
                         @enderror
                     </div>
 
-                    {{-- ← Saisie libre si "Autre" --}}
+                    {{-- Saisie libre si Autre --}}
                     @if($fonction == 'Autre')
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
@@ -426,7 +424,6 @@
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
 
-            {{-- Header --}}
             <div class="px-8 py-5 rounded-t-2xl text-white text-center"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 bg-white/20">
@@ -440,14 +437,12 @@
 
             <div class="p-8">
 
-                {{-- Avertissement --}}
                 <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-5 text-xs text-yellow-700 flex items-start gap-2">
                     <i class="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0"></i>
                     Ces informations ne seront plus affichées après fermeture.
                     Notez-les ou transmettez-les maintenant au membre.
                 </div>
 
-                {{-- Infos --}}
                 <div class="space-y-3">
 
                     <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
@@ -480,7 +475,7 @@
                     </div>
                     @endif
 
-                    {{-- Code d'accès mis en évidence --}}
+                    {{-- Code d'accès --}}
                     <div class="bg-red-50 border-2 border-red-200 rounded-xl px-4 py-4 text-center">
                         <p class="text-xs text-red-500 font-medium mb-1">
                             <i class="fa-solid fa-key mr-1"></i>
