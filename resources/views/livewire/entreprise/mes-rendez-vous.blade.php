@@ -323,6 +323,13 @@
                                         · {{ $cand->secteur_activite }}
                                         @endif
                                     </p>
+                                    <p class="text-xs text-gray-400">
+                                        <i class="fa-solid fa-briefcase mr-1"></i>
+                                        {{ $cand->fonction ?: 'Fonction non renseignée' }}
+                                        <span class="mx-1">•</span>
+                                        <i class="fa-solid fa-phone mr-1"></i>
+                                        {{ $cand->telephone ?: 'Non renseigné' }}
+                                    </p>
                                 </div>
                                 <span class="text-xs px-2 py-0.5 rounded-full font-medium
                                     {{ $cand->score_compatibilite == 3 ? 'bg-green-100 text-green-700' :

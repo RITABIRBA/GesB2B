@@ -147,8 +147,13 @@
             <i class="fa-solid fa-users" style="color: #007A3D;"></i>
             Participants de l'événement
             <span class="text-sm font-normal text-gray-400">
-                ({{ $candidats->count() }} disponible(s))
+                ({{ $candidats->total() }} disponible(s))
             </span>
+            @if($candidats->hasPages())
+            <span class="text-xs font-normal text-gray-400 ml-auto">
+                Page {{ $candidats->currentPage() }} / {{ $candidats->lastPage() }}
+            </span>
+            @endif
         </h4>
 
         @forelse($candidats as $p)
@@ -471,6 +476,13 @@
             </p>
         </div>
         @endforelse
+
+        {{-- Pagination (LOT D) --}}
+        @if($candidats->hasPages())
+        <div class="mt-6 flex justify-center">
+            {{ $candidats->links() }}
+        </div>
+        @endif
     </div>
     @endif
 

@@ -131,6 +131,7 @@
     </div>
 
 </div>
+@livewire('shared.demande-aide-widget')
 
 @livewireScripts
 {{-- Module de chargement global --}}

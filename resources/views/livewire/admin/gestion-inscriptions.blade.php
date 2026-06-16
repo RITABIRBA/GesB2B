@@ -152,6 +152,7 @@
                         <div class="flex gap-1.5 flex-wrap">
                             @if($inscription->statut_paiement == 'en_attente')
                             <button wire:click="validerPaiement({{ $inscription->id }})"
+                                wire:confirm="Voulez-vous vraiment valider ce paiement ? Le statut de l'inscription passera à 'Payé'."
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
                                 style="background-color: #007A3D;">
                                 <i class="fa-solid fa-check"></i> Valider

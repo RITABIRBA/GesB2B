@@ -213,17 +213,17 @@
                     {{-- Statut profil --}}
                     <td class="px-6 py-4">
                         @php
-                        $profilComplet = $membre->secteur_recherche
-                            && $membre->zone_geographique
-                            && $membre->type_partenaire;
+                        $profilComplet = !empty($membre->secteurs_recherche)
+                            && !empty($membre->zone_geographique)
+                            && !empty($membre->types_partenariat);
                         @endphp
                         @if($profilComplet)
                         <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
-                            <i class="fa-solid fa-circle-check mr-1"></i> Complet
+                            <i class="fa-solid fa-circle-check mr-1"></i> Profil complété
                         </span>
                         @else
                         <span class="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700 font-medium">
-                            <i class="fa-solid fa-clock mr-1"></i> En attente de connexion
+                            <i class="fa-solid fa-hourglass-half mr-1"></i> Profil à compléter
                         </span>
                         @endif
                     </td>
@@ -266,9 +266,7 @@
         </table>
     </div>
 
-    {{-- ============================================================
-         MODAL AJOUT / MODIFICATION MEMBRE
-    ============================================================ --}}
+    {{--MODAL AJOUT / MODIFICATION MEMBRE --}}
     @if($showModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
@@ -421,8 +419,8 @@
          MODAL CODE D'ACCÈS DU NOUVEAU MEMBRE
     ============================================================ --}}
     @if($showCodeModal && count($nouveauMembre) > 0)
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8">
 
             <div class="px-8 py-5 rounded-t-2xl text-white text-center"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">

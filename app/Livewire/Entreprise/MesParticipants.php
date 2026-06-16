@@ -80,11 +80,26 @@ class MesParticipants extends Component
      */
     private function genererCodeAcces(string $nom): string
     {
+        // ← Retire les accents avant de tronquer, pour éviter de couper
+        // un caractère multi-octets (ex: "Ouédraogo" -> "Ouedraogo")
+        $nomNettoye = $this->translitterer($nom);
+
         do {
-            $code = strtoupper(substr($nom, 0, 3) . rand(1000, 9999));
+            $code = strtoupper(mb_substr($nomNettoye, 0, 3) . rand(1000, 9999));
         } while (Participant::where('code_acces', $code)->exists());
 
         return $code;
+    }
+
+    /**
+     * Convertit les caractères accentués en leur équivalent sans accent
+     * (é -> e, à -> a, etc.) pour générer un code d'accès propre en ASCII.
+     */
+    private function translitterer(string $texte): string
+    {
+        $transliterated = iconv('UTF-8', 'ASCII//TRANSLIT', $texte);
+
+        return $transliterated !== false ? $transliterated : $texte;
     }
 
 

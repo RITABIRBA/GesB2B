@@ -40,6 +40,7 @@
                 ['route' => 'superviseur.rendez-vous',  'icon' => 'fa-handshake',       'label' => 'Rendez-vous'],
                 ['route' => 'superviseur.badges',       'icon' => 'fa-id-badge',        'label' => 'Badges'],
                 ['route' => 'superviseur.gestion-acces','icon' => 'fa-users-gear',      'label' => 'Gestion des CDD'],
+                ['route' => 'superviseur.demandes-aide','icon' => 'fa-circle-question', 'label' => "Demandes d'aide"],
             ];
             @endphp
 

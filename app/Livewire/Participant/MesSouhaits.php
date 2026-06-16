@@ -3,6 +3,7 @@
 namespace App\Livewire\Participant;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Models\Souhait;
 use App\Models\Participant;
 use App\Models\Inscription;
@@ -11,9 +12,19 @@ use Carbon\Carbon;
 
 class MesSouhaits extends Component
 {
+    use WithPagination;
+
     public string $search       = '';
     public string $alertSuccess = '';
     public string $alertError   = '';
+
+    /**
+     * Réinitialise la pagination quand la recherche change.
+     */
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
 
     public function emettresouhait(int $id_cible): void
     {
@@ -316,7 +327,7 @@ class MesSouhaits extends Component
         $candidats = collect();
 
         if ($participant && $inscriptionValide && !$souhaitsfermes) {
-            $candidats = Participant::with('entreprise')
+            $candidatsTous = Participant::with('entreprise')
                 ->where('id_evenement', $participant->id_evenement)
                 ->where('id', '!=', $participant->id)
                 ->where('participation_rdv', true)
@@ -350,6 +361,21 @@ class MesSouhaits extends Component
                     ['score_compatibilite', 'desc'],
                 ])
                 ->values();
+
+            // ─── Pagination manuelle (LOT D — liste divisée en pages) ───
+            $perPage = 4;
+            $page    = $this->getPage('page');
+
+            $candidats = new \Illuminate\Pagination\LengthAwarePaginator(
+                $candidatsTous->forPage($page, $perPage)->values(),
+                $candidatsTous->count(),
+                $perPage,
+                $page,
+                [
+                    'path'     => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+                    'pageName' => 'page',
+                ]
+            );
         }
 
         return view('livewire.participant.mes-souhaits', [

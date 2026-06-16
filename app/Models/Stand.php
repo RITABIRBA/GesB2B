@@ -14,8 +14,9 @@ class Stand extends Model
         'numero_stand',
         'superficie',
         'standing',
-        'prix',                  // ← nouveau
-        'statut_paiement_stand', // ← nouveau
+        'prix',
+        'statut_paiement_stand',
+        'statut_reservation',
     ];
 
     public function evenement()
@@ -31,5 +32,22 @@ class Stand extends Model
     public function rendezVous()
     {
         return $this->hasMany(RendezVous::class, 'id_stand');
+    }
+
+    /**
+     * Calcule le prix du stand selon son standing et le type
+     * de paiement de l'événement. Renvoie 0 si l'événement est gratuit.
+     */
+    public function getPrixCalculeAttribute(): float
+    {
+        if (!$this->evenement || $this->evenement->type_paiement === 'gratuit') {
+            return 0;
+        }
+
+        return match ($this->standing) {
+            'premium' => (float) $this->evenement->prix_stand_premium,
+            'vip'     => (float) $this->evenement->prix_stand_vip,
+            default   => (float) $this->evenement->prix_stand_standard,
+        };
     }
 }

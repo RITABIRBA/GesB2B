@@ -25,7 +25,8 @@ class GestionEvenements extends Component
     public $nom_salle                   = '';
     public $nombre_tables               = 10;
     public $montant_inscription         = 0;
-    public $type_paiement               = 'gratuit'; 
+    public $type_paiement               = 'gratuit';
+    public $nombre_stands               = 0;
     public $prix_stand_standard         = 0;
     public $prix_stand_premium          = 0;
     public $prix_stand_vip              = 0;
@@ -70,6 +71,7 @@ class GestionEvenements extends Component
         $this->nombre_tables                = 10;
         $this->montant_inscription          = 0;
         $this->type_paiement                = 'gratuit';
+        $this->nombre_stands                = 0;
         $this->prix_stand_standard          = 0;
         $this->prix_stand_premium           = 0;
         $this->prix_stand_vip               = 0;
@@ -99,6 +101,7 @@ class GestionEvenements extends Component
         $this->nombre_tables                = (int) ($e->nombre_tables ?? 10);
         $this->montant_inscription          = $e->montant_inscription;
         $this->type_paiement                = $e->type_paiement;
+        $this->nombre_stands                = (int) ($e->nombre_stands ?? 0);
         $this->prix_stand_standard          = $e->prix_stand_standard ?? 0;
         $this->prix_stand_premium           = $e->prix_stand_premium ?? 0;
         $this->prix_stand_vip               = $e->prix_stand_vip ?? 0;
@@ -121,7 +124,7 @@ class GestionEvenements extends Component
             'heure_fin'     => 'required',
             'ville'         => 'required|string|max:255',
             'lieu'          => 'required|string|max:255',
-            'type_paiement' => 'required|in:gratuit,par_entreprise', 
+            'type_paiement' => 'required|in:gratuit,par_entreprise',
             'date_ouverture_inscriptions' => 'nullable|date',
             'date_cloture_inscriptions'   => 'nullable|date|after_or_equal:date_ouverture_inscriptions',
             'nom_salle'                   => 'nullable|string|max:255',
@@ -130,9 +133,14 @@ class GestionEvenements extends Component
             'max_souhaits'                => 'required|integer|min:1|max:100',
             'duree_rdv'                   => 'required|integer|min:5|max:120',
             'duree_pause'                 => 'required|integer|min:0|max:60',
+            'nombre_stands'               => 'nullable|integer|min:0|max:500',
             'prix_stand_standard'         => 'nullable|numeric|min:0',
             'prix_stand_premium'          => 'nullable|numeric|min:0',
             'prix_stand_vip'              => 'nullable|numeric|min:0',
+        ];
+
+        $messages = [
+            'type_paiement.in' => "Le type de paiement doit être 'Gratuit' ou 'Payant'.",
         ];
 
         if ($this->type_paiement !== 'gratuit') {
@@ -141,15 +149,14 @@ class GestionEvenements extends Component
 
         if ($this->utiliser_nouveau_type === '1') {
             $regles['nouveau_type'] = 'required|string|max:255';
-            $this->validate($regles);
+            $this->validate($regles, $messages);
             $type    = TypeEvenement::create(['nom' => $this->nouveau_type]);
             $id_type = $type->id;
         } else {
             $regles['id_type_evenement'] = 'required';
-            $this->validate($regles);
+            $this->validate($regles, $messages);
             $id_type = $this->id_type_evenement;
         }
-
         $data = [
             'id_type_evenement'           => $id_type,
             'nom'                         => $this->nom,
@@ -168,6 +175,7 @@ class GestionEvenements extends Component
             'montant_inscription'         => $this->type_paiement === 'gratuit'
                 ? 0
                 : $this->montant_inscription,
+            'nombre_stands'               => (int) ($this->nombre_stands ?: 0),
             'prix_stand_standard'         => $this->prix_stand_standard ?: 0,
             'prix_stand_premium'          => $this->prix_stand_premium ?: 0,
             'prix_stand_vip'              => $this->prix_stand_vip ?: 0,

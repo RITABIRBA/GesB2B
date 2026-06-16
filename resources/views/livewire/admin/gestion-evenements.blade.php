@@ -43,6 +43,7 @@
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Inscriptions</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Paiement</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Salle RDV</th>
+                    <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Stands</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Souhaits</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">RDV</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Actions</th>
@@ -124,13 +125,9 @@
                         <span class="text-xs px-2 py-0.5 rounded-full font-medium text-white bg-green-500 block w-fit">
                             <i class="fa-solid fa-gift mr-1"></i> Gratuit
                         </span>
-                        @elseif($evenement->type_paiement == 'par_participant')
-                        <span class="text-xs px-2 py-0.5 rounded-full font-medium text-white bg-blue-600 block w-fit">
-                            <i class="fa-solid fa-user mr-1"></i> Par participant
-                        </span>
                         @else
                         <span class="text-xs px-2 py-0.5 rounded-full font-medium text-white bg-purple-600 block w-fit">
-                            <i class="fa-solid fa-building mr-1"></i> Par entreprise
+                            <i class="fa-solid fa-money-bill-wave mr-1"></i> Payant
                         </span>
                         @endif
                         @if($evenement->type_paiement != 'gratuit')
@@ -152,6 +149,29 @@
                         </p>
                         @else
                         <span class="text-gray-400 italic">Non définie</span>
+                        @endif
+                    </td>
+
+                    {{-- Stands --}}
+                    <td class="px-4 py-4 text-xs">
+                        @if($evenement->nombre_stands)
+                        <p class="text-gray-700 font-medium">
+                            <i class="fa-solid fa-store text-green-600 mr-1"></i>
+                            {{ $evenement->nombre_stands }} stand(s)
+                        </p>
+                        <div class="flex flex-col gap-0.5 mt-1 text-gray-400">
+                            @if($evenement->prix_stand_standard)
+                            <span><i class="fa-solid fa-store text-green-500 mr-1"></i>{{ number_format($evenement->prix_stand_standard, 0, ',', ' ') }} F</span>
+                            @endif
+                            @if($evenement->prix_stand_premium)
+                            <span><i class="fa-solid fa-gem text-blue-500 mr-1"></i>{{ number_format($evenement->prix_stand_premium, 0, ',', ' ') }} F</span>
+                            @endif
+                            @if($evenement->prix_stand_vip)
+                            <span><i class="fa-solid fa-star text-yellow-500 mr-1"></i>{{ number_format($evenement->prix_stand_vip, 0, ',', ' ') }} F</span>
+                            @endif
+                        </div>
+                        @else
+                        <span class="text-gray-400 italic">Aucun</span>
                         @endif
                     </td>
 
@@ -197,7 +217,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="py-16 text-center text-gray-400">
+                    <td colspan="10" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-calendar-xmark text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun événement pour le moment</p>
                         <button wire:click="openModal"
@@ -515,7 +535,7 @@
                             <i class="fa-solid fa-money-bill mr-1" style="color: #007A3D;"></i>
                             Type de paiement *
                         </label>
-                        <div class="grid grid-cols-3 gap-3">
+                        <div class="grid grid-cols-2 gap-3">
                             <button type="button"
                                 wire:click="$set('type_paiement', 'gratuit')"
                                 class="border-2 rounded-xl p-4 text-left transition flex flex-col justify-between h-24
@@ -525,26 +545,18 @@
                             </button>
 
                             <button type="button"
-                                wire:click="$set('type_paiement', 'par_participant')"
-                                class="border-2 rounded-xl p-4 text-left transition flex flex-col justify-between h-24
-                                {{ $type_paiement == 'par_participant' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50' }}">
-                                <i class="fa-solid fa-user text-lg"></i>
-                                <span class="text-sm font-semibold">Par participant</span>
-                            </button>
-
-                            <button type="button"
                                 wire:click="$set('type_paiement', 'par_entreprise')"
                                 class="border-2 rounded-xl p-4 text-left transition flex flex-col justify-between h-24
                                 {{ $type_paiement == 'par_entreprise' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50' }}">
-                                <i class="fa-solid fa-building text-lg"></i>
-                                <span class="text-sm font-semibold">Par entreprise</span>
+                                <i class="fa-solid fa-money-bill-wave text-lg"></i>
+                                <span class="text-sm font-semibold">Payant</span>
                             </button>
                         </div>
                         @error('type_paiement') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
-                    {{-- Montant (Affiché uniquement si Payant) --}}
-                    @if($type_paiement && $type_paiement !== 'gratio' && $type_paiement !== 'gratuit')
+                    {{-- Montant (affiché uniquement si Payant) --}}
+                    @if($type_paiement !== 'gratuit')
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
                             Montant de l'inscription (FCFA) *
@@ -556,6 +568,69 @@
                     </div>
                     @endif
 
+                    {{-- Stands --}}
+                    <div class="col-span-2">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                            <p class="text-xs font-bold text-yellow-700 mb-1 flex items-center gap-2">
+                                <i class="fa-solid fa-store"></i>
+                                Stands d'exposition
+                                <span class="text-yellow-600 font-normal">(optionnel)</span>
+                            </p>
+                            <p class="text-xs text-yellow-600 mb-3">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                Définissez le nombre de stands disponibles et leur tarif par standing.
+                                Vous pourrez ensuite les générer dans « Gestion des Stands » → « Générer automatiquement ».
+                            </p>
+
+                            <div class="mb-3">
+                                <label class="block text-gray-600 text-xs font-medium mb-1">
+                                    Nombre de stands disponibles
+                                </label>
+                                <input wire:model="nombre_stands" type="number" min="0" max="500"
+                                    class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm bg-white"
+                                    placeholder="Ex: 20">
+                                @error('nombre_stands') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">
+                                        <i class="fa-solid fa-store text-green-600 mr-1"></i> Standard (FCFA)
+                                    </label>
+                                    <input wire:model="prix_stand_standard" type="number" min="0"
+                                        class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm bg-white"
+                                        placeholder="Ex: 50000">
+                                    @error('prix_stand_standard') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">
+                                        <i class="fa-solid fa-gem text-blue-500 mr-1"></i> Premium (FCFA)
+                                    </label>
+                                    <input wire:model="prix_stand_premium" type="number" min="0"
+                                        class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm bg-white"
+                                        placeholder="Ex: 100000">
+                                    @error('prix_stand_premium') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 text-xs font-medium mb-1">
+                                        <i class="fa-solid fa-star text-yellow-500 mr-1"></i> VIP (FCFA)
+                                    </label>
+                                    <input wire:model="prix_stand_vip" type="number" min="0"
+                                        class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm bg-white"
+                                        placeholder="Ex: 200000">
+                                    @error('prix_stand_vip') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            @if($nombre_stands > 0)
+                            <div class="mt-3 bg-white rounded-xl p-3 border border-yellow-200 text-xs text-yellow-700 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-500"></i>
+                                <strong>{{ $nombre_stands }}</strong> stands seront disponibles pour cet événement.
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -565,11 +640,19 @@
                     class="px-5 py-2 rounded-xl text-gray-500 hover:bg-gray-100 transition text-sm font-medium">
                     Annuler
                 </button>
-                <button type="button" wire:click="enregistrer"
+                <button type="button" wire:click="sauvegarder"
+                    wire:loading.attr="disabled"
+                    wire:loading.class="opacity-70 cursor-not-allowed"
                     class="px-6 py-2 rounded-xl text-white font-medium text-sm transition hover:opacity-90 shadow"
                     style="background-color: #007A3D;">
-                    <i class="fa-solid fa-floppy-disk mr-1"></i>
-                    {{ $isEditing ? 'Enregistrer les modifications' : 'Créer l\'événement' }}
+                    <span wire:loading.remove>
+                        <i class="fa-solid fa-floppy-disk mr-1"></i>
+                        {{ $isEditing ? 'Enregistrer les modifications' : "Créer l'événement" }}
+                    </span>
+                    <span wire:loading>
+                        <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                        Enregistrement...
+                    </span>
                 </button>
             </div>
 

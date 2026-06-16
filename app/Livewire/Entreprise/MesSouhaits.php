@@ -3,6 +3,9 @@
 namespace App\Livewire\Entreprise;
 
 use Livewire\Component;
+use Livewire\WithPagination;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use App\Models\Souhait;
 use App\Models\Participant;
 use App\Models\Inscription;
@@ -11,23 +14,22 @@ use App\Models\Entreprise;
 use App\Models\Notification;
 use Carbon\Carbon;
 
-/**
- * Gestion des souhaits de rendez-vous pour le représentant d'entreprise.
- * Même logique que la page souhaits du participant.
- */
 class MesSouhaits extends Component
 {
+    use WithPagination;
+
     public string $search       = '';
     public string $alertSuccess = '';
     public string $alertError   = '';
 
-    /**
-     * Récupère le participant (représentant) connecté via son entreprise.
-     */
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
     private function getRepresentant(): ?Participant
     {
         $entreprise = Entreprise::where('email_responsable', auth()->user()->email)->first();
-
         if (!$entreprise) return null;
 
         return Participant::where('id_entreprise', $entreprise->id)
@@ -35,9 +37,6 @@ class MesSouhaits extends Component
             ->first();
     }
 
-    /**
-     * Émet un souhait vers un participant cible.
-     */
     public function emettresouhait(int $id_cible): void
     {
         $this->alertSuccess = '';
@@ -82,7 +81,7 @@ class MesSouhaits extends Component
         $scoreCompatibilite = $this->calculerCompatibilite($participant, $cible);
 
         if ($scoreCompatibilite === 0) {
-            $this->alertError = 'Ce participant n\'est pas compatible avec votre profil (secteur, zone géographique et types de partenariat ne correspondent pas).';
+            $this->alertError = 'Ce participant n\'est pas compatible avec votre profil.';
             return;
         }
 
@@ -116,7 +115,6 @@ class MesSouhaits extends Component
                 'statut' => 'accepte',
             ]);
 
-            // Évite les doublons de RDV
             $rdvExiste = \App\Models\RendezVous::where(function ($q) use ($participant, $id_cible) {
                     $q->where('id_participant1', $participant->id)->where('id_participant2', $id_cible);
                 })
@@ -129,7 +127,7 @@ class MesSouhaits extends Component
                 \App\Models\RendezVous::create([
                     'id_participant1' => $participant->id,
                     'id_participant2' => $id_cible,
-                    'statut'          => 'a_planifier',
+                    'statut'          => 'planifie',
                 ]);
 
                 Notification::create([
@@ -155,9 +153,6 @@ class MesSouhaits extends Component
                 : '⚠️ Souhait émis avec compatibilité partielle.');
     }
 
-    /**
-     * Supprime un souhait et réajuste les priorités des suivants.
-     */
     public function supprimer(int $id): void
     {
         $this->alertSuccess = '';
@@ -226,19 +221,12 @@ class MesSouhaits extends Component
 
     // ─── Helpers ────────────────────────────────────────────────
 
-    /**
-     * Vérifie si les souhaits sont fermés (3 jours avant l'événement).
-     */
     private function souhaitsfermes(Evenement $evenement): bool
     {
         if (!$evenement->date_debut) return false;
-        $dateEvenement = Carbon::parse($evenement->date_debut);
-        return Carbon::now()->diffInDays($dateEvenement, false) <= 3;
+        return Carbon::now()->diffInDays(Carbon::parse($evenement->date_debut), false) <= 3;
     }
 
-    /**
-     * Vérifie si le représentant a une inscription valide pour son événement.
-     */
     private function inscriptionEstValide(Participant $participant): bool
     {
         if (!$participant->id_evenement) return false;
@@ -254,9 +242,6 @@ class MesSouhaits extends Component
             ->exists();
     }
 
-    /**
-     * Retourne les disponibilités d'un participant sous forme de tableau.
-     */
     private function getDisponibilites(Participant $p): array
     {
         if (!$p->disponibilites) return [];
@@ -266,23 +251,14 @@ class MesSouhaits extends Component
         return is_array($dispo) ? $dispo : [];
     }
 
-    /**
-     * Vérifie si deux participants ont au moins un jour disponible en commun.
-     */
     private function ontDisponibiliteCommune(Participant $moi, Participant $cible): bool
     {
         $dispoMoi   = $this->getDisponibilites($moi);
         $dispoCible = $this->getDisponibilites($cible);
-
         if (empty($dispoMoi) || empty($dispoCible)) return true;
-
         return count(array_intersect($dispoMoi, $dispoCible)) > 0;
     }
 
-    /**
-     * Calcule le score de compatibilité (0 à 3).
-     * Compare secteurs_recherche (JSON), zone_geographique, types_partenariat (JSON).
-     */
     private function calculerCompatibilite(Participant $moi, Participant $cible): int
     {
         $points = 0;
@@ -292,17 +268,13 @@ class MesSouhaits extends Component
             : (json_decode($moi->secteurs_recherche ?? '[]', true) ?: []);
 
         if (!empty($secteursRecherche) && $cible->secteur_activite) {
-            if (in_array($cible->secteur_activite, $secteursRecherche)) {
-                $points++;
-            }
+            if (in_array($cible->secteur_activite, $secteursRecherche)) $points++;
         } elseif (empty($secteursRecherche)) {
             $points++;
         }
 
         if ($moi->zone_geographique && $cible->zone_geographique) {
-            if ($moi->zone_geographique === $cible->zone_geographique) {
-                $points++;
-            }
+            if ($moi->zone_geographique === $cible->zone_geographique) $points++;
         } else {
             $points++;
         }
@@ -316,9 +288,7 @@ class MesSouhaits extends Component
             : (json_decode($cible->types_partenariat ?? '[]', true) ?: []);
 
         if (!empty($typesPartenariatMoi) && !empty($typesPartenariatCible)) {
-            if (count(array_intersect($typesPartenariatMoi, $typesPartenariatCible)) > 0) {
-                $points++;
-            }
+            if (count(array_intersect($typesPartenariatMoi, $typesPartenariatCible)) > 0) $points++;
         } else {
             $points++;
         }
@@ -362,7 +332,7 @@ class MesSouhaits extends Component
         $candidats = collect();
 
         if ($participant && $inscriptionValide && !$souhaitsfermes) {
-            $candidats = Participant::with('entreprise')
+            $candidatsTous = Participant::with('entreprise')
                 ->where('id_evenement', $participant->id_evenement)
                 ->where('id', '!=', $participant->id)
                 ->where('participation_rdv', true)
@@ -394,6 +364,21 @@ class MesSouhaits extends Component
                     ['score_compatibilite', 'desc'],
                 ])
                 ->values();
+
+            // ─── Pagination manuelle (LOT D) ──────────────────────
+            $perPage = 4;
+            $page    = $this->getPage('page');
+
+            $candidats = new LengthAwarePaginator(
+                $candidatsTous->forPage($page, $perPage)->values(),
+                $candidatsTous->count(),
+                $perPage,
+                $page,
+                [
+                    'path'     => Paginator::resolveCurrentPath(),
+                    'pageName' => 'page',
+                ]
+            );
         }
 
         return view('livewire.entreprise.mes-souhaits', [

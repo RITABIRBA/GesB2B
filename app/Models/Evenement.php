@@ -24,6 +24,7 @@ class Evenement extends Model
         'nombre_tables',
         'montant_inscription',
         'type_paiement',
+        'nombre_stands',
         'prix_stand_standard',
         'prix_stand_premium',
         'prix_stand_vip',
@@ -32,7 +33,6 @@ class Evenement extends Model
         'duree_rdv',
         'duree_pause',
     ];
-
     public function typeEvenement()
     {
         return $this->belongsTo(TypeEvenement::class, 'id_type_evenement');

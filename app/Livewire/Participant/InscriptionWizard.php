@@ -7,6 +7,7 @@ use App\Models\Participant;
 use App\Models\Evenement;
 use App\Models\Inscription;
 use App\Models\Entreprise;
+use App\Models\Stand;
 use App\Models\User;
 
 class InscriptionWizard extends Component
@@ -19,8 +20,9 @@ class InscriptionWizard extends Component
     public $evenement = null;
 
     // Mode
-    public bool $estMembre = false;
-    public $entreprise     = null;
+    public bool $estMembre       = false;
+    public bool $estRepresentant = false;
+    public $entreprise           = null;
 
     // Étape 2 : Infos personnelles
     public string $nom            = '';
@@ -52,9 +54,10 @@ class InscriptionWizard extends Component
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
 
-    // Étape 5 : Disponibilités + CDD
+    // Étape 5 : Disponibilités + CDD + Stand
     public array $disponibilites    = [];
     public $id_chef_delegation      = '';
+    public $id_stand_choisi         = ''; // ← Réservation de stand (représentant)
 
     // Listes
     public array $secteurs = [
@@ -73,6 +76,7 @@ class InscriptionWizard extends Component
         'Industrie manufacturière',
         'Enseignement',
         'Services aux entreprises',
+        'Services financiers',
         'BTP',
         'Activités médicales et pharmaceutiques',
         'Autre',
@@ -263,8 +267,9 @@ class InscriptionWizard extends Component
             $this->id_chef_delegation      = $participant->id_chef_delegation ?? '';
 
             if ($participant->id_entreprise) {
-                $this->estMembre  = true;
-                $this->entreprise = Entreprise::find($participant->id_entreprise);
+                $this->estMembre       = true;
+                $this->estRepresentant = ($participant->role === 'representant');
+                $this->entreprise      = Entreprise::find($participant->id_entreprise);
             }
         }
     }
@@ -285,6 +290,22 @@ class InscriptionWizard extends Component
     public function getIsMultiJours(): bool
     {
         return count($this->getJoursEvenement()) > 1;
+    }
+
+    /**
+     * Stands disponibles pour cet événement (uniquement pour le représentant).
+     */
+    public function getStandsDisponiblesEvenement()
+    {
+        if (!$this->estRepresentant || !$this->id_evenement) {
+            return collect();
+        }
+
+        return Stand::with('evenement')
+            ->where('id_evenement', $this->id_evenement)
+            ->whereNull('id_entreprise')
+            ->orderBy('numero_stand')
+            ->get();
     }
 
     public function commencer(): void
@@ -384,6 +405,27 @@ class InscriptionWizard extends Component
         else $this->etape = 0;
     }
 
+    /**
+     * Normalise une valeur de tableau avant sauvegarde : si une chaîne JSON
+     * est reçue par erreur (au lieu d'un tableau PHP), on la décode pour
+     * éviter un double encodage en base.
+     */
+    private function normalizeArrayField($value): ?array
+    {
+        if (is_array($value)) {
+            return !empty($value) ? $value : null;
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                return !empty($decoded) ? $decoded : null;
+            }
+        }
+
+        return null;
+    }
+
     public function confirmer()
     {
         $participant = Participant::findForUser(auth()->user());
@@ -419,15 +461,14 @@ class InscriptionWizard extends Component
             'chiffre_affaires'       => $this->chiffre_affaires ?: null,
             'objectif_participation' => $this->objectif_participation ?: null,
             'zone_geographique'      => $this->zone_geographique,
-            'types_partenariat'      => $this->types_partenariat ?: null,
+            'types_partenariat'      => $this->normalizeArrayField($this->types_partenariat),
             'type_partenariat_autre' => in_array('Autre', $this->types_partenariat)
                 ? $this->type_partenariat_autre : null,
-            'profils_partenaire'     => $this->profils_partenaire ?: null,
-            'secteurs_recherche'     => $this->secteurs_recherche ?: null,
+            'profils_partenaire'     => $this->normalizeArrayField($this->profils_partenaire),
+            'secteurs_recherche'     => $this->normalizeArrayField($this->secteurs_recherche),
             'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche)
                 ? $this->secteur_recherche_autre : null,
-            'disponibilites'         => !empty($this->disponibilites)
-                ? $this->disponibilites : null,
+            'disponibilites'         => $this->normalizeArrayField($this->disponibilites),
             'id_chef_delegation'     => $this->id_chef_delegation ?: null,
             'id_evenement'           => $this->id_evenement,
         ]);
@@ -452,6 +493,18 @@ class InscriptionWizard extends Component
             'statut_paiement'  => $statut,
             'statut_presence'  => 'absent',
         ]);
+
+        // ← Réservation d'un stand (uniquement représentant)
+        if ($this->estRepresentant && $this->id_stand_choisi) {
+            $stand = Stand::find($this->id_stand_choisi);
+            if ($stand && !$stand->id_entreprise) {
+                $stand->update([
+                    'id_entreprise'         => $participant->id_entreprise,
+                    'statut_reservation'    => 'en_attente',
+                    'statut_paiement_stand' => null,
+                ]);
+            }
+        }
 
         // Notification au CDD si choisi
         if ($this->id_chef_delegation) {
@@ -482,10 +535,11 @@ class InscriptionWizard extends Component
     public function render()
     {
         return view('livewire.participant.inscription-wizard', [
-            'joursEvenement'    => $this->getJoursEvenement(),
-            'isMultiJours'      => $this->getIsMultiJours(),
-            'villesDisponibles' => $this->getVillesDisponibles(),
-            'chefsDelegation'   => User::whereHas('roles', fn($q) =>
+            'joursEvenement'             => $this->getJoursEvenement(),
+            'isMultiJours'               => $this->getIsMultiJours(),
+            'villesDisponibles'          => $this->getVillesDisponibles(),
+            'standsDisponiblesEvenement' => $this->getStandsDisponiblesEvenement(),
+            'chefsDelegation'            => User::whereHas('roles', fn($q) =>
                 $q->where('name', 'cdd')
             )->orderBy('name')->get(),
         ])->layout($this->getLayout(), [

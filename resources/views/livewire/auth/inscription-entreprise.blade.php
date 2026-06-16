@@ -126,6 +126,20 @@
                     </div>
                 </div>
 
+                {{-- Genre --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Genre *</label>
+                    <select wire:model="genre"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm">
+                        <option value="">-- Choisir --</option>
+                        <option value="homme">Homme</option>
+                        <option value="femme">Femme</option>
+                    </select>
+                    @error('genre')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
+                </div>
+
                 {{-- Fonction --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Fonction *</label>
@@ -432,23 +446,6 @@
                     les meilleurs partenaires lors du forum.
                 </div>
 
-                {{-- Secteur recherché --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                        Secteur d'activité recherché *
-                    </label>
-                    <select wire:model="secteur_recherche"
-                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
-                        <option value="">-- Choisir --</option>
-                        @foreach($secteurs as $s)
-                        <option value="{{ $s }}">{{ $s }}</option>
-                        @endforeach
-                    </select>
-                    @error('secteur_recherche')
-                        <span class="text-red-500 text-xs">{{ $message }}</span>
-                    @enderror
-                </div>
-
                 {{-- Zone géographique --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">
@@ -466,29 +463,94 @@
                     @enderror
                 </div>
 
-                {{-- Type partenaire --}}
+                {{-- Secteurs recherchés (max 3) --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">
-                        Type de partenaire recherché *
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Secteurs d'activité recherchés *
+                        <span class="text-gray-400 font-normal">(max 3 — {{ count($secteurs_recherche) }}/3)</span>
                     </label>
-                    <div class="grid grid-cols-3 gap-3">
-                        @foreach($types_partenaires as $type)
-                        <label class="cursor-pointer">
-                            <input type="radio"
-                                wire:model="type_partenaire"
-                                value="{{ $type }}"
-                                class="hidden peer">
-                            <div class="p-3 border-2 rounded-xl text-center transition text-sm
-                                peer-checked:border-red-400 peer-checked:bg-red-50 peer-checked:text-red-700
-                                hover:bg-gray-50 border-gray-200 text-gray-600">
-                                {{ $type }}
-                            </div>
-                        </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach($secteurs as $option)
+                        <button type="button"
+                            wire:click="toggleSecteurRecherche('{{ $option }}')"
+                            class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
+                                {{ in_array($option, $secteurs_recherche)
+                                    ? 'border-red-400 bg-red-50 text-red-700 font-medium'
+                                    : (count($secteurs_recherche) >= 3 && !in_array($option, $secteurs_recherche)
+                                        ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                        : 'border-gray-200 hover:border-red-300 text-gray-600') }}">
+                            <i class="fa-solid {{ in_array($option, $secteurs_recherche) ? 'fa-circle-check text-red-500' : 'fa-circle text-gray-300' }}"></i>
+                            {{ $option }}
+                        </button>
                         @endforeach
                     </div>
-                    @error('type_partenaire')
-                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                    @enderror
+                    @if(in_array('Autre', $secteurs_recherche))
+                    <input wire:model="secteur_recherche_autre" type="text"
+                        class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                        placeholder="Précisez le secteur recherché...">
+                    @error('secteur_recherche_autre') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    @endif
+                    @error('secteurs_recherche') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Type de partenariat (max 3) --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Type de partenariat recherché *
+                        <span class="text-gray-400 font-normal">(max 3 — {{ count($types_partenariat) }}/3)</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach($types_partenaires as $option)
+                        <button type="button"
+                            wire:click="toggleTypePartenariat('{{ $option }}')"
+                            class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
+                                {{ in_array($option, $types_partenariat)
+                                    ? 'border-blue-400 bg-blue-50 text-blue-700 font-medium'
+                                    : (count($types_partenariat) >= 3 && !in_array($option, $types_partenariat)
+                                        ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                        : 'border-gray-200 hover:border-blue-300 text-gray-600') }}">
+                            <i class="fa-solid {{ in_array($option, $types_partenariat) ? 'fa-circle-check text-blue-500' : 'fa-circle text-gray-300' }}"></i>
+                            {{ $option }}
+                        </button>
+                        @endforeach
+                    </div>
+                    @if(in_array('Autre', $types_partenariat))
+                    <input wire:model="type_partenariat_autre" type="text"
+                        class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                        placeholder="Précisez le type de partenariat...">
+                    @error('type_partenariat_autre') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    @endif
+                    @error('types_partenariat') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Profil de partenaire (max 3) --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Profil de partenaire recherché
+                        <span class="text-gray-400 font-normal">(max 3 — {{ count($profils_partenaire) }}/3)</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach($profilsPartenariatOptions as $option)
+                        <button type="button"
+                            wire:click="toggleProfilPartenaire('{{ $option }}')"
+                            class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
+                                {{ in_array($option, $profils_partenaire)
+                                    ? 'border-purple-400 bg-purple-50 text-purple-700 font-medium'
+                                    : (count($profils_partenaire) >= 3 && !in_array($option, $profils_partenaire)
+                                        ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                        : 'border-gray-200 hover:border-purple-300 text-gray-600') }}">
+                            <i class="fa-solid {{ in_array($option, $profils_partenaire) ? 'fa-circle-check text-purple-500' : 'fa-circle text-gray-300' }}"></i>
+                            {{ $option }}
+                        </button>
+                        @endforeach
+                    </div>
+                    @if(in_array('Autre', $profils_partenaire))
+                    <input wire:model="profil_partenaire_autre" type="text"
+                        class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                        placeholder="Précisez le profil de partenaire...">
+                    @error('profil_partenaire_autre') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    @endif
+                    @error('profils_partenaire') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
                 {{-- Navigation --}}
@@ -576,6 +638,11 @@
                             <span class="text-xs text-gray-400">Nom complet</span>
                             <p class="font-semibold text-gray-800">
                                 {{ $nom_responsable }} {{ $prenom_responsable }}
+                                @if($genre == 'femme')
+                                <span class="text-xs text-gray-400">(Mme)</span>
+                                @elseif($genre == 'homme')
+                                <span class="text-xs text-gray-400">(M.)</span>
+                                @endif
                             </p>
                         </div>
                         <div>
@@ -648,16 +715,39 @@
                         <i class="fa-solid fa-handshake"></i>
                         Partenaire recherché
                     </p>
-                    <div class="flex flex-wrap gap-2">
-                        <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
-                            <i class="fa-solid fa-tag mr-1"></i>{{ $secteur_recherche }}
-                        </span>
-                        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
-                            <i class="fa-solid fa-location-dot mr-1"></i>{{ $zone_geographique }}
-                        </span>
-                        <span class="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
-                            <i class="fa-solid fa-handshake mr-1"></i>{{ $type_partenaire }}
-                        </span>
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap gap-1 items-center">
+                            <span class="text-xs text-gray-500 mr-1">Zone :</span>
+                            <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                                <i class="fa-solid fa-location-dot mr-1"></i>{{ $zone_geographique }}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-1 items-center">
+                            <span class="text-xs text-gray-500 mr-1">Secteurs :</span>
+                            @foreach($secteurs_recherche as $s)
+                            <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+                                <i class="fa-solid fa-tag mr-1"></i>{{ $s == 'Autre' ? $secteur_recherche_autre : $s }}
+                            </span>
+                            @endforeach
+                        </div>
+                        <div class="flex flex-wrap gap-1 items-center">
+                            <span class="text-xs text-gray-500 mr-1">Types :</span>
+                            @foreach($types_partenariat as $t)
+                            <span class="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
+                                <i class="fa-solid fa-handshake mr-1"></i>{{ $t == 'Autre' ? $type_partenariat_autre : $t }}
+                            </span>
+                            @endforeach
+                        </div>
+                        @if(!empty($profils_partenaire))
+                        <div class="flex flex-wrap gap-1 items-center">
+                            <span class="text-xs text-gray-500 mr-1">Profils :</span>
+                            @foreach($profils_partenaire as $p)
+                            <span class="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700 font-medium">
+                                <i class="fa-solid fa-user-tag mr-1"></i>{{ $p == 'Autre' ? $profil_partenaire_autre : $p }}
+                            </span>
+                            @endforeach
+                        </div>
+                        @endif
                     </div>
                 </div>
 

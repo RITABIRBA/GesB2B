@@ -105,17 +105,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($mesStands as $stand)
             @php
+                $prix = $stand->prix_calcule;
+                $statutReservation = $stand->statut_reservation;
+                $statutPaiement = $stand->statut_paiement_stand;
                 $evenement = $stand->evenement;
-                $prix = match($stand->standing) {
-                    'premium' => $evenement?->prix_stand_premium ?? 0,
-                    'vip'     => $evenement?->prix_stand_vip ?? 0,
-                    default   => $evenement?->prix_stand_standard ?? 0,
-                };
-                $statut = $stand->statut_paiement_stand ?? 'non_paye';
             @endphp
-            <div class="bg-white rounded-xl shadow p-5 border-l-4"
-                style="border-color: {{ $statut == 'paye' ? '#007A3D' : '#C8102E' }}">
-
+            <div class="bg-white rounded-xl shadow p-5 border-2 border-green-100">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg"
                         style="background-color: #007A3D;">
@@ -157,28 +152,41 @@
                 </p>
                 @endif
 
-                {{-- Statut paiement --}}
-                @if($statut == 'paye')
-                <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium block text-center mb-3">
-                    <i class="fa-solid fa-circle-check mr-1"></i> Stand payé ✅
+                {{-- Statut réservation --}}
+                @if($statutReservation == 'en_attente')
+                <span class="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium block text-center mb-2">
+                    <i class="fa-solid fa-clock mr-1"></i> En attente de validation par l'admin
                 </span>
-                @else
-                @if($prix > 0)
-                <button wire:click="payerStand({{ $stand->id }})"
-                    class="w-full py-2 rounded-xl text-xs text-white font-medium transition hover:opacity-90 mb-2"
-                    style="background-color: #C8102E;">
-                    <i class="fa-solid fa-credit-card mr-1"></i>
-                    Payer le stand
-                </button>
-                @else
-                <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium block text-center mb-2">
-                    <i class="fa-solid fa-gift mr-1"></i> Stand gratuit
-                </span>
-                @endif
+
+                @elseif($statutReservation == 'valide')
+
+                    @if($statutPaiement == 'paye')
+                    <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium block text-center mb-3">
+                        <i class="fa-solid fa-circle-check mr-1"></i>
+                        {{ $prix > 0 ? 'Stand payé ✅' : 'Réservation confirmée (gratuit) ✅' }}
+                    </span>
+                    @else
+                        @if($prix > 0)
+                        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium block text-center mb-2">
+                            <i class="fa-solid fa-circle-check mr-1"></i> Réservation validée
+                        </span>
+                        <button wire:click="payerStand({{ $stand->id }})"
+                            class="w-full py-2 rounded-xl text-xs text-white font-medium transition hover:opacity-90 mb-2"
+                            style="background-color: #C8102E;">
+                            <i class="fa-solid fa-credit-card mr-1"></i>
+                            Payer le stand
+                        </button>
+                        @else
+                        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium block text-center mb-2">
+                            <i class="fa-solid fa-gift mr-1"></i> Réservation confirmée (gratuit)
+                        </span>
+                        @endif
+                    @endif
+
                 @endif
 
-                {{-- ← Bouton annuler seulement si non payé --}}
-                @if($statut != 'paye')
+                {{-- ← Bouton annuler seulement si pas encore payé --}}
+                @if($statutPaiement != 'paye')
                 <button wire:click="annulerReservation({{ $stand->id }})"
                     wire:confirm="Voulez-vous annuler la réservation du Stand N°{{ $stand->numero_stand }} ?"
                     class="w-full py-2 rounded-xl text-xs text-red-600 border border-red-200 hover:bg-red-50 transition font-medium">
@@ -186,7 +194,6 @@
                     Annuler la réservation
                 </button>
                 @endif
-
             </div>
             @endforeach
         </div>
@@ -275,11 +282,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 @foreach($stands as $stand)
                 @php
-                    $prixStand = match($stand->standing) {
-                        'premium' => $evenement?->prix_stand_premium ?? 0,
-                        'vip'     => $evenement?->prix_stand_vip ?? 0,
-                        default   => $evenement?->prix_stand_standard ?? 0,
-                    };
+                    $prixStand = $stand->prix_calcule;
                 @endphp
                 <div class="bg-white rounded-xl shadow p-4 text-center border-2
                     {{ $reservationFermee ? 'border-gray-100 opacity-60' : 'border-green-100 hover:border-green-400' }}

@@ -7,6 +7,13 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="bg-red-100 border border-red-300 text-red-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
+        <i class="fa-solid fa-circle-xmark text-red-500 text-xl"></i>
+        {{ session('error') }}
+    </div>
+    @endif
+
     {{-- En-tête --}}
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
@@ -43,13 +50,14 @@
     </div>
 
     {{-- Tableau --}}
-    <div class="bg-white rounded-xl shadow overflow-hidden">
+    <div class="bg-white rounded-xl shadow overflow-x-auto">
         <table class="w-full text-left">
             <thead style="background-color: #f8f9fa;">
                 <tr class="border-b">
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">N° Stand</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Événement</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Entreprise</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Réservation</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Superficie</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Standing</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
@@ -79,6 +87,45 @@
                             <i class="fa-solid fa-circle-dot mr-1"></i>
                             Disponible
                         </span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-4">
+                        @if(!$stand->id_entreprise)
+                        <span class="text-xs text-gray-300">—</span>
+                        @elseif($stand->statut_reservation == 'en_attente')
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium block w-fit">
+                                <i class="fa-solid fa-clock mr-1"></i> En attente
+                            </span>
+                            <div class="flex gap-1 mt-1">
+                                <button wire:click="validerReservation({{ $stand->id }})"
+                                    wire:confirm="Valider la réservation du Stand N°{{ $stand->numero_stand }} pour {{ $stand->entreprise->nom ?? '' }} ?"
+                                    class="px-2 py-1 rounded-lg text-white text-xs font-medium transition hover:opacity-90"
+                                    style="background-color: #007A3D;">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                                <button wire:click="rejeterReservation({{ $stand->id }})"
+                                    wire:confirm="Rejeter la réservation du Stand N°{{ $stand->numero_stand }} ?"
+                                    class="px-2 py-1 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                        @elseif($stand->statut_reservation == 'valide')
+                        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium block w-fit">
+                            <i class="fa-solid fa-circle-check mr-1"></i> Validée
+                        </span>
+                        @if($stand->statut_paiement_stand == 'paye')
+                        <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium block w-fit mt-1">
+                            <i class="fa-solid fa-money-bill mr-1"></i> Payé
+                        </span>
+                        @else
+                        <span class="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700 font-medium block w-fit mt-1">
+                            <i class="fa-solid fa-hourglass-half mr-1"></i> Paiement attendu
+                        </span>
+                        @endif
+                        @else
+                        <span class="text-xs text-gray-300">—</span>
                         @endif
                     </td>
                     <td class="px-6 py-4 text-gray-600">
@@ -116,7 +163,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="py-16 text-center text-gray-400">
+                    <td colspan="7" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-store text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun stand pour le moment</p>
                         <div class="flex gap-3 justify-center mt-3">

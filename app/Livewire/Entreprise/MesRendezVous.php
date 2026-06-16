@@ -176,15 +176,21 @@ class MesRendezVous extends Component
             return;
         }
 
-        RendezVous::create([
+      RendezVous::create([
             'id_participant1' => $moi->id,
             'id_participant2' => $remplacant->id,
-            'statut'          => 'a_planifier',
+            'id_stand'        => $rdv->id_stand,
+            'salle'           => $rdv->salle,
+            'numero_table'    => $rdv->numero_table,
+            'date'            => $rdv->date,
+            'heure_debut'     => $rdv->heure_debut,
+            'heure_fin'       => $rdv->heure_fin,
+            'statut'          => 'planifie',
         ]);
 
         Notification::create([
             'id_participant' => $moi->id,
-            'contenu'        => "✅ Nouveau rendez-vous créé avec {$remplacant->nom} {$remplacant->prenom} (remplacement).",
+            'contenu'        => "Nouveau rendez-vous créé avec {$remplacant->nom} {$remplacant->prenom} (remplacement).",
             'date_envoie'    => now()->toDateString(),
             'type'           => 'systeme',
         ]);

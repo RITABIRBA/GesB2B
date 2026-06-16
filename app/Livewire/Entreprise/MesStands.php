@@ -30,6 +30,10 @@ class MesStands extends Component
             ?? Entreprise::where('nom', auth()->user()->name)->first();
     }
 
+    /**
+     * Réservation d'un stand par le représentant.
+     * → statut_reservation = 'en_attente' (en attente de validation admin).
+     */
     public function reserverStand($stand_id)
     {
         $entreprise = $this->getEntreprise();
@@ -37,13 +41,11 @@ class MesStands extends Component
 
         $stand = Stand::with('evenement')->findOrFail($stand_id);
 
-        // ← Vérifie si le stand est déjà occupé
         if ($stand->id_entreprise) {
             session()->flash('error', 'Ce stand est déjà occupé.');
             return;
         }
 
-        // ← Vérifie date limite (veille de l'événement)
         if ($stand->evenement) {
             $veille = \Carbon\Carbon::parse($stand->evenement->date_debut)->subDay()->toDateString();
             if (now()->toDateString() > $veille) {
@@ -52,10 +54,18 @@ class MesStands extends Component
             }
         }
 
-        $stand->update(['id_entreprise' => $entreprise->id]);
-        session()->flash('success', 'Stand N°' . $stand->numero_stand . ' réservé ! Procédez au paiement.');
+        $stand->update([
+            'id_entreprise'         => $entreprise->id,
+            'statut_reservation'    => 'en_attente',
+            'statut_paiement_stand' => null,
+        ]);
+
+        session()->flash('success', 'Stand N°' . $stand->numero_stand . ' réservé ! Votre réservation est en attente de validation par l\'administration.');
     }
 
+    /**
+     * Annule une réservation, uniquement si elle n'a pas encore été payée.
+     */
     public function annulerReservation($stand_id)
     {
         $entreprise = $this->getEntreprise();
@@ -68,25 +78,43 @@ class MesStands extends Component
             return;
         }
 
+        if ($stand->statut_paiement_stand == 'paye') {
+            session()->flash('error', 'Ce stand a déjà été payé, vous ne pouvez plus annuler la réservation.');
+            return;
+        }
+
         $stand->update([
-            'id_entreprise' => null,
+            'id_entreprise'         => null,
+            'statut_reservation'    => null,
             'statut_paiement_stand' => null,
         ]);
         session()->flash('success', 'Réservation du Stand N°' . $stand->numero_stand . ' annulée.');
     }
 
-    // ← Ouvre modal paiement
+    /**
+     * Ouvre le modal de paiement — uniquement si la réservation
+     * a été validée par l'admin et qu'un paiement est requis.
+     */
     public function payerStand($stand_id)
     {
         $stand = Stand::with('evenement')->findOrFail($stand_id);
 
-        // Prix selon le type de stand et l'événement
-        $evenement = $stand->evenement;
-        $prix = match($stand->standing) {
-            'premium' => $evenement?->prix_stand_premium ?? 0,
-            'vip'     => $evenement?->prix_stand_vip ?? 0,
-            default   => $evenement?->prix_stand_standard ?? 0,
-        };
+        if ($stand->statut_reservation !== 'valide') {
+            session()->flash('error', 'Votre réservation doit d\'abord être validée par l\'administration.');
+            return;
+        }
+
+        if ($stand->statut_paiement_stand == 'paye') {
+            session()->flash('error', 'Ce stand a déjà été payé.');
+            return;
+        }
+
+        $prix = $stand->prix_calcule;
+
+        if ($prix <= 0) {
+            session()->flash('error', 'Aucun paiement n\'est requis pour ce stand.');
+            return;
+        }
 
         $this->stand_id_paiement  = $stand_id;
         $this->montant_paiement   = $prix;
@@ -143,7 +171,6 @@ class MesStands extends Component
 
     private function enregistrerPaiementStand()
     {
-        // ← Marque le stand comme payé
         Stand::findOrFail($this->stand_id_paiement)->update([
             'statut_paiement_stand' => 'paye',
         ]);
@@ -164,7 +191,6 @@ class MesStands extends Component
                 ->get()
             : collect();
 
-        // ← Stands disponibles avec prix et description
         $standsDisponibles = Stand::with('evenement')
             ->whereNull('id_entreprise')
             ->whereHas('evenement', fn($q) =>

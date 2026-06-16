@@ -81,6 +81,7 @@
                 ['route' => 'admin.traducteurs',  'icon' => 'fa-language',        'label' => 'Traducteurs'],
                 ['route' => 'admin.notifications','icon' => 'fa-bell',            'label' => 'Notifications'],
                 ['route' => 'admin.chefs-delegation', 'icon' => 'fa-user-tie', 'label' => 'Chefs de délégation'],
+                ['route' => 'admin.demandes-aide', 'icon' => 'fa-circle-question', 'label' => "Demandes d'aide"],
             ];
             @endphp
 

@@ -6,6 +6,8 @@ use Livewire\Component;
 use App\Models\Stand;
 use App\Models\Evenement;
 use App\Models\Entreprise;
+use App\Models\Participant;
+use App\Models\Notification;
 
 class GestionStands extends Component
 {
@@ -52,7 +54,6 @@ class GestionStands extends Component
         $this->resetErrorBag();
     }
 
-    // ← Ouvre modal génération
     public function openGenerateModal()
     {
         $this->id_evenement_generate = '';
@@ -67,7 +68,6 @@ class GestionStands extends Component
         $this->showGenerateModal = false;
     }
 
-    // ← Génère les stands automatiquement
     public function genererStands()
     {
         $this->validate([
@@ -77,10 +77,8 @@ class GestionStands extends Component
             'standing_default'      => 'required',
         ]);
 
-        // Supprime les anciens stands de cet événement
         Stand::where('id_evenement', $this->id_evenement_generate)->delete();
 
-        // Génère les nouveaux stands
         for ($i = 1; $i <= $this->nombre_stands; $i++) {
             Stand::create([
                 'id_evenement'  => $this->id_evenement_generate,
@@ -140,6 +138,89 @@ class GestionStands extends Component
     {
         Stand::findOrFail($id)->delete();
         session()->flash('success', 'Stand supprimé.');
+    }
+
+    
+    // VALIDATION / REJET DES RÉSERVATIONS DE STANDS
+    
+
+    /**
+     * Notifie le représentant de l'entreprise liée au stand.
+     */
+    private function notifierRepresentant(Stand $stand, string $message): void
+    {
+        if (!$stand->id_entreprise) return;
+
+        $representant = Participant::where('id_entreprise', $stand->id_entreprise)
+            ->where('role', 'representant')
+            ->first();
+
+        if ($representant) {
+            Notification::create([
+                'id_participant' => $representant->id,
+                'contenu'        => $message,
+                'date_envoie'    => now()->toDateString(),
+                'type'           => 'systeme',
+            ]);
+        }
+    }
+
+    /**
+     * Valide la réservation d'un stand.
+     * Si l'événement est gratuit, le stand est automatiquement réglé.
+     */
+    public function validerReservation($id)
+    {
+        $stand = Stand::with('evenement')->findOrFail($id);
+
+        if (!$stand->id_entreprise || $stand->statut_reservation !== 'en_attente') {
+            session()->flash('error', 'Cette réservation ne peut pas être validée.');
+            return;
+        }
+
+        $data    = ['statut_reservation' => 'valide'];
+        $gratuit = $stand->evenement && $stand->evenement->type_paiement == 'gratuit';
+
+        if ($gratuit) {
+            $data['statut_paiement_stand'] = 'paye';
+        }
+
+        $stand->update($data);
+
+        $this->notifierRepresentant(
+            $stand,
+            $gratuit
+                ? "✅ Votre réservation du Stand N°{$stand->numero_stand} a été validée. Aucun paiement n'est requis pour cet événement gratuit."
+                : "✅ Votre réservation du Stand N°{$stand->numero_stand} a été validée. Vous pouvez maintenant procéder au paiement depuis « Mes Stands »."
+        );
+
+        session()->flash('success', "Réservation du Stand N°{$stand->numero_stand} validée.");
+    }
+
+    /**
+     * Rejette la réservation : le stand redevient disponible.
+     */
+    public function rejeterReservation($id)
+    {
+        $stand = Stand::with('evenement')->findOrFail($id);
+
+        if (!$stand->id_entreprise || $stand->statut_reservation !== 'en_attente') {
+            session()->flash('error', 'Cette réservation ne peut pas être rejetée.');
+            return;
+        }
+
+        $this->notifierRepresentant(
+            $stand,
+            "❌ Votre réservation du Stand N°{$stand->numero_stand} a été rejetée par l'administration. Vous pouvez réserver un autre stand disponible."
+        );
+
+        $stand->update([
+            'id_entreprise'         => null,
+            'statut_reservation'    => null,
+            'statut_paiement_stand' => null,
+        ]);
+
+        session()->flash('success', "Réservation du Stand N°{$stand->numero_stand} rejetée. Le stand est de nouveau disponible.");
     }
 
     public function render()

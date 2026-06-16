@@ -49,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/notifications',   \App\Livewire\Admin\GestionNotifications::class)->name('admin.notifications');
         Route::get('/utilisateurs',    \App\Livewire\Admin\GestionUtilisateurs::class)->name('admin.utilisateurs');
         Route::get('/chefs-delegation', \App\Livewire\Admin\GestionChefsDelegation::class)->name('admin.chefs-delegation');
+        Route::get('/demandes-aide',   \App\Livewire\Admin\DemandesAide::class)->name('admin.demandes-aide');
     });
 
     // ============================================================
@@ -64,6 +65,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/rendez-vous',   \App\Livewire\Superviseur\VoirRendezVous::class)->name('superviseur.rendez-vous');
         Route::get('/badges',        \App\Livewire\Superviseur\VoirBadges::class)->name('superviseur.badges');
         Route::get('/gestion-acces', \App\Livewire\Superviseur\GestionCdd::class)->name('superviseur.gestion-acces');
+        Route::get('/demandes-aide', \App\Livewire\Superviseur\DemandesAide::class)->name('superviseur.demandes-aide');
     });
 
     // ============================================================
@@ -77,6 +79,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/souhaits',     \App\Livewire\Cdd\GestionSouhaits::class)->name('cdd.souhaits');
         Route::get('/catalogue',    \App\Livewire\Cdd\Catalogue::class)->name('cdd.catalogue');
         Route::get('/statistiques-souhaits', \App\Livewire\Cdd\StatistiquesSouhaits::class)->name('cdd.statistiques-souhaits');
+        Route::get('/demandes-aide', \App\Livewire\Cdd\DemandesAide::class)->name('cdd.demandes-aide');
     });
 
     // ============================================================

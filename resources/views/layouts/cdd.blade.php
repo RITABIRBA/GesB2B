@@ -35,6 +35,7 @@
                 ['route' => 'cdd.souhaits',              'icon' => 'fa-heart',          'label' => 'Souhaits RDV'],
                 ['route' => 'cdd.statistiques-souhaits', 'icon' => 'fa-chart-bar',      'label' => 'Stats Souhaits'],
                 ['route' => 'cdd.catalogue',             'icon' => 'fa-book-open',      'label' => 'Catalogue'],
+                ['route' => 'cdd.demandes-aide',         'icon' => 'fa-circle-question','label' => "Demandes d'aide"],
             ];
             @endphp
 

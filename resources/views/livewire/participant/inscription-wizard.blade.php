@@ -1,6 +1,6 @@
 <div>
 
-    {{-- BARRE DE PROGRESSION --}}
+    {{-- BARRE DE PROGRESSION (en haut, fixe) --}}
     @if($etape > 0)
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center justify-between">
@@ -36,6 +36,58 @@
             </div>
             @endif
             @endforeach
+        </div>
+    </div>
+
+    {{-- MINI BARRE STICKY EN BAS — visible pendant le scroll --}}
+    <div class="fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t border-gray-100"
+        style="background: rgba(255,255,255,0.97); backdrop-filter: blur(12px);">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            {{-- Étape courante --}}
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                    style="background-color: #C8102E;">
+                    {{ $etape }}
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 leading-none">Étape {{ $etape }} / {{ count($etapes) }}</p>
+                    <p class="text-sm font-bold text-gray-800 leading-tight">
+                        {{ $etapes[$etape] ?? '' }}
+                    </p>
+                </div>
+            </div>
+
+            {{-- Mini pills de progression --}}
+            <div class="hidden sm:flex items-center gap-1.5">
+                @foreach($etapes as $num => $label)
+                <div class="h-2 rounded-full transition-all duration-300"
+                    style="width: {{ $etape > $num ? '28px' : ($etape == $num ? '36px' : '14px') }};
+                           background-color: {{ $etape > $num ? '#007A3D' : ($etape == $num ? '#C8102E' : '#e5e7eb') }};">
+                </div>
+                @endforeach
+            </div>
+
+            {{-- Bouton continuer / confirmer rapide --}}
+            @if($etape < 6)
+            <button wire:click="suivant"
+                class="px-5 py-2.5 rounded-xl text-white text-sm font-bold transition hover:opacity-90 flex items-center gap-2 shadow flex-shrink-0"
+                style="background-color: #C8102E;">
+                Continuer <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            @elseif($etape == 6)
+            <button wire:click="confirmer"
+                wire:loading.attr="disabled"
+                wire:loading.class="opacity-70 cursor-not-allowed"
+                class="px-5 py-2.5 rounded-xl text-white text-sm font-bold transition hover:opacity-90 flex items-center gap-2 shadow flex-shrink-0"
+                style="background-color: #007A3D;">
+                <span wire:loading.remove>
+                    <i class="fa-solid fa-circle-check mr-1"></i> Confirmer
+                </span>
+                <span wire:loading>
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                </span>
+            </button>
+            @endif
         </div>
     </div>
     @endif
@@ -117,7 +169,7 @@
 
     {{-- ÉTAPE 1 — DÉTAILS ÉVÉNEMENT --}}
     @if($etape == 1)
-    <div class="bg-white rounded-2xl shadow-lg p-8">
+    <div class="bg-white rounded-2xl shadow-lg p-8 pb-24">
         <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <i class="fa-solid fa-calendar" style="color: #C8102E;"></i>
             Détails de l'événement
@@ -191,13 +243,12 @@
 
     {{-- ÉTAPE 2 — INFORMATIONS PERSONNELLES --}}
     @if($etape == 2)
-    <div class="bg-white rounded-2xl shadow-lg p-8">
+    <div class="bg-white rounded-2xl shadow-lg p-8 pb-24">
         <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <i class="fa-solid fa-user" style="color: #C8102E;"></i>
             Informations personnelles
         </h3>
 
-        {{-- Entreprise en lecture seule pour membres --}}
         @if($estMembre && $entreprise)
         <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5">
             <p class="text-xs font-bold text-green-700 mb-2 flex items-center gap-2">
@@ -254,7 +305,7 @@
                 @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
             @endif
-            <div class="{{ $estMembre ? '' : '' }}">
+            <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Fonction *</label>
                 <select wire:model.live="fonction"
                     class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
@@ -270,7 +321,6 @@
                 @endif
                 @error('fonction') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
-
             @if(!$estMembre)
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays *</label>
@@ -318,14 +368,13 @@
 
     {{-- ÉTAPE 3 — ACTIVITÉ PROFESSIONNELLE --}}
     @if($etape == 3)
-    <div class="bg-white rounded-2xl shadow-lg p-8">
+    <div class="bg-white rounded-2xl shadow-lg p-8 pb-24">
         <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <i class="fa-solid fa-briefcase" style="color: #C8102E;"></i>
             Activité professionnelle
         </h3>
 
         <div class="grid grid-cols-2 gap-4">
-
             @if(!$estMembre)
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Secteur d'activité *</label>
@@ -381,8 +430,6 @@
                     placeholder="Ex: Riz, logiciels, textile..."></textarea>
             </div>
             @endif
-
-            {{-- Objectif de participation (pour tous) --}}
             <div class="col-span-2">
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">
                     Objectif de participation
@@ -396,7 +443,6 @@
                 </p>
                 @error('objectif_participation') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
-
         </div>
 
         <div class="flex justify-between mt-8">
@@ -415,7 +461,7 @@
 
     {{-- ÉTAPE 4 — RECHERCHE DE PARTENARIAT --}}
     @if($etape == 4)
-    <div class="bg-white rounded-2xl shadow-lg p-8">
+    <div class="bg-white rounded-2xl shadow-lg p-8 pb-24">
         <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
             <i class="fa-solid fa-handshake" style="color: #C8102E;"></i>
             Recherche de partenariat
@@ -425,8 +471,6 @@
         </p>
 
         <div class="space-y-6">
-
-            {{-- Zone géographique --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Zone géographique ciblée *</label>
                 <select wire:model="zone_geographique"
@@ -439,7 +483,6 @@
                 @error('zone_geographique') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
             </div>
 
-            {{-- Type de partenariat (max 3) --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-2">
                     Type de partenariat recherché *
@@ -468,7 +511,6 @@
                 @error('types_partenariat') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
             </div>
 
-            {{-- Profil partenaire (max 3) --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-2">
                     Profil de partenaire recherché *
@@ -492,7 +534,6 @@
                 @error('profils_partenaire') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
             </div>
 
-            {{-- Secteurs recherchés (max 3) --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-2">
                     Secteurs d'activité recherchés *
@@ -520,7 +561,6 @@
                 @endif
                 @error('secteurs_recherche') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
             </div>
-
         </div>
 
         <div class="flex justify-between mt-8">
@@ -539,13 +579,12 @@
 
     {{-- ÉTAPE 5 — DISPONIBILITÉS + CDD --}}
     @if($etape == 5)
-    <div class="bg-white rounded-2xl shadow-lg p-8">
+    <div class="bg-white rounded-2xl shadow-lg p-8 pb-24">
         <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <i class="fa-solid fa-calendar-days" style="color: #C8102E;"></i>
             Disponibilités & Chef de Délégation
         </h3>
 
-        {{-- Disponibilités --}}
         <div class="mb-6">
             <p class="text-sm font-semibold text-gray-700 mb-3">
                 Jours de disponibilité
@@ -578,7 +617,6 @@
             @error('disponibilites') <p class="text-red-500 text-xs mt-2">{{ $message }}</p> @enderror
         </div>
 
-        {{-- Chef de délégation --}}
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
             <p class="text-sm font-bold text-blue-700 mb-1 flex items-center gap-2">
                 <i class="fa-solid fa-user-tie"></i>
@@ -604,6 +642,55 @@
             @endif
         </div>
 
+        @if($estRepresentant && $standsDisponiblesEvenement->count() > 0)
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5 mt-6">
+            <p class="text-sm font-bold text-yellow-700 mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-store"></i>
+                Réservation d'un stand
+                <span class="font-normal text-yellow-600">(optionnel)</span>
+            </p>
+            <p class="text-xs text-yellow-600 mb-3">
+                @if($evenement->type_paiement == 'gratuit')
+                Les stands sont gratuits pour cet événement.
+                @else
+                Le tarif dépend du standing choisi.
+                @endif
+            </p>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <label class="cursor-pointer">
+                    <input type="radio" wire:model="id_stand_choisi" value="" class="hidden peer">
+                    <div class="p-3 border-2 rounded-xl text-center transition h-full flex flex-col items-center justify-center
+                        peer-checked:border-gray-400 peer-checked:bg-gray-100 hover:bg-gray-50 border-gray-200">
+                        <i class="fa-solid fa-ban text-gray-400 text-lg mb-1 block"></i>
+                        <span class="text-sm font-medium text-gray-600">Aucun stand</span>
+                    </div>
+                </label>
+                @foreach($standsDisponiblesEvenement as $stand)
+                <label class="cursor-pointer">
+                    <input type="radio" wire:model="id_stand_choisi" value="{{ $stand->id }}" class="hidden peer">
+                    <div class="p-3 border-2 rounded-xl text-center transition
+                        peer-checked:border-yellow-400 peer-checked:bg-yellow-50 hover:bg-gray-50 border-gray-200">
+                        <p class="font-bold text-gray-800 text-sm">Stand N°{{ $stand->numero_stand }}</p>
+                        @if($stand->standing == 'vip')
+                        <span class="text-xs px-2 py-0.5 rounded-full text-white bg-yellow-500 font-medium inline-block mt-1">VIP</span>
+                        @elseif($stand->standing == 'premium')
+                        <span class="text-xs px-2 py-0.5 rounded-full text-white bg-blue-600 font-medium inline-block mt-1">Premium</span>
+                        @else
+                        <span class="text-xs px-2 py-0.5 rounded-full text-white font-medium inline-block mt-1" style="background-color: #007A3D;">Standard</span>
+                        @endif
+                        <p class="text-xs text-gray-400 mt-1">{{ $stand->superficie }} m²</p>
+                        @if($stand->prix_calcule > 0)
+                        <p class="text-xs font-bold mt-1" style="color: #C8102E;">{{ number_format($stand->prix_calcule, 0, ',', ' ') }} FCFA</p>
+                        @else
+                        <p class="text-xs text-green-600 font-medium mt-1">Gratuit</p>
+                        @endif
+                    </div>
+                </label>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         <div class="flex justify-between mt-8">
             <button wire:click="precedent"
                 class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium flex items-center gap-2">
@@ -620,7 +707,7 @@
 
     {{-- ÉTAPE 6 — CONFIRMATION --}}
     @if($etape == 6)
-    <div class="bg-white rounded-2xl shadow-lg p-8">
+    <div class="bg-white rounded-2xl shadow-lg p-8 pb-24">
         <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
             <i class="fa-solid fa-circle-check" style="color: #007A3D;"></i>
             Récapitulatif
@@ -628,15 +715,12 @@
         <p class="text-gray-500 text-sm mb-6">Vérifiez vos informations avant de confirmer.</p>
 
         <div class="space-y-4">
-
-            {{-- Événement --}}
             <div class="bg-green-50 border border-green-200 rounded-xl p-4">
                 <p class="text-xs font-bold text-green-700 mb-1"><i class="fa-solid fa-calendar mr-1"></i> Événement</p>
                 <p class="font-bold text-gray-800">{{ $evenement->nom }}</p>
                 <p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }} — {{ $evenement->ville }}</p>
             </div>
 
-            {{-- Infos personnelles --}}
             <div class="bg-gray-50 rounded-xl p-4">
                 <p class="text-xs font-bold text-gray-600 mb-3"><i class="fa-solid fa-user mr-1"></i> Informations personnelles</p>
                 <div class="grid grid-cols-2 gap-3 text-sm">
@@ -661,7 +745,6 @@
                 </div>
             </div>
 
-            {{-- Activité --}}
             @if($objectif_participation || $secteur_activite)
             <div class="bg-gray-50 rounded-xl p-4">
                 <p class="text-xs font-bold text-gray-600 mb-3"><i class="fa-solid fa-briefcase mr-1"></i> Activité</p>
@@ -682,7 +765,6 @@
             </div>
             @endif
 
-            {{-- Partenariat --}}
             <div class="bg-blue-50 rounded-xl p-4">
                 <p class="text-xs font-bold text-blue-700 mb-3"><i class="fa-solid fa-handshake mr-1"></i> Partenariat recherché</p>
                 <div class="space-y-2">
@@ -719,7 +801,6 @@
                 </div>
             </div>
 
-            {{-- CDD --}}
             @if($id_chef_delegation)
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p class="text-xs font-bold text-blue-700 mb-1">
@@ -730,7 +811,25 @@
             </div>
             @endif
 
-            {{-- Paiement --}}
+            @if($estRepresentant && $id_stand_choisi)
+            @php $standChoisi = $standsDisponiblesEvenement->find($id_stand_choisi); @endphp
+            @if($standChoisi)
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <p class="text-xs font-bold text-yellow-700 mb-1">
+                    <i class="fa-solid fa-store mr-1"></i> Stand réservé
+                </p>
+                <p class="font-semibold text-gray-800">
+                    Stand N°{{ $standChoisi->numero_stand }} — {{ ucfirst($standChoisi->standing) }}
+                    @if($standChoisi->prix_calcule > 0)
+                    ({{ number_format($standChoisi->prix_calcule, 0, ',', ' ') }} FCFA)
+                    @else
+                    (Gratuit)
+                    @endif
+                </p>
+            </div>
+            @endif
+            @endif
+
             @if($evenement->type_paiement == 'gratuit')
             <div class="bg-green-50 border border-green-300 rounded-xl p-4 flex items-center gap-3">
                 <i class="fa-solid fa-circle-check text-green-500 text-2xl"></i>
@@ -750,7 +849,6 @@
                 </div>
             </div>
             @endif
-
         </div>
 
         <div class="flex justify-between mt-8">

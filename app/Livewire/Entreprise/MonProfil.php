@@ -31,46 +31,73 @@ class MonProfil extends Component
     public $nombre_salaries   = '';
     public $chiffre_affaires  = '';
 
-    // ← Profil partenaire recherché
-    public $secteur_recherche = '';
-    public $zone_geographique = '';
-    public $type_partenaire   = '';
+    
+    // PROFIL PARTENAIRE RECHERCHÉ (max 3 chacun)
+    
+
+    public string $zone_geographique = '';
+
+    public array  $secteurs_recherche      = [];
+    public string $secteur_recherche_autre = '';
+
+    public array  $types_partenariat       = [];
+    public string $type_partenariat_autre  = '';
+
+    public array  $profils_partenaire      = [];
 
     public bool $isEditing = false;
 
+    
     // LISTES DE RÉFÉRENCE
     
 
     public array $secteurs = [
-        'Agriculture', 'Industrie', 'Commerce', 'Services',
-        'Technologie', 'Transport', 'Construction', 'Tourisme',
-        'Santé', 'Education', 'Finance', 'Energie', 'Mines',
-        'Artisanat', 'Autre',
-    ];
-
-    public array $zones = [
-        'Burkina Faso',
-        'Afrique de l\'Ouest',
-        'Afrique Centrale',
-        'Afrique de l\'Est',
-        'Afrique du Nord',
-        'Afrique Australe',
-        'Europe',
-        'Amérique',
-        'Asie',
-        'Monde entier',
-    ];
-
-    public array $types_partenaires = [
-        'Fournisseur',
-        'Client',
-        'Distributeur',
-        'Partenaire financier',
-        'Investisseur',
-        'Sous-traitant',
-        'Revendeur',
-        'Partenaire technique',
+        'Agriculture et agro-alimentaire',
+        'Environnement',
+        'Industrie textile',
+        'Biens de consommation',
+        'Energie',
+        'Formation',
+        'Tourisme',
+        'TIC',
+        'Sous-traitance',
+        'Artisanat',
+        'Distribution',
+        'Prestation',
+        'Industrie manufacturière',
+        'Enseignement',
+        'Services aux entreprises',
+        'BTP',
+        'Activités médicales et pharmaceutiques',
         'Autre',
+    ];
+
+    public array $zonesGeographiques = [
+        'Locale',
+        'Nationale',
+        'Régionale (CEDEAO)',
+        'Africaine',
+        'Internationale',
+    ];
+
+    public array $typesPartenariatOptions = [
+        'Alliance commerciale',
+        'Alliance financière',
+        'Alliance industrielle',
+        'Autre',
+    ];
+
+    public array $profilsPartenariatOptions = [
+        'Consultant',
+        'Distributeur',
+        'Exportateur',
+        'Fabricant / Producteur',
+        'Investisseur',
+        'Importateur',
+        'Prestataire de service',
+        'Sous-traitant',
+        'Innovation',
+        'R&D',
     ];
 
     public array $pays_liste = [
@@ -116,6 +143,26 @@ class MonProfil extends Component
         $this->ville = '';
     }
 
+    /**
+     * Décode une liste JSON et remplace toute valeur hors-liste
+     * par "Autre" + remplit la propriété "_autre" correspondante.
+     */
+    private function chargerListeAvecAutre($valeurBrute, array $listeOfficielle, string $proprieteAutre): array
+    {
+        $valeurs = is_array($valeurBrute)
+            ? $valeurBrute
+            : (json_decode($valeurBrute ?? '[]', true) ?: []);
+
+        foreach ($valeurs as $i => $valeur) {
+            if (!in_array($valeur, $listeOfficielle)) {
+                $this->{$proprieteAutre} = $valeur;
+                $valeurs[$i] = 'Autre';
+            }
+        }
+
+        return $valeurs;
+    }
+
 
     // MOUNT
     
@@ -151,9 +198,25 @@ class MonProfil extends Component
             $this->annee_creation   = $representant->annee_creation ?? '';
             $this->nombre_salaries  = $representant->nombre_salaries ?? '';
             $this->chiffre_affaires = $representant->chiffre_affaires ?? '';
-            $this->secteur_recherche = $representant->secteur_recherche ?? '';
+
+            // ← Profil partenaire recherché
             $this->zone_geographique = $representant->zone_geographique ?? '';
-            $this->type_partenaire   = $representant->type_partenaire ?? '';
+
+            $this->secteurs_recherche = $this->chargerListeAvecAutre(
+                $representant->secteurs_recherche,
+                $this->secteurs,
+                'secteur_recherche_autre'
+            );
+
+            $this->types_partenariat = $this->chargerListeAvecAutre(
+                $representant->types_partenariat,
+                $this->typesPartenariatOptions,
+                'type_partenariat_autre'
+            );
+
+            $this->profils_partenaire = is_array($representant->profils_partenaire)
+                ? $representant->profils_partenaire
+                : (json_decode($representant->profils_partenaire ?? '[]', true) ?: []);
         }
     }
 
@@ -167,6 +230,45 @@ class MonProfil extends Component
         $this->isEditing = false;
         $this->mount();
         $this->resetErrorBag();
+    }
+
+    
+    // TOGGLES — PROFIL PARTENAIRE (max 3 chacun)
+    
+
+    public function toggleSecteurRecherche(string $option): void
+    {
+        if (in_array($option, $this->secteurs_recherche)) {
+            $this->secteurs_recherche = array_values(array_diff($this->secteurs_recherche, [$option]));
+        } elseif (count($this->secteurs_recherche) < 3) {
+            $this->secteurs_recherche[] = $option;
+        }
+
+        if (!in_array('Autre', $this->secteurs_recherche)) {
+            $this->secteur_recherche_autre = '';
+        }
+    }
+
+    public function toggleTypePartenariat(string $option): void
+    {
+        if (in_array($option, $this->types_partenariat)) {
+            $this->types_partenariat = array_values(array_diff($this->types_partenariat, [$option]));
+        } elseif (count($this->types_partenariat) < 3) {
+            $this->types_partenariat[] = $option;
+        }
+
+        if (!in_array('Autre', $this->types_partenariat)) {
+            $this->type_partenariat_autre = '';
+        }
+    }
+
+    public function toggleProfilPartenaire(string $option): void
+    {
+        if (in_array($option, $this->profils_partenaire)) {
+            $this->profils_partenaire = array_values(array_diff($this->profils_partenaire, [$option]));
+        } elseif (count($this->profils_partenaire) < 3) {
+            $this->profils_partenaire[] = $option;
+        }
     }
 
     
@@ -186,10 +288,27 @@ class MonProfil extends Component
             'annee_creation'        => 'required|integer|min:1900|max:' . date('Y'),
             'nombre_salaries'       => 'required|integer|min:1',
             'chiffre_affaires'      => 'required|numeric|min:0|max:100',
-            'secteur_recherche'     => 'required|string|max:255',
             'zone_geographique'     => 'required|string|max:255',
-            'type_partenaire'       => 'required|string|max:255',
+            'secteurs_recherche'    => 'required|array|min:1|max:3',
+            'types_partenariat'     => 'required|array|min:1|max:3',
+            'profils_partenaire'    => 'nullable|array|max:3',
+        ], [
+            'zone_geographique.required'  => 'La zone géographique est obligatoire.',
+            'secteurs_recherche.required' => 'Sélectionnez au moins un secteur recherché.',
+            'secteurs_recherche.min'      => 'Sélectionnez au moins un secteur recherché.',
+            'types_partenariat.required'  => 'Sélectionnez au moins un type de partenariat.',
+            'types_partenariat.min'       => 'Sélectionnez au moins un type de partenariat.',
         ]);
+
+        if (in_array('Autre', $this->secteurs_recherche) && !$this->secteur_recherche_autre) {
+            $this->addError('secteur_recherche_autre', 'Précisez le secteur recherché.');
+            return;
+        }
+
+        if (in_array('Autre', $this->types_partenariat) && !$this->type_partenariat_autre) {
+            $this->addError('type_partenariat_autre', 'Précisez le type de partenariat.');
+            return;
+        }
 
         // ← Met à jour l'entreprise
         Entreprise::findOrFail($this->entreprise_id)->update([
@@ -207,6 +326,17 @@ class MonProfil extends Component
             'contact'               => $this->contact,
         ]);
 
+        // ← Remplace "Autre" par la saisie libre dans les sélections
+        $secteursRecherche = $this->secteurs_recherche;
+        if (($idx = array_search('Autre', $secteursRecherche)) !== false && $this->secteur_recherche_autre) {
+            $secteursRecherche[$idx] = $this->secteur_recherche_autre;
+        }
+
+        $typesPartenariat = $this->types_partenariat;
+        if (($idx = array_search('Autre', $typesPartenariat)) !== false && $this->type_partenariat_autre) {
+            $typesPartenariat[$idx] = $this->type_partenariat_autre;
+        }
+
         // ← Met à jour le représentant
         $representant = Participant::where('id_entreprise', $this->entreprise_id)
             ->where('role', 'representant')
@@ -223,9 +353,10 @@ class MonProfil extends Component
                 'annee_creation'        => $this->annee_creation,
                 'nombre_salaries'       => $this->nombre_salaries,
                 'chiffre_affaires'      => $this->chiffre_affaires,
-                'secteur_recherche'     => $this->secteur_recherche,
                 'zone_geographique'     => $this->zone_geographique,
-                'type_partenaire'       => $this->type_partenaire,
+                'secteurs_recherche'    => json_encode($secteursRecherche),
+                'types_partenariat'     => json_encode($typesPartenariat),
+                'profils_partenaire'    => !empty($this->profils_partenaire) ? json_encode($this->profils_partenaire) : null,
             ]);
         }
 
@@ -240,8 +371,11 @@ class MonProfil extends Component
     public function render()
     {
         return view('livewire.entreprise.mon-profil', [
-            'entreprise'        => $this->getEntreprise(),
-            'villesDisponibles' => $this->getVillesDisponibles(),
+            'entreprise'                => $this->getEntreprise(),
+            'villesDisponibles'         => $this->getVillesDisponibles(),
+            'zonesGeographiques'        => $this->zonesGeographiques,
+            'typesPartenariatOptions'   => $this->typesPartenariatOptions,
+            'profilsPartenariatOptions' => $this->profilsPartenariatOptions,
         ])->layout('layouts.entreprise', ['title' => 'Mon Profil']);
     }
 }

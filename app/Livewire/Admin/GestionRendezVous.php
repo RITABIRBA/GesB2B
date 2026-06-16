@@ -3,15 +3,21 @@
 namespace App\Livewire\Admin;
 
 use Livewire\Component;
+use Livewire\WithPagination;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use App\Models\RendezVous;
 use App\Models\Participant;
 use App\Models\Souhait;
 use App\Models\Traducteur;
 use App\Models\Evenement;
 use App\Models\Notification;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class GestionRendezVous extends Component
 {
+    use WithPagination;
+
     // Génération du planning
     public $id_evenement          = '';
     public $evenement_selectionne = null;
@@ -61,6 +67,41 @@ class GestionRendezVous extends Component
     // Filtres
     public $search        = '';
     public $filtre_statut = '';
+
+    // ─── Tri & Point des RDV par événement ─────────────────
+    public $sort_field       = 'date';
+    public $sort_direction   = 'asc';
+    public $filtre_evenement = '';
+
+    // ─── Pagination (par événement) ────────────────────────
+    protected $perPagePlanning = 10;
+
+    /**
+     * Réinitialise toutes les pages de pagination (une par
+     * événement) — appelé quand un filtre ou le tri change,
+     * pour éviter de rester sur une page devenue inexistante.
+     */
+    private function resetAllPages(): void
+    {
+        foreach (array_keys($this->paginators ?? []) as $pageName) {
+            $this->resetPage($pageName);
+        }
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetAllPages();
+    }
+
+    public function updatedFiltreStatut(): void
+    {
+        $this->resetAllPages();
+    }
+
+    public function updatedFiltreEvenement(): void
+    {
+        $this->resetAllPages();
+    }
 
     /**
      * Quand l'événement change, recalcule le résumé automatiquement.
@@ -414,6 +455,168 @@ class GestionRendezVous extends Component
         session()->flash('success', 'Rendez-vous supprimé.');
     }
 
+    // ─── TRI DES COLONNES ───────────────────────────────────────
+
+    /**
+     * Bascule le tri sur la colonne cliquée : si c'est déjà la
+     * colonne triée, inverse le sens (asc/desc), sinon trie cette
+     * nouvelle colonne en ascendant. Réinitialise les pages.
+     */
+    public function sortBy(string $field): void
+    {
+        if ($this->sort_field === $field) {
+            $this->sort_direction = $this->sort_direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sort_field     = $field;
+            $this->sort_direction = 'asc';
+        }
+
+        $this->resetAllPages();
+    }
+
+    /**
+     * Applique le tri courant ($sort_field / $sort_direction) sur
+     * une collection de RendezVous (avec relations participant1/2
+     * déjà chargées).
+     */
+    private function sortCollection($collection)
+    {
+        $field = $this->sort_field;
+
+        return $collection->sortBy(function ($rdv) use ($field) {
+            return match ($field) {
+                'nom1'   => mb_strtolower(trim(($rdv->participant1->nom ?? '') . ' ' . ($rdv->participant1->prenom ?? ''))),
+                'nom2'   => mb_strtolower(trim(($rdv->participant2->nom ?? '') . ' ' . ($rdv->participant2->prenom ?? ''))),
+                'date'   => trim(($rdv->date ?? '') . ' ' . ($rdv->heure_debut ?? '')),
+                'statut' => $rdv->statut,
+                default  => $rdv->id,
+            };
+        }, SORT_REGULAR, $this->sort_direction === 'desc')->values();
+    }
+
+    /**
+     * Libellé français d'un statut de RDV (pour exports).
+     */
+    private function libelleStatut(string $statut): string
+    {
+        return match ($statut) {
+            'a_planifier' => 'A planifier',
+            'planifie'    => 'Planifie',
+            'confirme'    => 'Confirme',
+            'annule'      => 'Annule',
+            'termine'     => 'Termine',
+            default       => $statut,
+        };
+    }
+
+    /**
+     * Requête de base des RDV, avec relations et filtres
+     * (statut, événement, recherche) appliqués — partagée entre
+     * l'affichage et les exports.
+     */
+    private function buildRendezVousQuery()
+    {
+        return RendezVous::with([
+                'participant1', 'participant1.entreprise',
+                'participant2', 'participant2.entreprise',
+                'traducteur', 'participantAbsent',
+            ])
+            ->when($this->filtre_statut, fn($q) =>
+                $q->where('statut', $this->filtre_statut)
+            )
+            ->when($this->filtre_evenement, function ($q) {
+                $q->where(function ($qq) {
+                    $qq->whereHas('participant1', fn($q2) =>
+                            $q2->where('id_evenement', $this->filtre_evenement)
+                        )
+                        ->orWhereHas('participant2', fn($q2) =>
+                            $q2->where('id_evenement', $this->filtre_evenement)
+                        );
+                });
+            })
+            ->when($this->search, fn($q) =>
+                $q->whereHas('participant1', fn($q) =>
+                    $q->where('nom', 'like', '%' . $this->search . '%')
+                      ->orWhere('prenom', 'like', '%' . $this->search . '%')
+                )->orWhereHas('participant2', fn($q) =>
+                    $q->where('nom', 'like', '%' . $this->search . '%')
+                      ->orWhere('prenom', 'like', '%' . $this->search . '%')
+                )
+            );
+    }
+
+    // ─── EXPORTS (point 2) — portent sur l'ensemble filtré, ────
+    // ─── pas seulement la page affichée ────────────────────────
+
+    /**
+     * Export CSV ("Excel") du planning filtré/trié actuel.
+     */
+    public function exportExcel()
+    {
+        $rdvs = $this->sortCollection($this->buildRendezVousQuery()->get());
+
+        $filename = 'planning_rdv_' . now()->format('Y-m-d_His') . '.csv';
+
+        return response()->streamDownload(function () use ($rdvs) {
+            $handle = fopen('php://output', 'w');
+            // BOM UTF-8 pour qu'Excel affiche correctement les accents
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, [
+                'Nom participant 1', 'Prenom participant 1', 'Entreprise 1',
+                'Nom participant 2', 'Prenom participant 2', 'Entreprise 2',
+                'Date', 'Heure debut', 'Heure fin', 'Salle', 'Table',
+                'Traducteur', 'Statut',
+            ], ';');
+
+            foreach ($rdvs as $rdv) {
+                fputcsv($handle, [
+                    $rdv->participant1->nom ?? '',
+                    $rdv->participant1->prenom ?? '',
+                    $rdv->participant1->entreprise->nom ?? 'Independant',
+                    $rdv->participant2->nom ?? '',
+                    $rdv->participant2->prenom ?? '',
+                    $rdv->participant2->entreprise->nom ?? 'Independant',
+                    $rdv->date ?? '',
+                    $rdv->heure_debut ?? '',
+                    $rdv->heure_fin ?? '',
+                    $rdv->salle ?? '',
+                    $rdv->numero_table ?? '',
+                    $rdv->traducteur->nom ?? '',
+                    $this->libelleStatut($rdv->statut),
+                ], ';');
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * Export PDF du planning filtré/trié actuel.
+     * Nécessite : composer require barryvdh/laravel-dompdf
+     */
+    public function exportPdf()
+    {
+        $rdvs = $this->sortCollection($this->buildRendezVousQuery()->get());
+
+        $evenementFiltre = $this->filtre_evenement
+            ? Evenement::find($this->filtre_evenement)
+            : null;
+
+        $pdf = Pdf::loadView('exports.planning-rdv-pdf', [
+            'rendezVous'    => $rdvs,
+            'evenement'     => $evenementFiltre,
+            'libelleStatut' => fn ($s) => $this->libelleStatut($s),
+        ])->setPaper('a4', 'landscape');
+
+        return response()->streamDownload(
+            fn () => print($pdf->output()),
+            'planning_rdv_' . now()->format('Y-m-d_His') . '.pdf'
+        );
+    }
+
     // ─── MATCH MANUEL (CAS 4) ──────────────────────────────────
 
     public function ouvrirMatchManuel(): void
@@ -540,6 +743,95 @@ class GestionRendezVous extends Component
     }
 
     /**
+     * Cherche un créneau (date, heure, salle, table) disponible pour
+     * les 2 participants donnés, en respectant leurs disponibilités,
+     * les pauses configurées, et l'absence de conflit/table occupée.
+     */
+    private function trouverCreneauDisponible(Evenement $evenement, int $id1, int $id2): ?array
+    {
+        $p1 = Participant::find($id1);
+        $p2 = Participant::find($id2);
+
+        $dureeRdv   = ($evenement->duree_rdv ?? 20) * 60;
+        $dureePause = ($evenement->duree_pause ?? 5) * 60;
+        $dureeSlot  = $dureeRdv + $dureePause;
+        $pauses     = $this->getPauses();
+
+        $debutEvt = \Carbon\Carbon::parse($evenement->date_debut);
+        $finEvt   = \Carbon\Carbon::parse($evenement->date_fin);
+        $jours    = [];
+        $cursor   = $debutEvt->copy();
+        while ($cursor->lte($finEvt)) {
+            $jours[] = $cursor->toDateString();
+            $cursor->addDay();
+        }
+
+        $dispoP1 = $this->getDisponibilites($p1);
+        $dispoP2 = $this->getDisponibilites($p2);
+
+        foreach ($jours as $jour) {
+            if (!empty($dispoP1) && !in_array($jour, $dispoP1)) continue;
+            if (!empty($dispoP2) && !in_array($jour, $dispoP2)) continue;
+
+            $debut = strtotime($evenement->heure_debut);
+            $fin   = strtotime($evenement->heure_fin);
+
+            while ($debut + $dureeRdv <= $fin) {
+                $creneauDebut = $debut;
+                $creneauFin   = $debut + $dureeRdv;
+                $dansUnePause = false;
+
+                foreach ($pauses as $pause) {
+                    if ($creneauDebut < $pause['fin'] && $creneauFin > $pause['debut']) {
+                        $dansUnePause = true;
+                        $debut        = $pause['fin'];
+                        break;
+                    }
+                }
+
+                if ($dansUnePause) continue;
+
+                $heureDebut = date('H:i', $creneauDebut);
+                $heureFin   = date('H:i', $creneauFin);
+
+                $conflit = RendezVous::where('date', $jour)
+                    ->where('heure_debut', $heureDebut)
+                    ->where('statut', '!=', 'annule')
+                    ->where(function ($q) use ($id1, $id2) {
+                        $q->whereIn('id_participant1', [$id1, $id2])
+                          ->orWhereIn('id_participant2', [$id1, $id2]);
+                    })
+                    ->exists();
+
+                if (!$conflit) {
+                    $tablesUtilisees = RendezVous::where('date', $jour)
+                        ->where('heure_debut', $heureDebut)
+                        ->where('statut', '!=', 'annule')
+                        ->whereNotNull('numero_table')
+                        ->pluck('numero_table')
+                        ->toArray();
+
+                    for ($t = 1; $t <= ($evenement->nombre_tables ?? 0); $t++) {
+                        if (!in_array($t, $tablesUtilisees)) {
+                            return [
+                                'date'         => $jour,
+                                'heure_debut'  => $heureDebut,
+                                'heure_fin'    => $heureFin,
+                                'salle'        => $evenement->nom_salle,
+                                'numero_table' => $t,
+                            ];
+                        }
+                    }
+                }
+
+                $debut += $dureeSlot;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Crée un RDV manuel entre 2 participants choisis par l'admin/superviseur.
      * Notifie les 2 participants par email interne (table notifications).
      */
@@ -576,23 +868,43 @@ class GestionRendezVous extends Component
             return;
         }
 
+        $evenement = Evenement::findOrFail($this->match_id_evenement);
+
+        $creneau = $this->trouverCreneauDisponible(
+            $evenement,
+            (int) $this->match_participant1,
+            (int) $this->match_participant2
+        );
+
+        if (!$creneau) {
+            $this->addError('match_participant2', 'Aucun créneau disponible pour ces deux participants (emplois du temps complets ou disponibilités incompatibles).');
+            return;
+        }
+
         RendezVous::create([
             'id_participant1' => $this->match_participant1,
             'id_participant2' => $this->match_participant2,
-            'statut'          => 'a_planifier',
+            'date'            => $creneau['date'],
+            'heure_debut'     => $creneau['heure_debut'],
+            'heure_fin'       => $creneau['heure_fin'],
+            'salle'           => $creneau['salle'],
+            'numero_table'    => $creneau['numero_table'],
+            'statut'          => 'planifie',
         ]);
 
         // Notifications
+        $infoCreneau = "le {$creneau['date']} de {$creneau['heure_debut']} à {$creneau['heure_fin']} (Table {$creneau['numero_table']})";
+
         Notification::create([
             'id_participant' => $p1->id,
-            'contenu'        => "📅 Un rendez-vous a été organisé par l'administration avec " . ($p2->nom ?? '') . ' ' . ($p2->prenom ?? '') . ".",
+            'contenu'        => "📅 Un rendez-vous a été organisé par l'administration avec " . ($p2->nom ?? '') . ' ' . ($p2->prenom ?? '') . " {$infoCreneau}.",
             'date_envoie'    => now()->toDateString(),
             'type'           => 'systeme',
         ]);
 
         Notification::create([
             'id_participant' => $p2->id,
-            'contenu'        => "📅 Un rendez-vous a été organisé par l'administration avec " . ($p1->nom ?? '') . ' ' . ($p1->prenom ?? '') . ".",
+            'contenu'        => "📅 Un rendez-vous a été organisé par l'administration avec " . ($p1->nom ?? '') . ' ' . ($p1->prenom ?? '') . " {$infoCreneau}.",
             'date_envoie'    => now()->toDateString(),
             'type'           => 'systeme',
         ]);
@@ -603,15 +915,6 @@ class GestionRendezVous extends Component
 
     /**
      * Génère le planning des RDV pour un événement.
-     *
-     * ALGORITHME :
-     * 1. Lit duree_rdv et duree_pause depuis l'événement
-     * 2. Calcule tous les créneaux disponibles (heure_debut → heure_fin)
-     *    en sautant les pauses configurées
-     * 3. Traite d'abord les souhaits MUTUELS (priorité absolue)
-     * 4. Puis les souhaits unilatéraux par priorité décroissante
-     * 5. Pour chaque paire, cherche un créneau ET une table libre
-     * 6. Crée le RDV avec salle, table, date et horaire
      */
     public function genererPlanning(): void
     {
@@ -679,7 +982,6 @@ class GestionRendezVous extends Component
             ->delete();
 
         // Collecte toutes les paires uniques de souhaits
-        // Mutuels en premier, puis unilatéraux
         $souhaitsTraites = [];
         $rdvMutuels      = [];
         $rdvUnilateraux  = [];
@@ -717,19 +1019,16 @@ class GestionRendezVous extends Component
             }
         }
 
-        // Mutuels en priorité, puis unilatéraux
         $planning     = array_merge($rdvMutuels, $rdvUnilateraux);
         $date         = $evenement->date_debut;
         $salle        = $evenement->nom_salle;
         $nombreTables = $evenement->nombre_tables;
 
-        // Suivi des tables utilisées par créneau
         $tablesByCreneau = [];
 
         foreach ($planning as $rdv) {
             foreach ($creneaux as $ci => $creneau) {
 
-                // Vérifie qu'aucun des 2 participants n'est déjà occupé
                 $conflit = RendezVous::where('date', $date)
                     ->where('heure_debut', $creneau['debut'])
                     ->where(function ($q) use ($rdv) {
@@ -746,7 +1045,6 @@ class GestionRendezVous extends Component
 
                 if ($conflit) continue;
 
-                // Cherche une table libre sur ce créneau
                 $tablesUtilisees = $tablesByCreneau[$ci] ?? [];
                 $tableTrouvee    = null;
 
@@ -759,7 +1057,6 @@ class GestionRendezVous extends Component
 
                 if ($tableTrouvee === null) continue;
 
-                // Crée le RDV
                 RendezVous::create([
                     'id_participant1' => $rdv['id_participant1'],
                     'id_participant2' => $rdv['id_participant2'],
@@ -777,6 +1074,7 @@ class GestionRendezVous extends Component
         }
 
         $this->closeGenerateModal();
+        $this->resetAllPages();
 
         $nbMutuels     = count($rdvMutuels);
         $nbUnilateraux = count($rdvUnilateraux);
@@ -844,27 +1142,48 @@ class GestionRendezVous extends Component
                 ->get();
         }
 
+        // ── Liste complète filtrée + triée (sert aux stats globales et exports) ──
+        $rendezVous = $this->sortCollection(
+            $this->buildRendezVousQuery()->latest('id')->get()
+        );
+
+        // ── Groupement par événement + pagination indépendante par groupe ──
+        $rdvParEvenementBrut = $rendezVous->groupBy(function($rdv) {
+            return $rdv->participant1->id_evenement
+                ?? $rdv->participant2->id_evenement
+                ?? 0;
+        });
+
+        $rdvGroupesPagines = [];
+        foreach ($rdvParEvenementBrut as $id_evenement => $rdvsGroupe) {
+            $pageName = 'page_evt_' . $id_evenement;
+            $page     = $this->getPage($pageName);
+
+            $rdvGroupesPagines[$id_evenement] = [
+                'tous' => $rdvsGroupe,
+                'page' => new LengthAwarePaginator(
+                    $rdvsGroupe->forPage($page, $this->perPagePlanning)->values(),
+                    $rdvsGroupe->count(),
+                    $this->perPagePlanning,
+                    $page,
+                    [
+                        'path'     => Paginator::resolveCurrentPath(),
+                        'pageName' => $pageName,
+                    ]
+                ),
+            ];
+        }
+
+        // Événement sélectionné pour le "Point des RDV" (point 4)
+        $evenementFiltre = $this->filtre_evenement
+            ? Evenement::find($this->filtre_evenement)
+            : null;
+
         return view('livewire.admin.gestion-rendez-vous', [
-            'rendezVous' => RendezVous::with([
-                    'participant1', 'participant1.entreprise',
-                    'participant2', 'participant2.entreprise',
-                    'traducteur', 'participantAbsent',
-                ])
-                ->when($this->filtre_statut, fn($q) =>
-                    $q->where('statut', $this->filtre_statut)
-                )
-                ->when($this->search, fn($q) =>
-                    $q->whereHas('participant1', fn($q) =>
-                        $q->where('nom', 'like', '%' . $this->search . '%')
-                          ->orWhere('prenom', 'like', '%' . $this->search . '%')
-                    )->orWhereHas('participant2', fn($q) =>
-                        $q->where('nom', 'like', '%' . $this->search . '%')
-                          ->orWhere('prenom', 'like', '%' . $this->search . '%')
-                    )
-                )
-                ->latest()
-                ->get(),
+            'rendezVous'              => $rendezVous,
+            'rdvGroupesPagines'       => $rdvGroupesPagines,
             'evenements'              => Evenement::orderBy('nom')->get(),
+            'evenementFiltre'         => $evenementFiltre,
             'traducteurs'             => $traducteurs,
             'participantsDisponibles' => $participantsDisponibles,
             'participantsMatchManuel' => $participantsMatchManuel,

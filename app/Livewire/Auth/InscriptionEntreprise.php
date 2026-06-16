@@ -31,6 +31,7 @@ class InscriptionEntreprise extends Component
     
     public string $nom_responsable       = '';
     public string $prenom_responsable    = '';
+    public string $genre                 = '';
     public string $fonction_responsable  = '';
     public string $fonction_autre        = ''; // ← Saisie libre si "Autre"
     public string $email                 = '';
@@ -90,47 +91,54 @@ class InscriptionEntreprise extends Component
     ];
 
     public array $secteurs = [
-        'Agriculture', 'Industrie', 'Commerce', 'Services',
-        'Technologie', 'Transport', 'Construction', 'Tourisme',
-        'Santé', 'Education', 'Finance', 'Energie', 'Mines',
-        'Artisanat', 'Autre',
+        'Agriculture et agro-alimentaire',
+        'Environnement',
+        'Industrie textile',
+        'Biens de consommation',
+        'Energie',
+        'Formation',
+        'Tourisme',
+        'TIC',
+        'Sous-traitance',
+        'Artisanat',
+        'Distribution',
+        'Prestation',
+        'Industrie manufacturière',
+        'Enseignement',
+        'Services aux entreprises',
+        'Services financiers',
+        'BTP',
+        'Activités médicales et pharmaceutiques',
+        'Autre',
     ];
-
     public array $zones = [
-        'Burkina Faso',
-        'Afrique de l\'Ouest',
-        'Afrique Centrale',
-        'Afrique de l\'Est',
-        'Afrique du Nord',
-        'Afrique Australe',
-        'Europe',
-        'Amérique',
-        'Asie',
-        'Monde entier',
+        'Locale',
+        'Nationale',
+        'Régionale (CEDEAO)',
+        'Africaine',
+        'Internationale',
     ];
 
+    // ← Type de partenariat recherché (Alliance commerciale, financière, industrielle, Autre)
     public array $types_partenaires = [
-        'Fournisseur',
-        'Client',
-        'Distributeur',
-        'Partenaire financier',
-        'Investisseur',
-        'Sous-traitant',
-        'Revendeur',
-        'Partenaire technique',
+        'Alliance commerciale',
+        'Alliance financière',
+        'Alliance industrielle',
         'Autre',
     ];
 
+    // ← Profil de partenaire recherché
     public array $profilsPartenariatOptions = [
-        'PME',
-        'Grande entreprise',
-        'Multinationale',
-        'Startup / Jeune entreprise',
-        'Coopérative',
-        'Institution publique',
-        'ONG / Association',
-        'Particulier',
-        'Autre',
+        'Consultant',
+        'Distributeur',
+        'Exportateur',
+        'Fabricant / Producteur',
+        'Investisseur',
+        'Importateur',
+        'Prestataire de service',
+        'Sous-traitant',
+        'Innovation',
+        'R&D',
     ];
 
     public array $pays_liste = [
@@ -249,6 +257,7 @@ class InscriptionEntreprise extends Component
             $this->validate([
                 'nom_responsable'      => 'required|string|max:255',
                 'prenom_responsable'   => 'required|string|max:255',
+                'genre'                => 'required|in:homme,femme',
                 'fonction_responsable' => 'required|string|max:255',
                 'email'                => 'required|email|unique:users,email',
                 'contact'              => 'required|string|max:255',
@@ -262,9 +271,10 @@ class InscriptionEntreprise extends Component
             ], [
                 'nom_responsable.required'      => 'Le nom est obligatoire.',
                 'prenom_responsable.required'   => 'Le prénom est obligatoire.',
+                'genre.required'                => 'Le genre est obligatoire.',
                 'fonction_responsable.required' => 'La fonction est obligatoire.',
                 'email.required'                => 'L\'email est obligatoire.',
-                'email.unique'                  => 'Cet email est déjà utilisé.',
+                'email.unique'                   => 'Cet email est déjà utilisé.',
                 'contact.required'              => 'Le téléphone est obligatoire.',
                 'ifu.required'                  => 'Le numéro IFU est obligatoire.',
                 'ifu.regex'                     => 'Format IFU invalide. Exemple : 12345678A',
@@ -273,7 +283,6 @@ class InscriptionEntreprise extends Component
                 'password.min'                  => 'Minimum 8 caractères.',
                 'password.confirmed'            => 'Les mots de passe ne correspondent pas.',
             ]);
-
             $this->etape = 2;
 
         } elseif ($this->etape === 2) {
@@ -432,11 +441,15 @@ class InscriptionEntreprise extends Component
         }
 
         // ← Crée le PARTICIPANT représentant
-        Participant::create([
+        // Note : secteurs_recherche, types_partenariat, profils_partenaire et
+        // disponibilites sont castés en 'array' dans le modèle Participant,
+        // donc on passe directement les tableaux PHP (pas de json_encode).
+       Participant::create([
             'id_entreprise'         => $entreprise->id,
             'id_cdd'                => $this->id_cdd ?: null,
             'nom'                   => $this->nom_responsable,
             'prenom'                => $this->prenom_responsable,
+            'genre'                 => $this->genre,
             'fonction'              => $this->fonction_responsable,
             'email'                 => $this->email,
             'telephone'             => $this->contact,
@@ -449,12 +462,16 @@ class InscriptionEntreprise extends Component
             'annee_creation'        => $this->annee_creation,
             'nombre_salaries'       => $this->nombre_salaries,
             'chiffre_affaires'      => $this->chiffre_affaires,
-            'secteurs_recherche'    => json_encode($secteursRecherche),
+            'secteurs_recherche'    => $secteursRecherche,
             'zone_geographique'     => $this->zone_geographique,
-            'types_partenariat'     => json_encode($typesPartenariat),
-            'profils_partenaire'    => json_encode($profilsPartenaire),
+            'types_partenariat'     => $typesPartenariat,
+            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat)
+                ? $this->type_partenariat_autre : null,
+            'profils_partenaire'    => $profilsPartenaire,
+            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche)
+                ? $this->secteur_recherche_autre : null,
             'disponibilites'        => !empty($this->disponibilites)
-                ? json_encode($this->disponibilites)
+                ? $this->disponibilites
                 : null,
             'code_acces'            => $code_acces,
             'role'                  => 'representant',
