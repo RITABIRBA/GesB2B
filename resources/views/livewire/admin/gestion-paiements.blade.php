@@ -50,7 +50,7 @@
     </div>
 
     {{-- Filtres --}}
-    <div class="flex gap-4 mb-5">
+    <div class="flex gap-4 mb-5 flex-wrap">
         <div class="relative w-full md:w-1/3">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
             <input wire:model.live="search" type="text"
@@ -71,6 +71,7 @@
             <option value="virement">Virement</option>
             <option value="mobile_money">Mobile Money</option>
             <option value="carte">Carte</option>
+            <option value="cheque">Chèque</option>
         </select>
     </div>
 
@@ -122,13 +123,18 @@
                                 'virement'     => ['icon' => 'fa-building-columns', 'color' => '#2d5a8e', 'label' => 'Virement'],
                                 'mobile_money' => ['icon' => 'fa-mobile', 'color' => '#f59e0b', 'label' => 'Mobile Money'],
                                 'carte'        => ['icon' => 'fa-credit-card', 'color' => '#8b5cf6', 'label' => 'Carte'],
+                                'cheque'       => ['icon' => 'fa-money-check', 'color' => '#C8102E', 'label' => 'Chèque'],
                             ];
                             $mode = $modeIcons[$paiement->mode_paiement] ?? ['icon' => 'fa-money-bill', 'color' => '#6b7280', 'label' => $paiement->mode_paiement];
                         @endphp
-                        <span class="text-xs px-2 py-1 rounded-full text-white font-medium flex items-center gap-1 w-fit"
-                            style="background-color: {{ $mode['color'] }}">
+                        <span class="text-xs px-2 py-1 rounded-full text-white font-medium flex items-center gap-1 w-fit cursor-pointer"
+                            style="background-color: {{ $mode['color'] }}"
+                            @if($paiement->mode_paiement === 'cheque') wire:click="voirCheque({{ $paiement->id }})" @endif>
                             <i class="fa-solid {{ $mode['icon'] }}"></i>
                             {{ $mode['label'] }}
+                            @if($paiement->mode_paiement === 'cheque' && $paiement->numero_cheque)
+                            <i class="fa-solid fa-eye ml-1"></i>
+                            @endif
                         </span>
                     </td>
                     <td class="px-6 py-4 text-gray-600 text-sm">{{ $paiement->date_paiement }}</td>
@@ -160,6 +166,13 @@
                     <td class="px-6 py-4">
                         @if($paiement->statut == 'en_attente')
                         <div class="flex gap-2">
+                            @if($paiement->mode_paiement === 'cheque')
+                            <button wire:click="voirCheque({{ $paiement->id }})"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
+                                style="background-color: #C8102E;">
+                                <i class="fa-solid fa-eye"></i> Vérifier
+                            </button>
+                            @else
                             <button wire:click="valider({{ $paiement->id }})"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
                                 style="background-color: #007A3D;">
@@ -170,6 +183,7 @@
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700 flex items-center gap-1">
                                 <i class="fa-solid fa-xmark"></i> Rejeter
                             </button>
+                            @endif
                         </div>
                         @else
                             <span class="text-xs text-gray-400">—</span>
@@ -187,4 +201,65 @@
             </tbody>
         </table>
     </div>
+
+    {{-- ✅ MODAL DÉTAIL CHÈQUE --}}
+    @if($showChequeModal && $paiement_cheque)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #C8102E, #a00d25);">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-money-check"></i> Paiement par chèque
+                </h3>
+                <button wire:click="fermerChequeModal" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-8">
+                <div class="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-200">
+                    <p class="font-bold text-gray-800">
+                        {{ $paiement_cheque->inscription->participant->nom ?? '-' }}
+                        {{ $paiement_cheque->inscription->participant->prenom ?? '' }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ $paiement_cheque->inscription->evenement->nom ?? '-' }}
+                    </p>
+                </div>
+
+                <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-center mb-5">
+                    <p class="text-xs text-red-500 font-medium mb-1">
+                        <i class="fa-solid fa-hashtag mr-1"></i> Numéro de chèque
+                    </p>
+                    <p class="font-mono font-bold text-2xl text-red-700 tracking-widest">
+                        {{ $paiement_cheque->numero_cheque ?? '—' }}
+                    </p>
+                </div>
+
+                <div class="bg-gray-50 rounded-xl p-4 mb-5">
+                    <p class="text-xs text-gray-500 mb-1">Montant</p>
+                    <p class="font-bold text-gray-800 text-xl">
+                        {{ number_format($paiement_cheque->montant, 0, ',', ' ') }} FCFA
+                    </p>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-700">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    Vérifiez physiquement que le chèque a bien été reçu avant de valider ce paiement.
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button wire:click="rejeter({{ $paiement_cheque->id }})"
+                        wire:confirm="Rejeter ce paiement par chèque ?"
+                        class="px-5 py-2.5 rounded-xl text-white font-medium text-sm bg-red-600 hover:bg-red-700">
+                        <i class="fa-solid fa-xmark mr-1"></i> Rejeter
+                    </button>
+                    <button wire:click="valider({{ $paiement_cheque->id }})"
+                        class="px-5 py-2.5 rounded-xl text-white font-medium text-sm transition hover:opacity-90"
+                        style="background-color: #007A3D;">
+                        <i class="fa-solid fa-check mr-1"></i> Confirmer la réception et valider
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
 </div>

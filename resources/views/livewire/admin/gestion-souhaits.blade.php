@@ -66,12 +66,16 @@
         </h4>
 
         @forelse($participants as $p)
+        @php
+            $secteursRech = is_array($p->secteurs_recherche) ? $p->secteurs_recherche : (json_decode($p->secteurs_recherche ?? '[]', true) ?: []);
+            $typesPart = is_array($p->types_partenariat) ? $p->types_partenariat : (json_decode($p->types_partenariat ?? '[]', true) ?: []);
+        @endphp
         <div class="bg-white rounded-xl shadow mb-4 overflow-hidden">
 
             {{-- Bandeau statut souhaits --}}
-            <div class="px-5 py-2 flex items-center justify-between
+            <div class="px-5 py-2 flex items-center justify-between flex-wrap gap-2
                 {{ $p->nb_souhaits >= 5 ? 'bg-green-50 border-b border-green-200' : 'bg-orange-50 border-b border-orange-200' }}">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 flex-wrap">
                     <span class="text-xs font-medium {{ $p->nb_souhaits >= 5 ? 'text-green-700' : 'text-orange-600' }}">
                         <i class="fa-solid fa-heart mr-1"></i>
                         {{ $p->nb_souhaits }} souhait(s) émis
@@ -86,6 +90,13 @@
                     <span class="text-xs text-orange-500">
                         <i class="fa-solid fa-triangle-exclamation mr-1"></i>
                         Minimum non atteint
+                    </span>
+                    @endif
+                    {{-- ✅ NOUVEAU : Badge profil B2B incomplet --}}
+                    @if(!$p->profil_complet)
+                    <span class="text-xs text-red-500 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>
+                        Profil B2B incomplet
                     </span>
                     @endif
                 </div>
@@ -109,7 +120,7 @@
 
                     <div class="flex-1">
                         {{-- Identité --}}
-                        <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
                             <div>
                                 <h4 class="font-bold text-gray-800 text-lg">
                                     {{ $p->nom }} {{ $p->prenom }}
@@ -169,17 +180,19 @@
                             </div>
                             @endif
 
-                            @if($p->type_partenaire)
+                            {{-- ✅ CORRIGÉ : types_partenariat (JSON) --}}
+                            @if(!empty($typesPart))
                             <div class="bg-gray-50 rounded-lg p-2">
                                 <p class="text-xs text-gray-400">Cherche</p>
-                                <p class="text-xs font-semibold text-gray-800">{{ $p->type_partenaire }}</p>
+                                <p class="text-xs font-semibold text-gray-800">{{ implode(', ', $typesPart) }}</p>
                             </div>
                             @endif
 
-                            @if($p->secteur_recherche)
+                            {{-- ✅ CORRIGÉ : secteurs_recherche (JSON) --}}
+                            @if(!empty($secteursRech))
                             <div class="bg-gray-50 rounded-lg p-2">
-                                <p class="text-xs text-gray-400">Secteur recherché</p>
-                                <p class="text-xs font-semibold text-gray-800">{{ $p->secteur_recherche }}</p>
+                                <p class="text-xs text-gray-400">Secteurs recherchés</p>
+                                <p class="text-xs font-semibold text-gray-800">{{ implode(', ', $secteursRech) }}</p>
                             </div>
                             @endif
 
@@ -303,6 +316,10 @@
 
     {{-- MODAL MATCHMAKING --}}
     @if($showModalMatch && $participantMatch)
+    @php
+        $secteursRechMatch = is_array($participantMatch->secteurs_recherche) ? $participantMatch->secteurs_recherche : (json_decode($participantMatch->secteurs_recherche ?? '[]', true) ?: []);
+        $typesPartMatch = is_array($participantMatch->types_partenariat) ? $participantMatch->types_partenariat : (json_decode($participantMatch->types_partenariat ?? '[]', true) ?: []);
+    @endphp
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
 
@@ -331,20 +348,27 @@
                         Profil de {{ $participantMatch->nom }} :
                     </p>
                     <div class="flex flex-wrap gap-2">
-                        @if($participantMatch->secteur_recherche)
-                        <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                            Cherche secteur : {{ $participantMatch->secteur_recherche }}
+                        @if(!$participantMatch->profilB2BComplet())
+                        <span class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                            Profil B2B incomplet — compatibilité non calculable
                         </span>
-                        @endif
-                        @if($participantMatch->zone_geographique)
-                        <span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                            Zone : {{ $participantMatch->zone_geographique }}
-                        </span>
-                        @endif
-                        @if($participantMatch->type_partenaire)
-                        <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
-                            Type : {{ $participantMatch->type_partenaire }}
-                        </span>
+                        @else
+                            @foreach($secteursRechMatch as $s)
+                            <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                                Cherche : {{ $s }}
+                            </span>
+                            @endforeach
+                            @if($participantMatch->zone_geographique)
+                            <span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                                Zone : {{ $participantMatch->zone_geographique }}
+                            </span>
+                            @endif
+                            @foreach($typesPartMatch as $t)
+                            <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+                                Type : {{ $t }}
+                            </span>
+                            @endforeach
                         @endif
                     </div>
                 </div>
@@ -364,7 +388,13 @@
             <div class="p-6 overflow-y-auto flex-1 space-y-3">
 
                 @forelse($candidatsMatch as $c)
-                @php $points = $c->score_compatibilite; @endphp
+                @php
+                    $points = $c->score_compatibilite;
+                    $matchSecteur = !empty($secteursRechMatch) && in_array($c->secteur_activite, $secteursRechMatch);
+                    $matchZone = $participantMatch->zone_geographique && $c->zone_geographique && $participantMatch->zone_geographique === $c->zone_geographique;
+                    $typesPartCandidat = is_array($c->types_partenariat) ? $c->types_partenariat : (json_decode($c->types_partenariat ?? '[]', true) ?: []);
+                    $matchType = !empty($typesPartMatch) && !empty($typesPartCandidat) && count(array_intersect($typesPartMatch, $typesPartCandidat)) > 0;
+                @endphp
 
                 <div class="border-2 rounded-xl p-4 {{ $c->souhait_emis ? 'border-gray-100 bg-gray-50 opacity-60' : 'border-gray-200 hover:border-green-300' }}">
                     <div class="flex items-start justify-between">
@@ -403,47 +433,35 @@
                                         <p class="text-xs font-semibold">{{ $c->zone_geographique }}</p>
                                     </div>
                                     @endif
-                                    @if($c->type_partenaire)
+                                    @if(!empty($typesPartCandidat))
                                     <div class="bg-white rounded-lg p-1.5 border border-gray-100">
                                         <p class="text-xs text-gray-400">Cherche</p>
-                                        <p class="text-xs font-semibold">{{ $c->type_partenaire }}</p>
+                                        <p class="text-xs font-semibold">{{ implode(', ', $typesPartCandidat) }}</p>
                                     </div>
                                     @endif
                                 </div>
 
                                 {{-- Indicateurs compatibilité --}}
                                 <div class="flex flex-wrap gap-1 mt-2">
-                                    @if($participantMatch->secteur_recherche)
+                                    @if(!empty($secteursRechMatch))
                                     <span class="text-xs px-1.5 py-0.5 rounded-full font-medium
-                                        {{ $c->secteur_activite == $participantMatch->secteur_recherche ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400' }}">
-                                        @if($c->secteur_activite == $participantMatch->secteur_recherche)
-                                        <i class="fa-solid fa-check mr-0.5"></i>
-                                        @else
-                                        <i class="fa-solid fa-xmark mr-0.5"></i>
-                                        @endif
-                                        {{ $participantMatch->secteur_recherche }}
+                                        {{ $matchSecteur ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400' }}">
+                                        <i class="fa-solid {{ $matchSecteur ? 'fa-check' : 'fa-xmark' }} mr-0.5"></i>
+                                        Secteur
                                     </span>
                                     @endif
                                     @if($participantMatch->zone_geographique)
                                     <span class="text-xs px-1.5 py-0.5 rounded-full font-medium
-                                        {{ $c->zone_geographique == $participantMatch->zone_geographique ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400' }}">
-                                        @if($c->zone_geographique == $participantMatch->zone_geographique)
-                                        <i class="fa-solid fa-check mr-0.5"></i>
-                                        @else
-                                        <i class="fa-solid fa-xmark mr-0.5"></i>
-                                        @endif
-                                        {{ $participantMatch->zone_geographique }}
+                                        {{ $matchZone ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400' }}">
+                                        <i class="fa-solid {{ $matchZone ? 'fa-check' : 'fa-xmark' }} mr-0.5"></i>
+                                        Zone
                                     </span>
                                     @endif
-                                    @if($participantMatch->type_partenaire)
+                                    @if(!empty($typesPartMatch))
                                     <span class="text-xs px-1.5 py-0.5 rounded-full font-medium
-                                        {{ $c->type_partenaire == $participantMatch->type_partenaire ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400' }}">
-                                        @if($c->type_partenaire == $participantMatch->type_partenaire)
-                                        <i class="fa-solid fa-check mr-0.5"></i>
-                                        @else
-                                        <i class="fa-solid fa-xmark mr-0.5"></i>
-                                        @endif
-                                        {{ $participantMatch->type_partenaire }}
+                                        {{ $matchType ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400' }}">
+                                        <i class="fa-solid {{ $matchType ? 'fa-check' : 'fa-xmark' }} mr-0.5"></i>
+                                        Type partenariat
                                     </span>
                                     @endif
                                 </div>
@@ -466,7 +484,7 @@
                             </span>
                             @else
                             <span class="text-xs px-2 py-0.5 rounded-full font-medium text-gray-400 bg-gray-50">
-                                Secteur différent
+                                Profil différent
                             </span>
                             @endif
 

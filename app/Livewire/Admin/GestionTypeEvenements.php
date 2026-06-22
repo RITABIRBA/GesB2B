@@ -15,7 +15,7 @@ class GestionTypeEvenements extends Component
 
     public function mount()
     {
-        $this->types = TypeEvenement::all();
+        $this->types = TypeEvenement::orderBy('nom')->get();
     }
 
     public function openModal()
@@ -28,19 +28,26 @@ class GestionTypeEvenements extends Component
     {
         $this->showModal = false;
         $this->reset(['nom', 'type_id', 'isEditing']);
+        $this->resetErrorBag();
     }
 
     public function sauvegarder()
     {
-        $this->validate(['nom' => 'required|string|max:255']);
+        $this->validate([
+            'nom' => 'required|string|max:255',
+        ], [
+            'nom.required' => 'Le nom du type d\'événement est obligatoire.',
+        ]);
 
         if ($this->isEditing) {
             TypeEvenement::find($this->type_id)->update(['nom' => $this->nom]);
+            session()->flash('success', 'Type d\'événement modifié avec succès.');
         } else {
             TypeEvenement::create(['nom' => $this->nom]);
+            session()->flash('success', 'Type d\'événement créé avec succès.');
         }
 
-        $this->types = TypeEvenement::all();
+        $this->types = TypeEvenement::orderBy('nom')->get();
         $this->closeModal();
     }
 
@@ -55,13 +62,21 @@ class GestionTypeEvenements extends Component
 
     public function supprimer($id)
     {
-        TypeEvenement::find($id)->delete();
-        $this->types = TypeEvenement::all();
+        $type = TypeEvenement::find($id);
+
+        if ($type && $type->evenements()->count() > 0) {
+            session()->flash('error', 'Impossible de supprimer ce type : des événements y sont rattachés.');
+            return;
+        }
+
+        $type?->delete();
+        $this->types = TypeEvenement::orderBy('nom')->get();
+        session()->flash('success', 'Type d\'événement supprimé.');
     }
 
     public function render()
     {
         return view('livewire.admin.gestion-type-evenements')
-            ->layout('layouts.app');
+            ->layout('layouts.admin', ['title' => 'Types d\'événements']);
     }
 }

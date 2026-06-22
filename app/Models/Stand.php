@@ -11,13 +11,25 @@ class Stand extends Model
     protected $fillable = [
         'id_evenement',
         'id_entreprise',
+        'id_type_stand',
+        'id_participant',
         'numero_stand',
         'superficie',
         'standing',
+        'composants',
         'prix',
+        'est_gratuit',
+        'motif_gratuite',
         'statut_paiement_stand',
         'statut_reservation',
     ];
+
+    protected $casts = [
+        'composants'   => 'array',
+        'est_gratuit'  => 'boolean',
+    ];
+
+    // ─── Relations ─────────────────────────────────────────
 
     public function evenement()
     {
@@ -29,19 +41,38 @@ class Stand extends Model
         return $this->belongsTo(Entreprise::class, 'id_entreprise');
     }
 
+    public function typeStand()
+    {
+        return $this->belongsTo(TypeStand::class, 'id_type_stand');
+    }
+
+    public function participant()
+    {
+        return $this->belongsTo(Participant::class, 'id_participant');
+    }
+
     public function rendezVous()
     {
         return $this->hasMany(RendezVous::class, 'id_stand');
     }
 
+    // ─── Helpers ───────────────────────────────────────────
+
     /**
-     * Calcule le prix du stand selon son standing et le type
-     * de paiement de l'événement. Renvoie 0 si l'événement est gratuit.
+     * Calcule le prix du stand selon son standing
+     * et le type de paiement de l'événement.
      */
     public function getPrixCalculeAttribute(): float
     {
-        if (!$this->evenement || $this->evenement->type_paiement === 'gratuit') {
+        if ($this->est_gratuit) return 0;
+
+        if (!$this->evenement ||
+            $this->evenement->type_paiement === 'gratuit') {
             return 0;
+        }
+
+        if ($this->typeStand) {
+            return (float) $this->typeStand->montant;
         }
 
         return match ($this->standing) {

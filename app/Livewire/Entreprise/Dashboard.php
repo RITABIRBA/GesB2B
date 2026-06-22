@@ -12,6 +12,7 @@ use App\Models\Inscription;
 use App\Models\Notification;
 use App\Models\Paiement;
 use App\Models\Recu;
+use App\Models\Remise;
 
 class Dashboard extends Component
 {
@@ -23,6 +24,12 @@ class Dashboard extends Component
     public int    $etape_paiement     = 1;
     public float  $montant_paiement   = 0;
     public int    $inscription_id     = 0;
+    public string $numero_cheque      = '';
+
+    // ✅ NOUVEAU : infos remise pour le modal
+    public float $montant_brut       = 0;
+    public float $pourcentage_remise = 0;
+    public float $montant_remise     = 0;
 
     public string $alertSuccess = '';
     public string $alertError   = '';
@@ -47,11 +54,21 @@ class Dashboard extends Component
                 ->first();
 
             if ($inscription) {
-                $this->inscription_id   = $inscription->id;
-                $this->montant_paiement = $inscription->evenement->montant_inscription ?? 0;
+                $this->inscription_id = $inscription->id;
+                $montantBrut = $inscription->evenement->montant_inscription ?? 0;
+
+                $details = $representant->montantApresRemise($montantBrut);
+
+                $this->montant_brut       = $details['montant_brut'];
+                $this->pourcentage_remise = $details['pourcentage'];
+                $this->montant_remise     = $details['montant_remise'];
+                $this->montant_paiement   = $details['montant_net'];
             } else {
-                $this->inscription_id   = 0;
-                $this->montant_paiement = 0;
+                $this->inscription_id     = 0;
+                $this->montant_paiement   = 0;
+                $this->montant_brut       = 0;
+                $this->pourcentage_remise = 0;
+                $this->montant_remise     = 0;
             }
         }
 
@@ -60,6 +77,7 @@ class Dashboard extends Component
         $this->telephone_paiement = '';
         $this->otp_saisi          = '';
         $this->otp_code           = '';
+        $this->numero_cheque      = '';
         $this->showModalPaiement  = true;
         $this->resetErrorBag();
     }
@@ -71,6 +89,7 @@ class Dashboard extends Component
         $this->inscription_id    = 0;
         $this->otp_code          = '';
         $this->otp_saisi         = '';
+        $this->numero_cheque     = '';
     }
 
     public function envoyerOtp(): void
@@ -86,15 +105,6 @@ class Dashboard extends Component
         $this->etape_paiement = 2;
     }
 
-    /**
-     * Vérifie l'OTP et enregistre le paiement LigdiCash.
-     *
-     * NOTE INTÉGRATION RÉELLE LIGDICASH :
-     * POST https://api.ligdicash.com/pay/v1/gate/push-in/plain/execute
-     * Headers : Authorization: Bearer {apiToken}
-     * Body    : { amount, customer_phone_number, otp, description }
-     * Docs    : https://developers.ligdicash.com
-     */
     public function confirmerOtp(): void
     {
         $this->validate([
@@ -118,6 +128,7 @@ class Dashboard extends Component
                 'montant'        => $this->montant_paiement,
                 'date_paiement'  => now()->toDateString(),
                 'mode_paiement'  => 'ligdicash_' . $this->mode_paiement,
+                'type_paiement'  => 'entreprise',
                 'statut'         => 'en_attente',
             ]);
 
@@ -127,10 +138,59 @@ class Dashboard extends Component
                 'date'        => now()->toDateString(),
             ]);
 
+            Inscription::find($this->inscription_id)?->update([
+                'montant_paye' => $this->montant_paiement,
+            ]);
+
             $this->closeModalPaiement();
 
+            $messageRemise = $this->pourcentage_remise > 0
+                ? " (remise de {$this->pourcentage_remise}% appliquée, -" . number_format($this->montant_remise, 0, ',', ' ') . " FCFA)"
+                : '';
+
             $this->alertSuccess = 'Paiement LigdiCash soumis ! Reçu généré : REC-'
-                . str_pad($paiement->id, 6, '0', STR_PAD_LEFT);
+                . str_pad($paiement->id, 6, '0', STR_PAD_LEFT) . $messageRemise;
+
+        } catch (\Exception $e) {
+            $this->alertError = 'Erreur : ' . $e->getMessage();
+        }
+    }
+
+    public function payerParCheque(): void
+    {
+        $this->validate([
+            'numero_cheque' => 'required|string|min:3|max:50',
+        ], [
+            'numero_cheque.required' => 'Le numéro de chèque est obligatoire.',
+            'numero_cheque.min'      => 'Numéro de chèque trop court.',
+        ]);
+
+        if (!$this->inscription_id) {
+            $this->alertError = 'Aucune inscription en attente de paiement trouvée.';
+            $this->closeModalPaiement();
+            return;
+        }
+
+        try {
+            $paiement = Paiement::create([
+                'id_inscription' => $this->inscription_id,
+                'montant'        => $this->montant_paiement,
+                'date_paiement'  => now()->toDateString(),
+                'mode_paiement'  => 'cheque',
+                'numero_cheque'  => $this->numero_cheque,
+                'type_paiement'  => 'entreprise',
+                'statut'         => 'en_attente',
+            ]);
+
+            Inscription::find($this->inscription_id)?->update([
+                'montant_paye' => $this->montant_paiement,
+            ]);
+
+            $this->closeModalPaiement();
+
+            $this->alertSuccess = 'Paiement par chèque soumis ! N° '
+                . $this->numero_cheque
+                . '. L\'administration vérifiera la réception du chèque avant validation.';
 
         } catch (\Exception $e) {
             $this->alertError = 'Erreur : ' . $e->getMessage();
@@ -190,11 +250,14 @@ class Dashboard extends Component
                 ->get()
             : collect();
 
-        // Logique paiement et reçu
         $paiementEnAttente = false;
-        $montantPaiement   = 0;
-        $recuPaiement      = null;
-        $statutPaiement    = null;
+        $montantPaiement    = 0;
+        $recuPaiement       = null;
+        $statutPaiement     = null;
+
+        // ✅ NOUVEAU : aperçu remise pour le bandeau
+        $remiseApplicable   = 0;
+        $montantBrutAffiche = 0;
 
         if ($entreprise && $entreprise->statut_validation == 'valide' && $representant) {
 
@@ -212,8 +275,12 @@ class Dashboard extends Component
                     ->first();
 
                 if (!$dernierPaiement) {
-                    $paiementEnAttente = true;
-                    $montantPaiement   = $inscription->evenement->montant_inscription ?? 0;
+                    $paiementEnAttente  = true;
+                    $montantBrutAffiche = $inscription->evenement->montant_inscription ?? 0;
+                    $remiseApplicable   = Remise::calculerMeilleureRemise($representant);
+                    $montantPaiement    = $remiseApplicable > 0
+                        ? $montantBrutAffiche - ($montantBrutAffiche * $remiseApplicable / 100)
+                        : $montantBrutAffiche;
                 } else {
                     $recuPaiement   = $dernierPaiement->recu ?? null;
                     $statutPaiement = $dernierPaiement->statut;
@@ -254,6 +321,8 @@ class Dashboard extends Component
             'notifications'         => $notifications,
             'paiementEnAttente'     => $paiementEnAttente,
             'montantPaiement'       => $montantPaiement,
+            'montantBrutAffiche'    => $montantBrutAffiche,
+            'remiseApplicable'      => $remiseApplicable,
             'recuPaiement'          => $recuPaiement,
             'statutPaiement'        => $statutPaiement,
             'evenementsDisponibles' => $evenementsDisponibles,

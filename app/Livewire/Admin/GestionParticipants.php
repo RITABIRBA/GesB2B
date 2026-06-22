@@ -8,6 +8,7 @@ use App\Models\Entreprise;
 use App\Models\Evenement;
 use App\Models\Inscription;
 use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Support\Facades\Hash;
 
 class GestionParticipants extends Component
@@ -24,9 +25,15 @@ class GestionParticipants extends Component
     public $telephone                = '';
     public $pays                     = '';
     public $ville                    = '';
-    public $role                     = 'representant';
+    // ✅ CORRIGÉ : valeur par défaut était 'representant'
+    public $role                     = 'participant';
     public $statut_historique        = 'actif';
     public $participation_rdv        = true;
+
+    public $date_naissance           = '';
+    public $filiere                  = '';
+    public $universite               = '';
+    public $statut_participant       = 'classique';
 
     // Infos activité
     public string $secteur_activite       = '';
@@ -38,27 +45,14 @@ class GestionParticipants extends Component
     public string $nombre_salaries        = '';
     public string $chiffre_affaires       = '';
 
-    // Zone géographique
     public string $zone_geographique = '';
-
-    // Disponibilités
     public array $disponibilites = [];
-
-    // Types de partenariat (max 3)
     public array  $types_partenariat      = [];
     public string $type_partenariat_autre = '';
-
-    // Profils partenaire recherché (max 3)
     public array $profils_partenaire = [];
-
-    // Secteurs recherchés (max 3)
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
-
-    // Objectif de participation
     public string $objectif_participation = '';
-
-    // Chef de délégation
     public $id_chef_delegation = '';
 
     // UI
@@ -66,6 +60,7 @@ class GestionParticipants extends Component
     public bool   $isEditing          = false;
     public string $search             = '';
     public string $filtre_statut      = '';
+    public string $filtre_preinscription = '';
     public string $entreprise_trouvee = '';
 
     // Modal compte
@@ -75,56 +70,63 @@ class GestionParticipants extends Component
     public string $compte_code_acces = '';
     public bool   $compte_has_email  = false;
 
-    // Listes
-    public array $roles = ['representant', 'membre'];
+    // Modal validation préinscription
+    public bool $showModalPreinscription = false;
+    public $preinscription_courante      = null;
+
+    // Modal rejet
+    public bool   $showModalRejet = false;
+    public string $motif_rejet    = '';
+
+    // ✅ CORRIGÉ : ajout du rôle 'participant'
+    public array $roles = ['participant', 'representant', 'membre'];
 
     public array $secteurs = [
-        'Agriculture et agro-alimentaire',
-        'Environnement',
-        'Industrie textile',
-        'Biens de consommation',
-        'Energie',
-        'Formation',
-        'Tourisme',
-        'TIC',
-        'Sous-traitance',
-        'Artisanat',
-        'Distribution',
-        'Prestation',
-        'Industrie manufacturière',
-        'Enseignement',
-        'Services aux entreprises',
-        'BTP',
-        'Activités médicales et pharmaceutiques',
-        'Autre',
+        'Agriculture et agro-alimentaire', 'Environnement', 'Industrie textile',
+        'Biens de consommation', 'Energie', 'Formation', 'Tourisme', 'TIC',
+        'Sous-traitance', 'Artisanat', 'Distribution', 'Prestation',
+        'Industrie manufacturière', 'Enseignement', 'Services aux entreprises',
+        'BTP', 'Activités médicales et pharmaceutiques', 'Autre',
     ];
 
     public array $typesPartenariatOptions = [
-        'Alliance commerciale',
-        'Alliance financière',
-        'Alliance industrielle',
-        'Autre',
+        'Alliance commerciale', 'Alliance financière', 'Alliance industrielle', 'Autre',
     ];
 
     public array $profilsPartenariatOptions = [
-        'Consultant',
-        'Distributeur',
-        'Exportateur',
-        'Fabricant / Producteur',
-        'Investisseur',
-        'Importateur',
-        'Prestataire de service',
-        'Sous-traitant',
-        'Innovation',
-        'R&D',
+        'Consultant', 'Distributeur', 'Exportateur', 'Fabricant / Producteur',
+        'Investisseur', 'Importateur', 'Prestataire de service', 'Sous-traitant',
+        'Innovation', 'R&D',
     ];
 
     public array $zonesGeographiques = [
-        'Locale',
-        'Nationale',
-        'Régionale (CEDEAO)',
-        'Africaine',
-        'Internationale',
+        'UEMOA (Afrique de l\'Ouest)',
+        'CEMAC (Afrique Centrale)',
+        'Afrique du Nord (Maghreb)',
+        'Afrique de l\'Est (EAC)',
+        'Afrique Australe (SADC)',
+        'Afrique (toute la région)',
+
+        'Union Européenne',
+        'Europe de l\'Ouest',
+        'Europe de l\'Est',
+        'Europe (toute la région)',
+
+        'Amérique du Nord',
+        'Amérique Centrale et Caraïbes',
+        'Amérique du Sud',
+        'Amériques (toute la région)',
+
+        'Asie de l\'Est',
+        'Asie du Sud-Est',
+        'Asie du Sud',
+        'Moyen-Orient',
+        'Asie (toute la région)',
+
+        'Océanie',
+
+        'Locale (mon pays uniquement)',
+        'Internationale (toutes zones)',
     ];
 
     public array $joursDisponibles = [
@@ -132,38 +134,27 @@ class GestionParticipants extends Component
     ];
 
     public array $pays_liste = [
-        // AFRIQUE DE L'OUEST
         'Bénin', 'Burkina Faso', 'Cap-Vert', 'Côte d\'Ivoire', 'Gambie',
         'Ghana', 'Guinée', 'Guinée-Bissau', 'Liberia', 'Mali', 'Mauritanie',
         'Niger', 'Nigeria', 'Sénégal', 'Sierra Leone', 'Togo',
-        // AFRIQUE CENTRALE
         'Angola', 'Cameroun', 'Congo', 'Gabon', 'Guinée équatoriale',
         'République centrafricaine', 'République démocratique du Congo', 'Tchad',
-        // AFRIQUE DE L'EST
         'Burundi', 'Djibouti', 'Érythrée', 'Éthiopie', 'Kenya', 'Madagascar',
         'Malawi', 'Maurice', 'Mozambique', 'Ouganda', 'Rwanda', 'Seychelles',
         'Somalie', 'Soudan', 'Soudan du Sud', 'Tanzanie', 'Zambie', 'Zimbabwe',
-        // AFRIQUE DU NORD
         'Algérie', 'Égypte', 'Libye', 'Maroc', 'Tunisie',
-        // AFRIQUE AUSTRALE
         'Afrique du Sud', 'Botswana', 'Eswatini', 'Lesotho', 'Namibie',
-        // EUROPE
         'Allemagne', 'Autriche', 'Belgique', 'Danemark', 'Espagne',
         'Finlande', 'France', 'Grèce', 'Irlande', 'Italie', 'Luxembourg',
         'Norvège', 'Pays-Bas', 'Pologne', 'Portugal', 'Royaume-Uni',
         'Russie', 'Suède', 'Suisse', 'Turquie', 'Ukraine',
-        // AMERIQUE
         'Argentine', 'Bolivie', 'Brésil', 'Canada', 'Chili', 'Colombie',
         'Cuba', 'États-Unis', 'Mexique', 'Pérou', 'Venezuela',
-        // ASIE
         'Arabie Saoudite', 'Bangladesh', 'Chine', 'Corée du Sud',
         'Émirats arabes unis', 'Inde', 'Indonésie', 'Iran', 'Irak',
         'Israël', 'Japon', 'Jordanie', 'Liban', 'Malaisie', 'Pakistan',
         'Philippines', 'Qatar', 'Singapour', 'Thaïlande', 'Vietnam',
-        // OCEANIE
-        'Australie', 'Nouvelle-Zélande',
-        // AUTRE
-        'Autre',
+        'Australie', 'Nouvelle-Zélande', 'Autre',
     ];
 
     public array $villes_par_pays = [
@@ -245,10 +236,7 @@ class GestionParticipants extends Component
         return $this->villes_par_pays[$this->pays] ?? ['Autre'];
     }
 
-    public function updatedPays(): void
-    {
-        $this->ville = '';
-    }
+    public function updatedPays(): void { $this->ville = ''; }
 
     public function updatedIfu(): void
     {
@@ -267,9 +255,7 @@ class GestionParticipants extends Component
     public function toggleTypePartenariat(string $type): void
     {
         if (in_array($type, $this->types_partenariat)) {
-            $this->types_partenariat = array_values(
-                array_filter($this->types_partenariat, fn($t) => $t !== $type)
-            );
+            $this->types_partenariat = array_values(array_filter($this->types_partenariat, fn($t) => $t !== $type));
         } elseif (count($this->types_partenariat) < 3) {
             $this->types_partenariat[] = $type;
         }
@@ -278,9 +264,7 @@ class GestionParticipants extends Component
     public function toggleProfilPartenaire(string $profil): void
     {
         if (in_array($profil, $this->profils_partenaire)) {
-            $this->profils_partenaire = array_values(
-                array_filter($this->profils_partenaire, fn($p) => $p !== $profil)
-            );
+            $this->profils_partenaire = array_values(array_filter($this->profils_partenaire, fn($p) => $p !== $profil));
         } elseif (count($this->profils_partenaire) < 3) {
             $this->profils_partenaire[] = $profil;
         }
@@ -289,9 +273,7 @@ class GestionParticipants extends Component
     public function toggleSecteurRecherche(string $secteur): void
     {
         if (in_array($secteur, $this->secteurs_recherche)) {
-            $this->secteurs_recherche = array_values(
-                array_filter($this->secteurs_recherche, fn($s) => $s !== $secteur)
-            );
+            $this->secteurs_recherche = array_values(array_filter($this->secteurs_recherche, fn($s) => $s !== $secteur));
         } elseif (count($this->secteurs_recherche) < 3) {
             $this->secteurs_recherche[] = $secteur;
         }
@@ -300,9 +282,7 @@ class GestionParticipants extends Component
     public function toggleDisponibilite(string $jour): void
     {
         if (in_array($jour, $this->disponibilites)) {
-            $this->disponibilites = array_values(
-                array_filter($this->disponibilites, fn($d) => $d !== $jour)
-            );
+            $this->disponibilites = array_values(array_filter($this->disponibilites, fn($d) => $d !== $jour));
         } else {
             $this->disponibilites[] = $jour;
         }
@@ -340,9 +320,14 @@ class GestionParticipants extends Component
         $this->telephone               = '';
         $this->pays                    = '';
         $this->ville                   = '';
-        $this->role                    = 'representant';
+        // ✅ CORRIGÉ
+        $this->role                    = 'participant';
         $this->statut_historique       = 'actif';
         $this->participation_rdv       = true;
+        $this->date_naissance          = '';
+        $this->filiere                 = '';
+        $this->universite              = '';
+        $this->statut_participant      = 'classique';
         $this->secteur_activite        = '';
         $this->secteur_activite_autre  = '';
         $this->sous_secteur            = '';
@@ -382,6 +367,11 @@ class GestionParticipants extends Component
         $this->role                    = $p->role;
         $this->statut_historique       = $p->statut_historique;
         $this->participation_rdv       = $p->participation_rdv;
+        $this->date_naissance          = $p->date_naissance
+            ? $p->date_naissance->format('Y-m-d') : '';
+        $this->filiere                 = $p->filiere ?? '';
+        $this->universite              = $p->universite ?? '';
+        $this->statut_participant      = $p->statut_participant ?? 'classique';
         $this->sous_secteur            = $p->sous_secteur ?? '';
         $this->description_activites   = $p->description_activites ?? '';
         $this->principaux_produits     = $p->principaux_produits ?? '';
@@ -425,6 +415,115 @@ class GestionParticipants extends Component
         $this->showModalCompte   = true;
     }
 
+    // ════════════════════════════════════════════════════════
+    // VALIDATION DE PRÉINSCRIPTION
+    // ════════════════════════════════════════════════════════
+
+    public function ouvrirValidationPreinscription(int $id): void
+    {
+        $this->preinscription_courante = Participant::with('entreprise', 'evenement')->findOrFail($id);
+        $this->showModalPreinscription = true;
+    }
+
+    public function fermerValidationPreinscription(): void
+    {
+        $this->showModalPreinscription = false;
+        $this->preinscription_courante = null;
+    }
+
+    public function validerPreinscription(): void
+    {
+        if (!$this->preinscription_courante) return;
+
+        $participant = Participant::findOrFail($this->preinscription_courante->id);
+
+        $participant->update([
+            'statut_preinscription' => 'valide',
+        ]);
+
+        $password_genere = null;
+        $userExiste = $participant->email
+            ? User::where('email', $participant->email)->exists()
+            : false;
+
+        if ($participant->email && !$userExiste) {
+            $password_genere = substr(str_shuffle(
+                'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            ), 0, 8);
+
+            $user = User::create([
+                'name'     => $participant->nom . ' ' . $participant->prenom,
+                'email'    => $participant->email,
+                'password' => Hash::make($password_genere),
+            ]);
+
+            $user->assignRole($participant->id_entreprise ? 'entreprise' : 'participant');
+        }
+
+        Notification::create([
+            'id_participant' => $participant->id,
+            'contenu'        => '✅ Votre préinscription a été validée ! '
+                . 'Vous pouvez vous connecter avec votre code d\'accès : '
+                . $participant->code_acces
+                . ($participant->email ? ' ou via votre email.' : '.'),
+            'date_envoie'    => now()->toDateString(),
+            'type'           => 'systeme',
+        ]);
+
+        $this->compte_email      = $participant->email ?? '';
+        $this->compte_password   = $password_genere;
+        $this->compte_code_acces = $participant->code_acces;
+        $this->compte_has_email  = !empty($participant->email);
+
+        $this->fermerValidationPreinscription();
+        $this->showModalCompte = true;
+
+        session()->flash('success', 'Préinscription validée ! Le compte a été créé.');
+    }
+
+    public function ouvrirRejetPreinscription(int $id): void
+    {
+        $this->preinscription_courante = Participant::findOrFail($id);
+        $this->motif_rejet             = '';
+        $this->showModalRejet          = true;
+    }
+
+    public function fermerRejetPreinscription(): void
+    {
+        $this->showModalRejet          = false;
+        $this->preinscription_courante = null;
+        $this->motif_rejet             = '';
+    }
+
+    public function rejeterPreinscription(): void
+    {
+        $this->validate([
+            'motif_rejet' => 'required|min:5',
+        ], [
+            'motif_rejet.required' => 'Veuillez indiquer le motif du rejet.',
+            'motif_rejet.min'      => 'Le motif est trop court.',
+        ]);
+
+        $participant = Participant::findOrFail($this->preinscription_courante->id);
+
+        $participant->update([
+            'statut_preinscription' => 'rejete',
+        ]);
+
+        Notification::create([
+            'id_participant' => $participant->id,
+            'contenu'        => '❌ Votre préinscription a été rejetée. Motif : '
+                . $this->motif_rejet,
+            'date_envoie'    => now()->toDateString(),
+            'type'           => 'systeme',
+        ]);
+
+        $this->fermerRejetPreinscription();
+        session()->flash('success', 'Préinscription rejetée. Le participant a été notifié.');
+    }
+
+    // ════════════════════════════════════════════════════════
+
     public function sauvegarder(): void
     {
         $this->validate([
@@ -438,6 +537,7 @@ class GestionParticipants extends Component
             'ifu'           => 'nullable|string|max:255',
             'role'          => 'required',
             'genre'         => 'nullable|in:homme,femme',
+            'date_naissance' => 'nullable|date',
             'objectif_participation' => 'nullable|string|max:200',
         ]);
 
@@ -470,6 +570,10 @@ class GestionParticipants extends Component
             'role'                   => $this->role,
             'statut_historique'      => $this->statut_historique,
             'participation_rdv'      => $this->participation_rdv,
+            'date_naissance'         => $this->date_naissance ?: null,
+            'filiere'                => $this->filiere ?: null,
+            'universite'             => $this->universite ?: null,
+            'statut_participant'     => $this->statut_participant,
             'secteur_activite'       => $secteurFinal ?: null,
             'sous_secteur'           => $this->sous_secteur ?: null,
             'description_activites'  => $this->description_activites ?: null,
@@ -494,8 +598,9 @@ class GestionParticipants extends Component
             session()->flash('success', 'Participant modifié avec succès.');
             $this->closeModal();
         } else {
-            $data['code_acces'] = $code_acces;
-            $participant        = Participant::create($data);
+            $data['code_acces']            = $code_acces;
+            $data['statut_preinscription'] = 'valide';
+            $participant                   = Participant::create($data);
 
             $evenement = Evenement::find($this->id_evenement);
             if ($evenement) {
@@ -567,6 +672,9 @@ class GestionParticipants extends Component
                     $q->where('nom', 'like', '%' . $this->search . '%')
                       ->orWhere('prenom', 'like', '%' . $this->search . '%')
                       ->orWhere('email', 'like', '%' . $this->search . '%')
+                )
+                ->when($this->filtre_preinscription, fn($q) =>
+                    $q->where('statut_preinscription', $this->filtre_preinscription)
                 )
                 ->latest()
                 ->get(),

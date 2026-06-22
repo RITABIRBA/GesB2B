@@ -9,22 +9,19 @@ use App\Models\Inscription;
 use App\Models\Entreprise;
 use App\Models\Stand;
 use App\Models\User;
+use App\Models\Notification;
 
 class InscriptionWizard extends Component
 {
-    // Navigation
     public int $etape = 0;
 
-    // Événement
     public $id_evenement;
     public $evenement = null;
 
-    // Mode
     public bool $estMembre       = false;
     public bool $estRepresentant = false;
     public $entreprise           = null;
 
-    // Étape 2 : Infos personnelles
     public string $nom            = '';
     public string $prenom         = '';
     public string $genre          = '';
@@ -35,7 +32,11 @@ class InscriptionWizard extends Component
     public string $pays           = '';
     public string $ville          = '';
 
-    // Étape 3 : Activité professionnelle
+    public string $date_naissance = '';
+
+    public string $filiere    = '';
+    public string $universite = '';
+
     public string $secteur_activite        = '';
     public string $secteur_activite_autre  = '';
     public string $sous_secteur            = '';
@@ -46,7 +47,6 @@ class InscriptionWizard extends Component
     public string $chiffre_affaires        = '';
     public string $objectif_participation  = '';
 
-    // Étape 4 : Recherche de partenariat
     public string $zone_geographique       = '';
     public array  $types_partenariat       = [];
     public string $type_partenariat_autre  = '';
@@ -54,12 +54,12 @@ class InscriptionWizard extends Component
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
 
-    // Étape 5 : Disponibilités + CDD + Stand
-    public array $disponibilites    = [];
-    public $id_chef_delegation      = '';
-    public $id_stand_choisi         = ''; // ← Réservation de stand (représentant)
+    public array $disponibilites = [];
+    public $id_chef_delegation   = '';
+    public $id_stand_choisi      = '';
 
-    // Listes
+    public string $statut_participant = 'classique';
+
     public array $secteurs = [
         'Agriculture et agro-alimentaire',
         'Environnement',
@@ -103,11 +103,33 @@ class InscriptionWizard extends Component
     ];
 
     public array $zonesGeographiques = [
-        'Locale',
-        'Nationale',
-        'Régionale (CEDEAO)',
-        'Africaine',
-        'Internationale',
+        'UEMOA (Afrique de l\'Ouest)',
+        'CEMAC (Afrique Centrale)',
+        'Afrique du Nord (Maghreb)',
+        'Afrique de l\'Est (EAC)',
+        'Afrique Australe (SADC)',
+        'Afrique (toute la région)',
+
+        'Union Européenne',
+        'Europe de l\'Ouest',
+        'Europe de l\'Est',
+        'Europe (toute la région)',
+
+        'Amérique du Nord',
+        'Amérique Centrale et Caraïbes',
+        'Amérique du Sud',
+        'Amériques (toute la région)',
+
+        'Asie de l\'Est',
+        'Asie du Sud-Est',
+        'Asie du Sud',
+        'Moyen-Orient',
+        'Asie (toute la région)',
+
+        'Océanie',
+
+        'Locale (mon pays uniquement)',
+        'Internationale (toutes zones)',
     ];
 
     public array $fonctions = [
@@ -119,6 +141,7 @@ class InscriptionWizard extends Component
         'Responsable Partenariats',
         'Chargé de Développement',
         'Représentant',
+        'Étudiant',
         'Autre',
     ];
 
@@ -147,6 +170,8 @@ class InscriptionWizard extends Component
         'Autre'          => ['Autre'],
     ];
 
+    // ─── Helpers ──────────────────────────────────────────
+
     public function getVillesDisponibles(): array
     {
         return $this->villes_par_pays[$this->pays] ?? ['Autre'];
@@ -155,6 +180,26 @@ class InscriptionWizard extends Component
     public function updatedPays(): void
     {
         $this->ville = '';
+    }
+
+    /**
+     * Vérifie si la fonction = Étudiant (utilise mb_strtolower
+     * pour les accents).
+     */
+    public function getEstEtudiantProperty(): bool
+    {
+        $fonctionCheck = mb_strtolower(trim($this->fonction));
+        return $fonctionCheck === 'étudiant' || $fonctionCheck === 'etudiant';
+    }
+
+    public function getEstB2BProperty(): bool
+    {
+        return ($this->evenement->type_evenement ?? 'avec_b2b') === 'avec_b2b';
+    }
+
+    public function getNbEtapesProperty(): int
+    {
+        return $this->estB2B ? 6 : 4;
     }
 
     public function toggleTypePartenariat(string $type): void
@@ -224,16 +269,28 @@ class InscriptionWizard extends Component
         $this->id_evenement = $evenement;
         $this->evenement    = Evenement::with('typeEvenement')->findOrFail($evenement);
 
+        if (!$this->evenement->inscriptionsOuvertes()) {
+            session()->flash('error', 'Les inscriptions pour cet événement sont closes.');
+            redirect()->route($this->getDashboardRoute());
+            return;
+        }
+
         $participant = Participant::findForUser(auth()->user());
 
         if ($participant) {
-            $this->nom       = $participant->nom;
-            $this->prenom    = $participant->prenom;
-            $this->email     = $participant->email ?? '';
-            $this->telephone = $participant->telephone ?? '';
-            $this->genre     = $participant->genre ?? '';
-            $this->pays      = $participant->pays ?? '';
-            $this->ville     = $participant->ville ?? '';
+            $this->nom            = $participant->nom;
+            $this->prenom         = $participant->prenom;
+            $this->email          = $participant->email ?? '';
+            $this->telephone      = $participant->telephone ?? '';
+            $this->genre          = $participant->genre ?? '';
+            $this->pays           = $participant->pays ?? '';
+            $this->ville          = $participant->ville ?? '';
+            $this->date_naissance = $participant->date_naissance
+                ? $participant->date_naissance->format('Y-m-d')
+                : '';
+            $this->filiere        = $participant->filiere ?? '';
+            $this->universite     = $participant->universite ?? '';
+            $this->statut_participant = $participant->statut_participant ?? 'classique';
 
             if (in_array($participant->fonction, $this->fonctions)) {
                 $this->fonction = $participant->fonction ?? '';
@@ -242,7 +299,6 @@ class InscriptionWizard extends Component
                 $this->fonction_autre = $participant->fonction ?? '';
             }
 
-            // Secteur activité
             if (in_array($participant->secteur_activite, $this->secteurs)) {
                 $this->secteur_activite = $participant->secteur_activite ?? '';
             } else {
@@ -292,16 +348,13 @@ class InscriptionWizard extends Component
         return count($this->getJoursEvenement()) > 1;
     }
 
-    /**
-     * Stands disponibles pour cet événement (uniquement pour le représentant).
-     */
     public function getStandsDisponiblesEvenement()
     {
         if (!$this->estRepresentant || !$this->id_evenement) {
             return collect();
         }
 
-        return Stand::with('evenement')
+        return Stand::with('evenement', 'typeStand')
             ->where('id_evenement', $this->id_evenement)
             ->whereNull('id_entreprise')
             ->orderBy('numero_stand')
@@ -310,49 +363,88 @@ class InscriptionWizard extends Component
 
     public function commencer(): void
     {
+        if (!$this->evenement->inscriptionsOuvertes()) {
+            session()->flash('error', 'Les inscriptions pour cet événement sont closes.');
+            return;
+        }
+
         $this->etape = 1;
     }
 
     public function suivant(): void
     {
+        if (!$this->evenement->inscriptionsOuvertes()) {
+            session()->flash('error', 'Les inscriptions pour cet événement sont closes.');
+            return;
+        }
+
         if ($this->etape == 1) {
             $this->etape = 2;
 
         } elseif ($this->etape == 2) {
-            // Si "Autre" → utilise la saisie libre
-            if ($this->fonction === 'Autre') {
-                $this->fonction = $this->fonction_autre;
-            }
+            $fonctionFinal = $this->fonction === 'Autre'
+                ? $this->fonction_autre
+                : $this->fonction;
 
             $regles = [
-                'nom'       => 'required|string|max:255',
-                'prenom'    => 'required|string|max:255',
-                'telephone' => 'required|string|max:20',
-                'fonction'  => 'required|string|max:255',
-                'genre'     => 'required|in:homme,femme',
+                'nom'            => 'required|string|max:255',
+                'prenom'         => 'required|string|max:255',
+                'telephone'      => 'required|string|max:20',
+                'genre'          => 'required|in:homme,femme',
+                'date_naissance' => 'nullable|date|before:today',
             ];
+
+            $fonctionCheck = mb_strtolower(trim($fonctionFinal));
+            $estEtudiantCheck = $fonctionCheck === 'étudiant' || $fonctionCheck === 'etudiant';
+
+            if ($estEtudiantCheck) {
+                $regles['filiere']    = 'required|string|max:255';
+                $regles['universite'] = 'required|string|max:255';
+            }
 
             if (!$this->estMembre) {
                 $regles['pays']  = 'required|string|max:255';
                 $regles['ville'] = 'required|string|max:255';
             }
 
-            $this->validate($regles);
-            $this->etape = 3;
+            $this->validate($regles, [
+                'date_naissance.before' => 'La date de naissance doit être dans le passé.',
+                'filiere.required'      => 'La filière est obligatoire pour un étudiant.',
+                'universite.required'   => "L'université est obligatoire pour un étudiant.",
+            ]);
+
+            if ($this->fonction === 'Autre') {
+                $this->fonction = $fonctionFinal;
+            }
+
+            // ✅ NOUVEAU : Étudiant → on saute l'étape 3 (activité professionnelle)
+            if ($estEtudiantCheck) {
+                $this->secteur_activite       = '';
+                $this->secteur_activite_autre = '';
+                $this->sous_secteur           = '';
+                $this->description_activites  = '';
+                $this->principaux_produits    = '';
+                $this->annee_creation         = '';
+                $this->nombre_salaries        = '';
+                $this->chiffre_affaires       = '';
+
+                $this->etape = $this->estB2B ? 4 : 6;
+            } else {
+                $this->etape = 3;
+            }
 
         } elseif ($this->etape == 3) {
-            // Si "Autre" → utilise la saisie libre
             $secteurFinal = $this->secteur_activite === 'Autre'
                 ? $this->secteur_activite_autre
                 : $this->secteur_activite;
 
             if (!$this->estMembre) {
                 $this->validate([
-                    'secteur_activite'      => 'required',
-                    'description_activites' => 'required|string',
-                    'annee_creation'        => 'required|integer|min:1900|max:' . date('Y'),
-                    'nombre_salaries'       => 'required|integer|min:1',
-                    'chiffre_affaires'      => 'required|numeric|min:0|max:100',
+                    'secteur_activite'       => 'required',
+                    'description_activites'  => 'required|string',
+                    'annee_creation'         => 'required|integer|min:1900|max:' . date('Y'),
+                    'nombre_salaries'        => 'required|integer|min:1',
+                    'chiffre_affaires'       => 'required|numeric|min:0|max:100',
                     'objectif_participation' => 'nullable|string|max:200',
                 ]);
             } else {
@@ -361,12 +453,15 @@ class InscriptionWizard extends Component
                 ]);
             }
 
-            // Sauvegarde le secteur final
             if ($this->secteur_activite === 'Autre') {
                 $this->secteur_activite = $secteurFinal;
             }
 
-            $this->etape = 4;
+            if (!$this->estB2B) {
+                $this->etape = 6;
+            } else {
+                $this->etape = 4;
+            }
 
         } elseif ($this->etape == 4) {
             $this->validate([
@@ -401,33 +496,41 @@ class InscriptionWizard extends Component
 
     public function precedent(): void
     {
-        if ($this->etape > 1) $this->etape--;
-        else $this->etape = 0;
+        $fonctionCheck = mb_strtolower(trim($this->fonction));
+        $estEtudiantCheck = $fonctionCheck === 'étudiant' || $fonctionCheck === 'etudiant';
+
+        if ($this->etape == 6 && !$this->estB2B) {
+            $this->etape = $estEtudiantCheck ? 2 : 3;
+        } elseif ($this->etape == 4 && $estEtudiantCheck) {
+            $this->etape = 2;
+        } elseif ($this->etape > 1) {
+            $this->etape--;
+        } else {
+            $this->etape = 0;
+        }
     }
 
-    /**
-     * Normalise une valeur de tableau avant sauvegarde : si une chaîne JSON
-     * est reçue par erreur (au lieu d'un tableau PHP), on la décode pour
-     * éviter un double encodage en base.
-     */
     private function normalizeArrayField($value): ?array
     {
         if (is_array($value)) {
             return !empty($value) ? $value : null;
         }
-
         if (is_string($value)) {
             $decoded = json_decode($value, true);
             if (is_array($decoded)) {
                 return !empty($decoded) ? $decoded : null;
             }
         }
-
         return null;
     }
 
     public function confirmer()
     {
+        if (!$this->evenement->inscriptionsOuvertes()) {
+            session()->flash('error', 'Les inscriptions pour cet événement sont closes.');
+            return redirect()->route($this->getDashboardRoute());
+        }
+
         $participant = Participant::findForUser(auth()->user());
 
         if (!$participant) {
@@ -452,6 +555,10 @@ class InscriptionWizard extends Component
             'fonction'               => $this->fonction,
             'pays'                   => $this->pays ?: $participant->pays,
             'ville'                  => $this->ville ?: $participant->ville,
+            'date_naissance'         => $this->date_naissance ?: null,
+            'filiere'                => $this->estEtudiant ? ($this->filiere ?: null) : null,
+            'universite'             => $this->estEtudiant ? ($this->universite ?: null) : null,
+            'statut_participant'     => $this->statut_participant,
             'secteur_activite'       => $this->secteur_activite ?: $participant->secteur_activite,
             'sous_secteur'           => $this->sous_secteur ?: null,
             'description_activites'  => $this->description_activites ?: null,
@@ -460,29 +567,34 @@ class InscriptionWizard extends Component
             'nombre_salaries'        => $this->nombre_salaries ?: null,
             'chiffre_affaires'       => $this->chiffre_affaires ?: null,
             'objectif_participation' => $this->objectif_participation ?: null,
-            'zone_geographique'      => $this->zone_geographique,
-            'types_partenariat'      => $this->normalizeArrayField($this->types_partenariat),
-            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat)
+            'zone_geographique'      => $this->estB2B ? $this->zone_geographique : null,
+            'types_partenariat'      => $this->estB2B
+                ? $this->normalizeArrayField($this->types_partenariat) : null,
+            'type_partenariat_autre' => $this->estB2B && in_array('Autre', $this->types_partenariat)
                 ? $this->type_partenariat_autre : null,
-            'profils_partenaire'     => $this->normalizeArrayField($this->profils_partenaire),
-            'secteurs_recherche'     => $this->normalizeArrayField($this->secteurs_recherche),
-            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche)
+            'profils_partenaire'     => $this->estB2B
+                ? $this->normalizeArrayField($this->profils_partenaire) : null,
+            'secteurs_recherche'     => $this->estB2B
+                ? $this->normalizeArrayField($this->secteurs_recherche) : null,
+            'secteur_recherche_autre' => $this->estB2B && in_array('Autre', $this->secteurs_recherche)
                 ? $this->secteur_recherche_autre : null,
-            'disponibilites'         => $this->normalizeArrayField($this->disponibilites),
+            'disponibilites'         => $this->estB2B
+                ? $this->normalizeArrayField($this->disponibilites) : null,
             'id_chef_delegation'     => $this->id_chef_delegation ?: null,
             'id_evenement'           => $this->id_evenement,
+            'statut_preinscription'  => 'en_attente',
         ]);
 
         $montant = $this->evenement->montant_inscription ?? 0;
-        $statut  = 'en_attente';
+        $statutInscription = 'en_attente';
 
         if ($this->evenement->type_paiement == 'gratuit') {
             $montant = 0;
-            $statut  = 'paye';
+            $statutInscription = 'paye';
         } elseif ($this->evenement->type_paiement == 'par_entreprise'
             && $participant->id_entreprise) {
             $montant = 0;
-            $statut  = 'en_attente';
+            $statutInscription = 'en_attente';
         }
 
         Inscription::create([
@@ -490,11 +602,10 @@ class InscriptionWizard extends Component
             'id_evenement'     => $this->id_evenement,
             'date_inscription' => now()->toDateString(),
             'montant_paye'     => $montant,
-            'statut_paiement'  => $statut,
+            'statut_paiement'  => $statutInscription,
             'statut_presence'  => 'absent',
         ]);
 
-        // ← Réservation d'un stand (uniquement représentant)
         if ($this->estRepresentant && $this->id_stand_choisi) {
             $stand = Stand::find($this->id_stand_choisi);
             if ($stand && !$stand->id_entreprise) {
@@ -506,27 +617,35 @@ class InscriptionWizard extends Component
             }
         }
 
-        // Notification au CDD si choisi
         if ($this->id_chef_delegation) {
-            $cddParticipant = Participant::where('email',
-                User::find($this->id_chef_delegation)?->email
-            )->first();
-
-            if ($cddParticipant) {
-                \App\Models\Notification::create([
-                    'id_participant' => $cddParticipant->id,
-                    'contenu'        => $participant->nom . ' ' . $participant->prenom
-                        . ' vous a choisi comme Chef de Délégation. Veuillez valider sa préinscription.',
-                    'date_envoie'    => now()->toDateString(),
-                    'type'           => 'systeme',
-                ]);
+            $cddUser = User::find($this->id_chef_delegation);
+            if ($cddUser) {
+                $cddParticipant = Participant::where('email', $cddUser->email)->first();
+                if ($cddParticipant) {
+                    Notification::create([
+                        'id_participant' => $cddParticipant->id,
+                        'contenu'        => $participant->nom . ' ' . $participant->prenom
+                            . ' vous a choisi comme Chef de Délégation pour '
+                            . $this->evenement->nom
+                            . '. Veuillez valider sa préinscription.',
+                        'date_envoie'    => now()->toDateString(),
+                        'type'           => 'systeme',
+                    ]);
+                }
             }
         }
 
-        if ($statut == 'paye') {
-            session()->flash('success', 'Inscription confirmée ! Bienvenue à ' . $this->evenement->nom . ' !');
+        if ($statutInscription === 'paye') {
+            session()->flash('success',
+                ' Inscription confirmée ! Bienvenue à '
+                . $this->evenement->nom . ' !'
+            );
         } else {
-            session()->flash('success', 'Préinscription envoyée ! En attente de validation.');
+            session()->flash('success',
+                '📋 Votre préinscription a bien été enregistrée ! '
+                . 'Votre dossier sera traité sous peu. '
+                . 'Vous recevrez une confirmation par email.'
+            );
         }
 
         return redirect()->route($this->getDashboardRoute());
@@ -542,6 +661,9 @@ class InscriptionWizard extends Component
             'chefsDelegation'            => User::whereHas('roles', fn($q) =>
                 $q->where('name', 'cdd')
             )->orderBy('name')->get(),
+            'estB2B'                     => $this->estB2B,
+            'nbEtapes'                   => $this->nbEtapes,
+            'estEtudiant'                => $this->estEtudiant,
         ])->layout($this->getLayout(), [
             'title' => 'Inscription — ' . ($this->evenement->nom ?? '')
         ]);

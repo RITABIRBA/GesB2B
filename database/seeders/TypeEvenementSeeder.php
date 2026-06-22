@@ -17,7 +17,7 @@ class TypeEvenementSeeder extends Seeder
             'Conférence',
             'Atelier',
             'Forum Africallia',
-            'SIAO',
+            
         ];
 
         foreach ($types as $type) {

@@ -6,16 +6,9 @@
     </div>
     @endif
 
-    @if(session('error'))
-    <div class="bg-red-100 border border-red-300 text-red-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
-        <i class="fa-solid fa-circle-xmark text-red-500 text-xl"></i>
-        {{ session('error') }}
-    </div>
-    @endif
-
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
-            <h3 class="text-xl font-bold text-gray-700">Demandes d'aide</h3>
+            <h3 class="text-xl font-bold text-gray-700">Demandes d'aide de ma délégation</h3>
             <span class="text-sm px-3 py-1 rounded-full text-white font-medium" style="background-color: #C8102E;">
                 {{ $demandes->where('statut', 'en_attente')->count() }} en attente
             </span>
@@ -89,7 +82,7 @@
         @empty
         <div class="bg-white rounded-xl shadow p-16 text-center text-gray-400">
             <i class="fa-solid fa-circle-question text-5xl mb-3 block text-gray-300"></i>
-            <p class="text-lg font-medium">Aucune demande d'aide</p>
+            <p class="text-lg font-medium">Aucune demande d'aide de votre délégation</p>
         </div>
         @endforelse
     </div>
@@ -128,13 +121,12 @@
                         Quelle action avez-vous effectuée ? *
                     </label>
                     <p class="text-xs text-gray-400 mb-2">
-                        Ce texte sera envoyé au participant dans ses notifications
-                        (ex : "Votre préinscription a été validée", "Vous avez été
-                        rattaché(e) à votre entreprise", etc.).
+                        Ce texte sera enregistré comme réponse à la demande du membre
+                        de votre délégation.
                     </p>
                     <textarea wire:model="reponse_texte" rows="4"
                         class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
-                        placeholder="Ex: Votre préinscription a été validée."></textarea>
+                        placeholder="Ex: Je l'ai aidé à compléter son inscription."></textarea>
                     @error('reponse_texte') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 

@@ -545,8 +545,7 @@ class GestionRendezVous extends Component
             );
     }
 
-    // ─── EXPORTS (point 2) — portent sur l'ensemble filtré, ────
-    // ─── pas seulement la page affichée ────────────────────────
+    // ─── EXPORTS ────────────────────────────────────────────────
 
     /**
      * Export CSV ("Excel") du planning filtré/trié actuel.
@@ -915,6 +914,9 @@ class GestionRendezVous extends Component
 
     /**
      * Génère le planning des RDV pour un événement.
+     * ✅ CORRIGÉ : tri global par score de priorité combiné de
+     * chaque paire (mutuel ou unilatéral), pas seulement par
+     * priorité interne à chaque participant.
      */
     public function genererPlanning(): void
     {
@@ -1001,23 +1003,38 @@ class GestionRendezVous extends Component
                 if (in_array($cleUnique, $souhaitsTraites)) continue;
                 $souhaitsTraites[] = $cleUnique;
 
-                $estMutuel = Souhait::where('id_participant', $souhait->id_participant_cible)
+                $souhaitRetour = Souhait::where('id_participant', $souhait->id_participant_cible)
                     ->where('id_participant_cible', $souhait->id_participant)
-                    ->exists();
+                    ->first();
+
+                $estMutuel = (bool) $souhaitRetour;
+
+                // ✅ NOUVEAU : score de priorité combiné de la paire
+                // (plus petit = plus prioritaire). Pour un souhait
+                // mutuel, on additionne les priorités des deux côtés.
+                $scorePriorite = $estMutuel
+                    ? $souhait->priorite + $souhaitRetour->priorite
+                    : $souhait->priorite;
+
+                $entry = [
+                    'id_participant1' => $souhait->id_participant,
+                    'id_participant2' => $souhait->id_participant_cible,
+                    'score_priorite'  => $scorePriorite,
+                ];
 
                 if ($estMutuel) {
-                    $rdvMutuels[] = [
-                        'id_participant1' => $souhait->id_participant,
-                        'id_participant2' => $souhait->id_participant_cible,
-                    ];
+                    $rdvMutuels[] = $entry;
                 } else {
-                    $rdvUnilateraux[] = [
-                        'id_participant1' => $souhait->id_participant,
-                        'id_participant2' => $souhait->id_participant_cible,
-                    ];
+                    $rdvUnilateraux[] = $entry;
                 }
             }
         }
+
+        // ✅ NOUVEAU : trie chaque groupe par score de priorité combiné
+        // (les souhaits les plus prioritaires sont traités en premier
+        // dans le remplissage du planning, peu importe l'ID du participant)
+        usort($rdvMutuels, fn($a, $b) => $a['score_priorite'] <=> $b['score_priorite']);
+        usort($rdvUnilateraux, fn($a, $b) => $a['score_priorite'] <=> $b['score_priorite']);
 
         $planning     = array_merge($rdvMutuels, $rdvUnilateraux);
         $date         = $evenement->date_debut;
@@ -1174,7 +1191,7 @@ class GestionRendezVous extends Component
             ];
         }
 
-        // Événement sélectionné pour le "Point des RDV" (point 4)
+        // Événement sélectionné pour le "Point des RDV"
         $evenementFiltre = $this->filtre_evenement
             ? Evenement::find($this->filtre_evenement)
             : null;

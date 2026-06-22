@@ -14,7 +14,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
 
-    // ← REDIRECTION SELON LE RÔLE
+    // ── REDIRECTION SELON LE RÔLE ──────────────────────────────
     Route::get('/dashboard', function () {
         $user = auth()->user();
         if ($user->hasRole('admin'))        return redirect('/admin/dashboard');
@@ -50,22 +50,32 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/utilisateurs',    \App\Livewire\Admin\GestionUtilisateurs::class)->name('admin.utilisateurs');
         Route::get('/chefs-delegation', \App\Livewire\Admin\GestionChefsDelegation::class)->name('admin.chefs-delegation');
         Route::get('/demandes-aide',   \App\Livewire\Admin\DemandesAide::class)->name('admin.demandes-aide');
+        Route::get('/participants/{id}', \App\Livewire\Admin\FicheParticipant::class)->name('admin.fiche-participant');
+Route::get('/entreprises/{id}', \App\Livewire\Admin\FicheEntreprise::class)->name('admin.fiche-entreprise');
+Route::get('/remises', \App\Livewire\Admin\GestionRemises::class)->name('admin.remises');
     });
 
     // ============================================================
     // ROUTES SUPERVISEUR
     // ============================================================
     Route::middleware(['role:superviseur'])->prefix('superviseur')->group(function () {
-        Route::get('/dashboard',     SuperviseurDashboard::class)->name('superviseur.dashboard');
-        Route::get('/evenements',    \App\Livewire\Superviseur\VoirEvenements::class)->name('superviseur.evenements');
-        Route::get('/entreprises',   \App\Livewire\Superviseur\VoirEntreprises::class)->name('superviseur.entreprises');
-        Route::get('/participants',  \App\Livewire\Superviseur\VoirParticipants::class)->name('superviseur.participants');
-        Route::get('/inscriptions',  \App\Livewire\Superviseur\VoirInscriptions::class)->name('superviseur.inscriptions');
-        Route::get('/paiements',     \App\Livewire\Superviseur\VoirPaiements::class)->name('superviseur.paiements');
-        Route::get('/rendez-vous',   \App\Livewire\Superviseur\VoirRendezVous::class)->name('superviseur.rendez-vous');
-        Route::get('/badges',        \App\Livewire\Superviseur\VoirBadges::class)->name('superviseur.badges');
-        Route::get('/gestion-acces', \App\Livewire\Superviseur\GestionCdd::class)->name('superviseur.gestion-acces');
-        Route::get('/demandes-aide', \App\Livewire\Superviseur\DemandesAide::class)->name('superviseur.demandes-aide');
+        Route::get('/dashboard',              SuperviseurDashboard::class)->name('superviseur.dashboard');
+        Route::get('/evenements',             \App\Livewire\Superviseur\VoirEvenements::class)->name('superviseur.evenements');
+        Route::get('/entreprises',            \App\Livewire\Superviseur\VoirEntreprises::class)->name('superviseur.entreprises');
+        Route::get('/gestion-entreprises',    \App\Livewire\Superviseur\GestionEntreprises::class)->name('superviseur.gestion-entreprises');
+        Route::get('/participants',           \App\Livewire\Superviseur\VoirParticipants::class)->name('superviseur.participants');
+        Route::get('/gestion-participants',   \App\Livewire\Superviseur\GestionParticipants::class)->name('superviseur.gestion-participants');
+        Route::get('/inscriptions',           \App\Livewire\Superviseur\VoirInscriptions::class)->name('superviseur.inscriptions');
+        Route::get('/paiements',              \App\Livewire\Superviseur\VoirPaiements::class)->name('superviseur.paiements');
+        Route::get('/rendez-vous',            \App\Livewire\Superviseur\VoirRendezVous::class)->name('superviseur.rendez-vous');
+        Route::get('/badges',                 \App\Livewire\Superviseur\VoirBadges::class)->name('superviseur.badges');
+        Route::get('/gestion-acces',          \App\Livewire\Superviseur\GestionCdd::class)->name('superviseur.gestion-acces');
+        Route::get('/demandes-aide',          \App\Livewire\Superviseur\DemandesAide::class)->name('superviseur.demandes-aide');
+        Route::get('/stands', \App\Livewire\Superviseur\GestionStands::class)->name('superviseur.stands');
+        Route::get('/remises', \App\Livewire\Admin\GestionRemises::class)->name('superviseur.remises');
+Route::get('/chefs-delegation', \App\Livewire\Admin\GestionChefsDelegation::class)->name('superviseur.chefs-delegation');
+Route::get('/remises', \App\Livewire\Admin\GestionRemises::class)->name('superviseur.remises');
+Route::get('/chefs-delegation', \App\Livewire\Admin\GestionChefsDelegation::class)->name('superviseur.chefs-delegation');
     });
 
     // ============================================================
@@ -80,6 +90,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/catalogue',    \App\Livewire\Cdd\Catalogue::class)->name('cdd.catalogue');
         Route::get('/statistiques-souhaits', \App\Livewire\Cdd\StatistiquesSouhaits::class)->name('cdd.statistiques-souhaits');
         Route::get('/demandes-aide', \App\Livewire\Cdd\DemandesAide::class)->name('cdd.demandes-aide');
+        Route::middleware(['role:cdd'])->prefix('cdd')->group(function () {
+    Route::get('/dashboard', \App\Livewire\Cdd\Dashboard::class)->name('cdd.dashboard');
+    Route::middleware(['role:cdd'])->prefix('cdd')->group(function () {
+    Route::get('/dashboard', \App\Livewire\Cdd\Dashboard::class)->name('cdd.dashboard');
+    Route::get('/inscriptions', \App\Livewire\Cdd\Inscriptions::class)->name('cdd.inscriptions');
+    Route::get('/demandes-aide', \App\Livewire\Cdd\DemandesAide::class)->name('cdd.demandes-aide');
+});
+});
     });
 
     // ============================================================
@@ -93,9 +111,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/souhaits',     \App\Livewire\Entreprise\MesSouhaits::class)->name('entreprise.souhaits');
         Route::get('/rendez-vous',  \App\Livewire\Entreprise\MesRendezVous::class)->name('entreprise.rendez-vous');
         Route::get('/catalogue',    \App\Livewire\Entreprise\Catalogue::class)->name('entreprise.catalogue');
-        // ← Wizard inscription à un événement pour le représentant
+        Route::get('/completer-profil-b2b', \App\Livewire\Entreprise\CompleterProfilB2B::class)
+            ->name('entreprise.completer-profil-b2b');
         Route::get('/inscription/{evenement}', \App\Livewire\Participant\InscriptionWizard::class)
             ->name('entreprise.inscription.wizard');
+            Route::get('/recu/{id}/telecharger', [App\Http\Controllers\RecuController::class, 'telecharger'])
+    ->name('entreprise.recu.telecharger');
     });
 
     // ============================================================
@@ -110,9 +131,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/badge',       \App\Livewire\Participant\MonBadge::class)->name('participant.badge');
         Route::get('/catalogue',   \App\Livewire\Participant\Catalogue::class)->name('participant.catalogue');
         Route::get('/planning',    \App\Livewire\Participant\MonPlanning::class)->name('participant.planning');
-        // ← Wizard inscription pour les membres
+        Route::get('/completer-profil-b2b', \App\Livewire\Participant\CompleterProfilB2B::class)
+            ->name('participant.completer-profil-b2b');
         Route::get('/inscription/{evenement}', \App\Livewire\Participant\InscriptionWizard::class)
             ->name('participant.inscription.wizard');
+            
+Route::get('/recu/{id}/telecharger', [App\Http\Controllers\RecuController::class, 'telecharger'])
+    ->name('participant.recu.telecharger');
+    Route::get('/recu/{id}/telecharger', [App\Http\Controllers\RecuController::class, 'telecharger'])
+    ->name('participant.recu.telecharger');
     });
 
     // ============================================================
@@ -125,7 +152,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/rendez-vous', \App\Livewire\Traducteur\MesRendezVous::class)->name('traducteur.rendez-vous');
     });
 
-}); // ← Fermeture du groupe auth
+}); // Fermeture du groupe auth
 
 // ============================================================
 // ROUTES PUBLIQUES

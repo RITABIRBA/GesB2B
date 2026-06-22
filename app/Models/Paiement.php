@@ -13,8 +13,16 @@ class Paiement extends Model
         'montant',
         'date_paiement',
         'mode_paiement',
+        'numero_cheque',
+        'type_paiement',
         'statut',
     ];
+
+    protected $casts = [
+        'date_paiement' => 'date',
+    ];
+
+    // ─── Relations ─────────────────────────────────────────
 
     public function inscription()
     {

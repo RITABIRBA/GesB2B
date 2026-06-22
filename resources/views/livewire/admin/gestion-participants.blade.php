@@ -29,25 +29,64 @@
         </button>
     </div>
 
+    {{-- Statistiques préinscriptions --}}
+    <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow p-4 flex items-center gap-3 border-l-4 border-yellow-500">
+            <i class="fa-solid fa-clock text-yellow-500 text-xl"></i>
+            <div>
+                <p class="text-xs text-gray-500">En attente</p>
+                <p class="font-bold text-gray-800 text-lg">
+                    {{ $participants->where('statut_preinscription', 'en_attente')->count() }}
+                </p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 flex items-center gap-3 border-l-4" style="border-color: #007A3D;">
+            <i class="fa-solid fa-circle-check text-xl" style="color: #007A3D;"></i>
+            <div>
+                <p class="text-xs text-gray-500">Validés</p>
+                <p class="font-bold text-gray-800 text-lg">
+                    {{ $participants->where('statut_preinscription', 'valide')->count() }}
+                </p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 flex items-center gap-3 border-l-4 border-red-500">
+            <i class="fa-solid fa-circle-xmark text-red-500 text-xl"></i>
+            <div>
+                <p class="text-xs text-gray-500">Rejetés</p>
+                <p class="font-bold text-gray-800 text-lg">
+                    {{ $participants->where('statut_preinscription', 'rejete')->count() }}
+                </p>
+            </div>
+        </div>
+    </div>
+
     {{-- Filtres --}}
-    <div class="flex gap-4 mb-5">
+    <div class="flex gap-4 mb-5 flex-wrap">
         <div class="relative w-full md:w-1/3">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
             <input wire:model.live="search" type="text"
                 placeholder="Rechercher par nom, prénom ou email..."
                 class="w-full border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
         </div>
+        <select wire:model.live="filtre_preinscription"
+            class="border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+            <option value="">Tous les statuts</option>
+            <option value="en_attente">En attente</option>
+            <option value="valide">Validé</option>
+            <option value="rejete">Rejeté</option>
+        </select>
     </div>
 
     {{-- Tableau --}}
     <div class="bg-white rounded-xl shadow overflow-x-auto">
-        <table class="w-full text-left" style="min-width: 900px;">
+        <table class="w-full text-left" style="min-width: 1000px;">
             <thead style="background-color: #f8f9fa;">
                 <tr class="border-b">
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Participant</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Contact</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Entreprise & Événement</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Rôle</th>
+                    <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Préinscription</th>
                     <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
             </thead>
@@ -73,6 +112,13 @@
                                     style="background-color: #fde8ec; color: #C8102E;">
                                     <i class="fa-solid fa-key mr-0.5"></i>{{ $participant->code_acces }}
                                 </span>
+                                @if($participant->statut_participant && $participant->statut_participant !== 'classique')
+                                <span class="text-xs px-2 py-0.5 rounded-full font-medium inline-block mt-0.5
+                                    {{ $participant->statut_participant === 'sponsor' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700' }}">
+                                    <i class="fa-solid {{ $participant->statut_participant === 'sponsor' ? 'fa-star' : 'fa-handshake' }} mr-0.5"></i>
+                                    {{ ucfirst($participant->statut_participant) }}
+                                </span>
+                                @endif
                                 @php
                                     $hasAccount = $participant->email
                                         ? \App\Models\User::where('email', $participant->email)->exists()
@@ -110,6 +156,12 @@
                             <i class="fa-solid fa-phone text-gray-400 mr-1"></i>
                             {{ $participant->telephone }}
                         </p>
+                        @if($participant->filiere)
+                        <p class="text-blue-500 mt-0.5">
+                            <i class="fa-solid fa-graduation-cap mr-1"></i>
+                            {{ $participant->filiere }}
+                        </p>
+                        @endif
                     </td>
                     <td class="px-4 py-4 text-xs">
                         <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium block w-fit mb-1">
@@ -136,7 +188,43 @@
                         </span>
                     </td>
                     <td class="px-4 py-4">
-                        <div class="flex gap-2">
+                        @if($participant->statut_preinscription == 'valide')
+                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium" style="background-color: #007A3D;">
+                            <i class="fa-solid fa-circle-check mr-1"></i> Validé
+                        </span>
+                        @elseif($participant->statut_preinscription == 'rejete')
+                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
+                            <i class="fa-solid fa-circle-xmark mr-1"></i> Rejeté
+                        </span>
+                        @else
+                        <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-yellow-500">
+                            <i class="fa-solid fa-clock mr-1"></i> En attente
+                        </span>
+                        @endif
+                    </td>
+                    <td class="px-4 py-4">
+                        <div class="flex gap-2 flex-wrap">
+                            {{-- ✅ NOUVEAU : Bouton Voir la fiche complète --}}
+                            <a href="{{ route('admin.fiche-participant', $participant->id) }}"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-indigo-600 transition hover:bg-indigo-700"
+                                title="Voir la fiche complète">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+
+                            {{-- Boutons validation/rejet si en attente --}}
+                            @if($participant->statut_preinscription == 'en_attente')
+                            <button wire:click="ouvrirValidationPreinscription({{ $participant->id }})"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90"
+                                style="background-color: #007A3D;"
+                                title="Valider la préinscription">
+                                <i class="fa-solid fa-check"></i> Valider
+                            </button>
+                            <button wire:click="ouvrirRejetPreinscription({{ $participant->id }})"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700"
+                                title="Rejeter la préinscription">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            @endif
                             <button wire:click="voirCompte({{ $participant->id }})"
                                 class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-gray-500 transition hover:bg-gray-600"
                                 title="Voir le compte">
@@ -158,7 +246,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="py-16 text-center text-gray-400">
+                    <td colspan="6" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-users text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun participant pour le moment</p>
                         <button wire:click="openModal"
@@ -172,6 +260,107 @@
             </tbody>
         </table>
     </div>
+
+    {{-- MODAL VALIDATION PRÉINSCRIPTION --}}
+    @if($showModalPreinscription && $preinscription_courante)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #007A3D, #005a2d);">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i> Valider la préinscription
+                </h3>
+                <button wire:click="fermerValidationPreinscription" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-8">
+                <div class="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-200">
+                    <p class="font-bold text-gray-800">
+                        {{ $preinscription_courante->nom }} {{ $preinscription_courante->prenom }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ $preinscription_courante->email ?: 'Pas d\'email' }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        {{ $preinscription_courante->telephone }}
+                    </p>
+                    @if($preinscription_courante->entreprise)
+                    <p class="text-xs text-green-600 mt-1">
+                        <i class="fa-solid fa-building mr-1"></i>
+                        {{ $preinscription_courante->entreprise->nom }}
+                    </p>
+                    @endif
+                    @if($preinscription_courante->evenement)
+                    <p class="text-xs text-blue-600 mt-1">
+                        <i class="fa-solid fa-calendar mr-1"></i>
+                        {{ $preinscription_courante->evenement->nom }}
+                    </p>
+                    @endif
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-700">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    @if($preinscription_courante->email)
+                    Un compte sera automatiquement créé avec un mot de passe temporaire.
+                    @else
+                    Le participant pourra se connecter uniquement avec son code d'accès.
+                    @endif
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button wire:click="fermerValidationPreinscription"
+                        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
+                        Annuler
+                    </button>
+                    <button wire:click="validerPreinscription"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
+                        style="background-color: #007A3D;">
+                        <i class="fa-solid fa-check mr-1"></i> Confirmer la validation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- MODAL REJET PRÉINSCRIPTION --}}
+    @if($showModalRejet && $preinscription_courante)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #C8102E, #a00d25);">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-xmark"></i> Rejeter la préinscription
+                </h3>
+                <button wire:click="fermerRejetPreinscription" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-8">
+                <div class="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-200">
+                    <p class="font-bold text-gray-800">
+                        {{ $preinscription_courante->nom }} {{ $preinscription_courante->prenom }}
+                    </p>
+                </div>
+                <div class="mb-5">
+                    <label class="block text-gray-600 text-sm font-medium mb-1.5">Motif du rejet *</label>
+                    <textarea wire:model="motif_rejet" rows="3"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                        placeholder="Expliquez la raison du rejet..."></textarea>
+                    @error('motif_rejet')
+                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button wire:click="fermerRejetPreinscription"
+                        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
+                        Annuler
+                    </button>
+                    <button wire:click="rejeterPreinscription"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
+                        style="background-color: #C8102E;">
+                        <i class="fa-solid fa-xmark mr-1"></i> Rejeter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- MODAL COMPTE --}}
     @if($showModalCompte)
@@ -294,9 +483,30 @@
                         </div>
                         <div>
                             <label class="block text-gray-600 text-sm font-medium mb-1.5">Fonction</label>
-                            <input wire:model="fonction" type="text"
+                            <input wire:model.live="fonction" type="text"
                                 class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-                                placeholder="Ex: Directeur Commercial">
+                                placeholder="Ex: Directeur Commercial / Étudiant">
+                        </div>
+
+                        @if(strtolower(trim($fonction)) === 'étudiant' || strtolower(trim($fonction)) === 'etudiant')
+                        <div>
+                            <label class="block text-gray-600 text-sm font-medium mb-1.5">Filière *</label>
+                            <input wire:model="filiere" type="text"
+                                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
+                                placeholder="Ex: Informatique">
+                        </div>
+                        <div>
+                            <label class="block text-gray-600 text-sm font-medium mb-1.5">Université *</label>
+                            <input wire:model="universite" type="text"
+                                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
+                                placeholder="Ex: Université Aube Nouvelle">
+                        </div>
+                        @endif
+
+                        <div>
+                            <label class="block text-gray-600 text-sm font-medium mb-1.5">Date de naissance</label>
+                            <input wire:model="date_naissance" type="date"
+                                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
                         </div>
                         <div>
                             <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone *</label>
@@ -313,52 +523,92 @@
                             @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        {{-- PAYS --}}
-<div>
-    <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays</label>
-    <select wire:model.live="pays"
-        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-        <option value="">-- Choisir un pays --</option>
-        @foreach($pays_liste as $p)
-        <option value="{{ $p }}">{{ $p }}</option>
-        @endforeach
-    </select>
-    @if($pays === 'Autre')
-    <input wire:model.live="pays" type="text"
-        class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-        placeholder="Saisissez votre pays...">
-    @endif
-</div>
+                        {{-- Statut participant --}}
+                        <div class="col-span-2">
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Statut</label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" wire:model="statut_participant" value="classique" class="hidden peer">
+                                    <div class="p-2.5 border-2 rounded-xl text-center transition text-sm
+                                        peer-checked:border-gray-500 peer-checked:bg-gray-100 hover:bg-gray-50 border-gray-200">
+                                        Classique
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" wire:model="statut_participant" value="sponsor" class="hidden peer">
+                                    <div class="p-2.5 border-2 rounded-xl text-center transition text-sm
+                                        peer-checked:border-yellow-400 peer-checked:bg-yellow-50 hover:bg-gray-50 border-gray-200">
+                                        <i class="fa-solid fa-star text-yellow-400 mr-1"></i>Sponsor
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" wire:model="statut_participant" value="partenaire" class="hidden peer">
+                                    <div class="p-2.5 border-2 rounded-xl text-center transition text-sm
+                                        peer-checked:border-blue-400 peer-checked:bg-blue-50 hover:bg-gray-50 border-gray-200">
+                                        <i class="fa-solid fa-handshake text-blue-500 mr-1"></i>Partenaire
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
 
-{{-- VILLE --}}
-<div>
-    <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville</label>
-    @if($pays && $pays !== 'Autre')
-        @php $villes = $villes_par_pays[$pays] ?? []; @endphp
-        @if(count($villes) > 0)
-        <select wire:model.live="ville"
-            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-            <option value="">-- Choisir une ville --</option>
-            @foreach($villes as $v)
-            <option value="{{ $v }}">{{ $v }}</option>
-            @endforeach
-        </select>
-        @if($ville === 'Autre')
-        <input wire:model="ville" type="text"
-            class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-            placeholder="Saisissez votre ville...">
-        @endif
-        @else
-        <input wire:model="ville" type="text"
-            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-            placeholder="Ex: Ouagadougou">
-        @endif
-    @else
-    <input wire:model="ville" type="text"
-        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-        placeholder="Ex: Ouagadougou">
-    @endif
-</div>
+                        {{-- PAYS --}}
+                        <div>
+                            <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays</label>
+                            <select wire:model.live="pays"
+                                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
+                                <option value="">-- Choisir un pays --</option>
+                                @foreach($pays_liste as $p)
+                                <option value="{{ $p }}">{{ $p }}</option>
+                                @endforeach
+                            </select>
+                            @if($pays === 'Autre')
+                            <input wire:model.live="pays" type="text"
+                                class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
+                                placeholder="Saisissez votre pays...">
+                            @endif
+                        </div>
+
+                        {{-- VILLE --}}
+                        <div>
+                            <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville</label>
+                            @if($pays && $pays !== 'Autre')
+                                @php $villes = $villes_par_pays[$pays] ?? []; @endphp
+                                @if(count($villes) > 0)
+                                <select wire:model.live="ville"
+                                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
+                                    <option value="">-- Choisir une ville --</option>
+                                    @foreach($villes as $v)
+                                    <option value="{{ $v }}">{{ $v }}</option>
+                                    @endforeach
+                                </select>
+                                @if($ville === 'Autre')
+                                <div class="mt-2">
+                                    <input wire:model="ville" type="text"
+                                        list="villes-suggestions-modif"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
+                                        placeholder="Saisissez votre ville...">
+                                    <datalist id="villes-suggestions-modif">
+                                        <option value="Ouagadougou">
+                                        <option value="Bobo-Dioulasso">
+                                        <option value="Abidjan">
+                                        <option value="Dakar">
+                                        <option value="Bamako">
+                                        <option value="Lomé">
+                                        <option value="Cotonou">
+                                    </datalist>
+                                </div>
+                                @endif
+                                @else
+                                <input wire:model="ville" type="text"
+                                    class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
+                                    placeholder="Ex: Ouagadougou">
+                                @endif
+                            @else
+                            <input wire:model="ville" type="text"
+                                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
+                                placeholder="Ex: Ouagadougou">
+                            @endif
+                        </div>
 
                 {{-- SECTION 2 : Inscription --}}
                 <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">

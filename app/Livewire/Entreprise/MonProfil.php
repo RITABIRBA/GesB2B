@@ -73,12 +73,40 @@ class MonProfil extends Component
     ];
 
     public array $zonesGeographiques = [
-        'Locale',
-        'Nationale',
-        'Régionale (CEDEAO)',
-        'Africaine',
-        'Internationale',
-    ];
+    // AFRIQUE — zones économiques
+    'UEMOA (Afrique de l\'Ouest)',
+    'CEMAC (Afrique Centrale)',
+    'Afrique du Nord (Maghreb)',
+    'Afrique de l\'Est (EAC)',
+    'Afrique Australe (SADC)',
+    'Afrique (toute la région)',
+
+    // EUROPE
+    'Union Européenne',
+    'Europe de l\'Ouest',
+    'Europe de l\'Est',
+    'Europe (toute la région)',
+
+    // AMÉRIQUES
+    'Amérique du Nord',
+    'Amérique Centrale et Caraïbes',
+    'Amérique du Sud',
+    'Amériques (toute la région)',
+
+    // ASIE
+    'Asie de l\'Est',
+    'Asie du Sud-Est',
+    'Asie du Sud',
+    'Moyen-Orient',
+    'Asie (toute la région)',
+
+    // OCÉANIE
+    'Océanie',
+
+    // GLOBAL
+    'Locale (mon pays uniquement)',
+    'Internationale (toutes zones)',
+];
 
     public array $typesPartenariatOptions = [
         'Alliance commerciale',

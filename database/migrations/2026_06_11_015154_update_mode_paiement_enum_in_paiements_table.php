@@ -7,27 +7,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE paiements MODIFY mode_paiement ENUM(
-            'especes',
-            'virement',
-            'mobile_money',
-            'carte',
-            'orange_money',
-            'moov_money',
-            'ligdicash_orange_money',
-            'ligdicash_moov_money'
-        ) NOT NULL DEFAULT 'mobile_money'");
+        // Passe la colonne en VARCHAR pour accepter toutes les valeurs
+        // utilisées dans le code (cheque, ligdicash_orange_money, etc.)
+        DB::statement("ALTER TABLE paiements MODIFY mode_paiement VARCHAR(50) NOT NULL");
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE paiements MODIFY mode_paiement ENUM(
-            'especes',
-            'virement',
-            'mobile_money',
-            'carte',
-            'orange_money',
-            'moov_money'
-        ) NOT NULL DEFAULT 'mobile_money'");
+        DB::statement("ALTER TABLE paiements MODIFY mode_paiement ENUM('orange_money','moov_money') NOT NULL");
     }
 };

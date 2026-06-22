@@ -3,91 +3,77 @@
 namespace App\Livewire\Cdd;
 
 use Livewire\Component;
+use App\Models\ChefDelegation;
 use App\Models\DemandeAide;
-use App\Models\Notification;
 
 class DemandesAide extends Component
 {
+    public $cdd = null;
     public string $filtre_statut = '';
 
-    // ─── Modal "Traiter la demande" ────────────────────────────
-    public bool $showTraiterModal  = false;
-    public ?int $demande_id        = null;
-    public $demande_courante       = null;
-    public string $reponse_texte   = '';
+    // Modal traiter
+    public bool $showTraiterModal   = false;
+    public $demande_courante        = null;
+    public string $reponse_texte    = '';
+
+    public function mount(): void
+    {
+        $this->cdd = ChefDelegation::where('user_id', auth()->id())->first();
+    }
 
     public function ouvrirTraiter(int $id): void
     {
-        $demande = DemandeAide::findOrFail($id);
-
-        if ($demande->id_cdd != auth()->id()) {
-            session()->flash('error', 'Action non autorisée.');
-            return;
-        }
-
-        $this->demande_id       = $id;
-        $this->demande_courante = DemandeAide::with(['participant.entreprise', 'evenement'])->find($id);
+        $this->demande_courante = DemandeAide::with(['participant.entreprise', 'evenement'])
+            ->findOrFail($id);
         $this->reponse_texte    = '';
-        $this->resetErrorBag();
         $this->showTraiterModal = true;
     }
 
     public function fermerTraiter(): void
     {
         $this->showTraiterModal = false;
-        $this->demande_id       = null;
         $this->demande_courante = null;
         $this->reponse_texte    = '';
-        $this->resetErrorBag();
     }
 
-    /**
-     * Marque la demande comme traitée et enregistre le texte de
-     * réponse décrivant l'action effectuée. Le participant est
-     * notifié avec ce texte (et non plus un message générique).
-     */
     public function confirmerTraiter(): void
     {
         $this->validate([
-            'reponse_texte' => 'required|min:5|max:1000',
+            'reponse_texte' => 'required|string|min:5',
         ], [
-            'reponse_texte.required' => 'Veuillez indiquer ce qui a été fait pour traiter cette demande.',
-            'reponse_texte.min'      => 'La réponse est trop courte (5 caractères minimum).',
+            'reponse_texte.required' => 'Veuillez indiquer ce que vous avez fait.',
+            'reponse_texte.min'      => 'Réponse trop courte.',
         ]);
 
-        $demande = DemandeAide::findOrFail($this->demande_id);
-
-        if ($demande->id_cdd != auth()->id()) {
-            session()->flash('error', 'Action non autorisée.');
-            $this->fermerTraiter();
-            return;
-        }
-
+        $demande = DemandeAide::findOrFail($this->demande_courante->id);
         $demande->update([
             'statut'    => 'traite',
-            'traite_le' => now(),
             'reponse'   => $this->reponse_texte,
+            'traite_le' => now(),
         ]);
 
-        Notification::create([
-            'id_participant' => $demande->id_participant,
-            'contenu'        => "✅ Votre demande d'aide a été traitée par votre Chef de Délégation : " . $this->reponse_texte,
-            'date_envoie'    => now()->toDateString(),
-            'type'           => 'systeme',
-        ]);
-
-        session()->flash('success', 'Demande marquée comme traitée. Le participant a été notifié avec la réponse.');
         $this->fermerTraiter();
+        session()->flash('success', 'Demande traitée avec succès.');
     }
 
     public function render()
     {
-        return view('livewire.cdd.demandes-aide', [
-            'demandes' => DemandeAide::with(['participant.entreprise', 'evenement'])
-                ->where('id_cdd', auth()->id())
-                ->when($this->filtre_statut, fn($q) => $q->where('statut', $this->filtre_statut))
+        $demandes = collect();
+
+        if ($this->cdd) {
+            $membreIds = $this->cdd->membres()->pluck('id');
+
+            $demandes = DemandeAide::with(['participant.entreprise', 'evenement'])
+                ->whereIn('participant_id', $membreIds)
+                ->when($this->filtre_statut, fn($q) =>
+                    $q->where('statut', $this->filtre_statut)
+                )
                 ->latest()
-                ->get(),
-        ])->layout('layouts.cdd', ['title' => "Demandes d'aide"]);
+                ->get();
+        }
+
+        return view('livewire.cdd.demandes-aide', [
+            'demandes' => $demandes,
+        ])->layout('layouts.cdd', ['title' => "Demandes d'aide de ma délégation"]);
     }
 }

@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\RendezVous;
 use App\Models\Participant;
 use App\Models\Notification;
+use Carbon\Carbon;
 
 class MesRendezVous extends Component
 {
@@ -15,8 +16,6 @@ class MesRendezVous extends Component
 
     /**
      * Le participant signale son absence pour un RDV.
-     * Le système cherche automatiquement des remplaçants
-     * compatibles avec l'autre participant.
      */
     public function signalerAbsence(int $id): void
     {
@@ -48,7 +47,6 @@ class MesRendezVous extends Component
             'absent_participant_id' => $participant->id,
         ]);
 
-        // Notification à l'absent (confirmation)
         Notification::create([
             'id_participant' => $participant->id,
             'contenu'        => "Votre absence a été enregistrée. Le rendez-vous avec {$autre->nom} {$autre->prenom} a été annulé.",
@@ -56,7 +54,6 @@ class MesRendezVous extends Component
             'type'           => 'systeme',
         ]);
 
-        // Notification à l'autre participant (B)
         if ($autre) {
             Notification::create([
                 'id_participant' => $autre->id,
@@ -67,6 +64,76 @@ class MesRendezVous extends Component
         }
 
         $this->alertSuccess = 'Absence signalée. L\'autre participant a été notifié et des remplaçants lui seront proposés.';
+    }
+
+    /**
+     * ✅ NOUVEAU : Signale l'absence du participant pour TOUTE une journée.
+     * Annule tous les RDV de cette date et notifie chaque partenaire concerné.
+     */
+    public function signalerAbsenceJournee(string $date): void
+    {
+        $this->alertSuccess = '';
+        $this->alertError   = '';
+
+        $participant = Participant::findForUser(auth()->user());
+
+        if (!$participant) {
+            $this->alertError = 'Participant non trouvé.';
+            return;
+        }
+
+        $rdvsDuJour = RendezVous::where('date', $date)
+            ->where(function ($q) use ($participant) {
+                $q->where('id_participant1', $participant->id)
+                  ->orWhere('id_participant2', $participant->id);
+            })
+            ->whereIn('statut', ['planifie', 'confirme', 'a_planifier'])
+            ->get();
+
+        if ($rdvsDuJour->isEmpty()) {
+            $this->alertError = 'Aucun rendez-vous actif trouvé pour cette date.';
+            return;
+        }
+
+        $nbAnnules = 0;
+
+        foreach ($rdvsDuJour as $rdv) {
+            $autreId = $rdv->id_participant1 == $participant->id
+                ? $rdv->id_participant2
+                : $rdv->id_participant1;
+
+            $autre = Participant::find($autreId);
+
+            $rdv->update([
+                'statut'                => 'annule',
+                'absent_participant_id' => $participant->id,
+            ]);
+
+            if ($autre) {
+                Notification::create([
+                    'id_participant' => $autre->id,
+                    'contenu'        => "⚠️ Votre rendez-vous du " . Carbon::parse($date)->format('d/m/Y')
+                        . " avec {$participant->nom} {$participant->prenom} a été annulé (absence signalée pour la journée). "
+                        . "Des participants de remplacement compatibles vous sont proposés.",
+                    'date_envoie'    => now()->toDateString(),
+                    'type'           => 'systeme',
+                ]);
+            }
+
+            $nbAnnules++;
+        }
+
+        Notification::create([
+            'id_participant' => $participant->id,
+            'contenu'        => "Votre absence pour la journée du " . Carbon::parse($date)->format('d/m/Y')
+                . " a été enregistrée. {$nbAnnules} rendez-vous ont été annulés et les partenaires concernés ont été notifiés.",
+            'date_envoie'    => now()->toDateString(),
+            'type'           => 'systeme',
+        ]);
+
+        $this->alertSuccess = "Absence signalée pour toute la journée du "
+            . Carbon::parse($date)->format('d/m/Y')
+            . " ({$nbAnnules} rendez-vous annulés). Les partenaires concernés ont été notifiés.";
     }
 
     /**
@@ -89,7 +156,6 @@ class MesRendezVous extends Component
 
     /**
      * B choisit un remplaçant proposé pour le participant absent A.
-     * Crée un nouveau RDV entre B et le remplaçant, et notifie tout le monde.
      */
     public function choisirRemplacant(int $rdvAnnuleId, int $idRemplacant): void
     {
@@ -99,7 +165,6 @@ class MesRendezVous extends Component
         $moi = Participant::findForUser(auth()->user());
         $rdv = RendezVous::findOrFail($rdvAnnuleId);
 
-        // Vérifie que je suis bien le participant "présent" de ce RDV annulé
         $autreId = $rdv->id_participant1 == $moi->id
             ? $rdv->id_participant2
             : $rdv->id_participant1;
@@ -115,7 +180,6 @@ class MesRendezVous extends Component
             return;
         }
 
-        // Vérifie qu'un RDV n'existe pas déjà entre les deux
         $existeDeja = RendezVous::where(function ($q) use ($moi, $remplacant) {
                 $q->where('id_participant1', $moi->id)->where('id_participant2', $remplacant->id);
             })
@@ -172,10 +236,6 @@ class MesRendezVous extends Component
         return count(array_intersect($dA, $dB)) > 0;
     }
 
-    /**
-     * Score de compatibilité entre 2 participants (0 à 3),
-     * basé sur secteurs_recherche / zone_geographique / types_partenariat.
-     */
     private function calculerCompatibilite(Participant $moi, Participant $cible): int
     {
         $points = 0;
@@ -212,11 +272,6 @@ class MesRendezVous extends Component
         return $points;
     }
 
-    /**
-     * Vérifie si le candidat a un profil similaire au participant absent A :
-     * même secteur d'activité OU intersection des types de partenariat
-     * OU même zone géographique (au moins 1 critère sur 3).
-     */
     private function profilSimilaire(Participant $a, Participant $candidat): bool
     {
         if ($a->secteur_activite && $candidat->secteur_activite
@@ -244,11 +299,6 @@ class MesRendezVous extends Component
         return false;
     }
 
-    /**
-     * Pour un RDV annulé (absence de A), retourne les candidats de
-     * remplacement pour B : présents, disponibles, profil similaire à A,
-     * compatibles avec B.
-     */
     private function getCandidatsRemplacement(RendezVous $rdv, Participant $moi): \Illuminate\Support\Collection
     {
         $absentId = $rdv->absent_participant_id;
@@ -256,7 +306,6 @@ class MesRendezVous extends Component
 
         if (!$absent || !$moi->id_evenement) return collect();
 
-        // IDs déjà en RDV (non annulé) avec moi
         $idsDejaMatches = RendezVous::where(function ($q) use ($moi) {
                 $q->where('id_participant1', $moi->id)
                   ->orWhere('id_participant2', $moi->id);
@@ -283,6 +332,23 @@ class MesRendezVous extends Component
             ->values();
     }
 
+    /**
+     * ✅ NOUVEAU : Retourne les dates distinctes ayant au moins
+     * un RDV actif pour ce participant.
+     */
+    private function getDatesAvecRdvActifs(Participant $participant): \Illuminate\Support\Collection
+    {
+        return RendezVous::where('date', '!=', null)
+            ->where(function ($q) use ($participant) {
+                $q->where('id_participant1', $participant->id)
+                  ->orWhere('id_participant2', $participant->id);
+            })
+            ->whereIn('statut', ['planifie', 'confirme', 'a_planifier'])
+            ->distinct()
+            ->orderBy('date')
+            ->pluck('date');
+    }
+
     public function render()
     {
         $participant = Participant::findForUser(auth()->user());
@@ -305,8 +371,6 @@ class MesRendezVous extends Component
                 ->get()
             : collect();
 
-        // Calcule les remplaçants proposés pour chaque RDV annulé
-        // où JE suis le participant présent (pas celui qui s'est absenté)
         $remplacants = [];
         if ($participant) {
             foreach ($rendezVous as $rdv) {
@@ -318,10 +382,15 @@ class MesRendezVous extends Component
             }
         }
 
+        $datesAvecRdv = $participant
+            ? $this->getDatesAvecRdvActifs($participant)
+            : collect();
+
         return view('livewire.participant.mes-rendez-vous', [
-            'rendezVous'  => $rendezVous,
-            'participant' => $participant,
-            'remplacants' => $remplacants,
+            'rendezVous'   => $rendezVous,
+            'participant'  => $participant,
+            'remplacants'  => $remplacants,
+            'datesAvecRdv' => $datesAvecRdv,
         ])->layout('layouts.participant', ['title' => 'Rendez-vous']);
     }
 }

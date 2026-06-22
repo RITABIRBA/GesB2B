@@ -12,14 +12,30 @@ class GestionPaiements extends Component
     public string $filtre_statut = '';
     public string $filtre_mode   = '';
 
+    // ✅ NOUVEAU : Modal détail chèque
+    public bool $showChequeModal = false;
+    public $paiement_cheque      = null;
+
+    public function voirCheque(int $id): void
+    {
+        $this->paiement_cheque = Paiement::with([
+            'inscription', 'inscription.participant', 'inscription.evenement',
+        ])->findOrFail($id);
+        $this->showChequeModal = true;
+    }
+
+    public function fermerChequeModal(): void
+    {
+        $this->showChequeModal = false;
+        $this->paiement_cheque = null;
+    }
+
     public function valider(int $id): void
     {
         $paiement = Paiement::with(['recu', 'inscription'])->findOrFail($id);
 
-        // ← Met à jour le statut du paiement
         $paiement->update(['statut' => 'valide']);
 
-        // ← Crée le reçu seulement s'il n'existe pas déjà
         if (!$paiement->recu) {
             Recu::create([
                 'id_paiement' => $paiement->id,
@@ -28,17 +44,18 @@ class GestionPaiements extends Component
             ]);
         }
 
-        // ← Met à jour le statut de l'inscription
         if ($paiement->inscription) {
             $paiement->inscription->update(['statut_paiement' => 'paye']);
         }
 
+        $this->fermerChequeModal();
         session()->flash('success', 'Paiement validé et reçu confirmé.');
     }
 
     public function rejeter(int $id): void
     {
         Paiement::findOrFail($id)->update(['statut' => 'rejete']);
+        $this->fermerChequeModal();
         session()->flash('success', 'Paiement rejeté.');
     }
 

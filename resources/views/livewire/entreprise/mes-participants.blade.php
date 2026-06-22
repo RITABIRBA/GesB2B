@@ -180,6 +180,11 @@
                                     style="background-color: {{ $membre->role == 'representant' ? '#C8102E' : '#007A3D' }}">
                                     {{ $membre->role == 'representant' ? 'Représentant' : 'Membre' }}
                                 </span>
+                                @if($membre->filiere)
+                                <span class="text-xs text-blue-500 block mt-0.5">
+                                    <i class="fa-solid fa-graduation-cap mr-0.5"></i>{{ $membre->filiere }}
+                                </span>
+                                @endif
                             </div>
                         </div>
                     </td>
@@ -213,9 +218,11 @@
                     {{-- Statut profil --}}
                     <td class="px-6 py-4">
                         @php
-                        $profilComplet = !empty($membre->secteurs_recherche)
-                            && !empty($membre->zone_geographique)
-                            && !empty($membre->types_partenariat);
+                        $profilComplet = method_exists($membre, 'profilB2BComplet')
+                            ? $membre->profilB2BComplet()
+                            : (!empty($membre->secteurs_recherche)
+                                && !empty($membre->zone_geographique)
+                                && !empty($membre->types_partenariat));
                         @endphp
                         @if($profilComplet)
                         <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
@@ -266,12 +273,14 @@
         </table>
     </div>
 
-    {{--MODAL AJOUT / MODIFICATION MEMBRE --}}
+    {{-- ============================================================
+         MODAL AJOUT / MODIFICATION MEMBRE
+    ============================================================ --}}
     @if($showModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
 
-            <div class="flex justify-between items-center px-8 py-5 border-b"
+            <div class="flex justify-between items-center px-8 py-5 border-b sticky top-0 z-10"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid {{ $isEditing ? 'fa-pen' : 'fa-user-plus' }}"></i>
@@ -329,8 +338,21 @@
                         </select>
                     </div>
 
-                    {{-- Fonction --}}
+                    {{-- ✅ Date de naissance --}}
                     <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Date de naissance
+                            <span class="text-gray-400 font-normal">(optionnelle)</span>
+                        </label>
+                        <input wire:model="date_naissance" type="date"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm">
+                        @error('date_naissance')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    {{-- Fonction --}}
+                    <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Fonction *</label>
                         <select wire:model.live="fonction"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm">
@@ -350,9 +372,45 @@
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">
                             Précisez la fonction *
                         </label>
-                        <input wire:model="fonction_autre" type="text"
+                        <input wire:model.live="fonction_autre" type="text"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
                             placeholder="Ex: Responsable Achats, Comptable...">
+                    </div>
+                    @endif
+
+                    {{-- ✅ Filière + Université si Étudiant --}}
+                    @if($estEtudiant)
+                    <div class="col-span-2">
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p class="text-xs font-bold text-blue-700 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                                Informations académiques
+                            </p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                                        Filière *
+                                    </label>
+                                    <input wire:model="filiere" type="text"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
+                                        placeholder="Ex: Informatique, Droit...">
+                                    @error('filiere')
+                                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                                        Université *
+                                    </label>
+                                    <input wire:model="universite" type="text"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
+                                        placeholder="Ex: Université Aube Nouvelle...">
+                                    @error('universite')
+                                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     @endif
 

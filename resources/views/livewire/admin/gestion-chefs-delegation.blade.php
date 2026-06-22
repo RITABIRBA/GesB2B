@@ -33,8 +33,9 @@
     {{-- Info --}}
     <div class="bg-blue-50 border border-blue-200 rounded-xl px-6 py-4 mb-6 text-sm text-blue-700 flex items-start gap-2">
         <i class="fa-solid fa-circle-info mt-0.5"></i>
-        Les Chefs de Délégation peuvent inscrire des participants et des représentants
-        d'entreprise depuis leur espace dédié.
+        Les Chefs de Délégation sont rattachés à un pays ou une zone géographique.
+        Ils peuvent ajouter des membres à leur délégation et les aider pour les souhaits
+        ou les inscriptions, selon les événements qui leur sont liés.
     </div>
 
     {{-- Recherche --}}
@@ -42,54 +43,70 @@
         <div class="relative w-full md:w-1/3">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
             <input wire:model.live="search" type="text"
-                placeholder="Rechercher par nom ou email..."
+                placeholder="Rechercher par nom ou zone..."
                 class="w-full border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none text-sm">
         </div>
     </div>
 
     {{-- Tableau --}}
-    <div class="bg-white rounded-xl shadow overflow-hidden">
-        <table class="w-full text-left">
+    <div class="bg-white rounded-xl shadow overflow-x-auto">
+        <table class="w-full text-left" style="min-width: 900px;">
             <thead style="background-color: #f8f9fa;">
                 <tr class="border-b">
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Chef de Délégation</th>
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Email</th>
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Nb. participants</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Zone couverte</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Membres</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Événement lié</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Créé le</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($cdds as $cdd)
-                @php
-                    $participantCdd = \App\Models\Participant::where('email', $cdd->email)->first();
-                    $nbParticipants = $participantCdd
-                        ? \App\Models\Participant::where('id_chef_delegation', $participantCdd->id)->count()
-                        : 0;
-                @endphp
                 <tr class="border-b hover:bg-gray-50 transition">
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
                                 style="background-color: #2d5a8e;">
-                                {{ strtoupper(substr($cdd->name, 0, 1)) }}
+                                {{ strtoupper(substr($cdd->nom ?? 'C', 0, 1)) }}
                             </div>
                             <div>
-                                <p class="font-semibold text-gray-800">{{ $cdd->name }}</p>
-                                <span class="text-xs px-2 py-0.5 rounded-full text-white font-medium"
-                                    style="background-color: #2d5a8e;">
-                                    CDD
-                                </span>
+                                <p class="font-semibold text-gray-800">{{ $cdd->nom }}</p>
+                                <div class="flex items-center gap-1 mt-0.5">
+                                    <span class="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                                        style="background-color: #2d5a8e;">
+                                        CDD
+                                    </span>
+                                    @if($cdd->est_admin)
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+                                        Admin
+                                    </span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </td>
                     <td class="px-6 py-4 text-gray-600 text-sm">
-                        <i class="fa-solid fa-envelope text-gray-400 mr-1"></i>
-                        {{ $cdd->email }}
+                        <i class="fa-solid fa-location-dot text-gray-400 mr-1"></i>
+                        {{ $cdd->zone_affichage }}
+                        @if($cdd->email)
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            <i class="fa-solid fa-envelope mr-1"></i>{{ $cdd->email }}
+                        </p>
+                        @endif
                     </td>
                     <td class="px-6 py-4">
-                        <span class="text-sm font-bold text-gray-700">{{ $nbParticipants }}</span>
-                        <span class="text-xs text-gray-400 ml-1">participant(s)</span>
+                        <span class="text-sm font-bold text-gray-700">{{ $cdd->membres_count }}</span>
+                        <span class="text-xs text-gray-400 ml-1">membre(s)</span>
+                    </td>
+                    <td class="px-6 py-4 text-xs">
+                        @if($cdd->evenement)
+                        <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 inline-block">
+                            {{ $cdd->evenement->nom }}
+                        </span>
+                        @else
+                        <span class="text-gray-400 italic">Tous les événements</span>
+                        @endif
                     </td>
                     <td class="px-6 py-4 text-gray-600 text-sm">
                         {{ $cdd->created_at->format('d/m/Y') }}
@@ -110,7 +127,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="py-16 text-center text-gray-400">
+                    <td colspan="6" class="py-16 text-center text-gray-400">
                         <i class="fa-solid fa-user-tie text-5xl mb-3 block text-gray-300"></i>
                         <p class="text-lg font-medium">Aucun Chef de Délégation</p>
                         <button wire:click="openModal"
@@ -128,9 +145,9 @@
     {{-- MODAL CRÉATION / MODIFICATION --}}
     @if($showModal)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
 
-            <div class="flex justify-between items-center px-8 py-5 border-b"
+            <div class="flex justify-between items-center px-8 py-5 border-b sticky top-0 z-10"
                 style="background: linear-gradient(135deg, #2d5a8e, #1e3f6e);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-user-tie"></i>
@@ -145,19 +162,58 @@
                 @if(!$isEditing)
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700 flex items-start gap-2">
                     <i class="fa-solid fa-circle-info mt-0.5"></i>
-                    Le compte créé aura automatiquement le rôle <strong>CDD</strong>.
-                    Exemple : "CDD Bobo-Dioulasso"
+                    Le CDD est rattaché à un pays ou une zone géographique.
+                    Exemple : "CDD Côte d'Ivoire" ou "CDD Zone UEMOA"
                 </div>
                 @endif
 
                 <div>
                     <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom complet *</label>
-                    <input wire:model="name" type="text"
+                    <input wire:model="nom" type="text"
                         class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
-                        placeholder="Ex: CDD Bobo-Dioulasso">
-                    @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        placeholder="Ex: CDD Côte d'Ivoire">
+                    @error('nom') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
 
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone</label>
+                    <input wire:model="telephone" type="text"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+                        placeholder="Ex: 70 00 00 00">
+                </div>
+
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                        Pays / Zone couverte *
+                    </label>
+                    <select wire:model.live="pays"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm">
+                        <option value="">-- Choisir --</option>
+                        @foreach($pays_liste as $p)
+                        <option value="{{ $p }}">{{ $p }}</option>
+                        @endforeach
+                    </select>
+                    @error('pays') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+
+                    @if($pays === 'Autre')
+                    <input wire:model="zone_autre" type="text"
+                        class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+                        placeholder="Précisez la zone (ex: UEMOA, Afrique de l'Ouest...)">
+                    @error('zone_autre') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                    @endif
+                </div>
+
+                @if(!$isEditing)
+                <div class="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl p-3">
+                    <input type="checkbox" wire:model.live="est_admin" id="est_admin" class="w-4 h-4">
+                    <label for="est_admin" class="text-sm text-purple-700 cursor-pointer">
+                        Je suis l'Administrateur et je deviens CDD pour cette zone
+                        <span class="block text-xs text-purple-500">(aucun nouveau compte ne sera créé)</span>
+                    </label>
+                </div>
+                @endif
+
+                @if(!$est_admin)
                 <div>
                     <label class="block text-gray-600 text-sm font-medium mb-1.5">Email *</label>
                     <input wire:model="email" type="email"
@@ -181,6 +237,22 @@
                         placeholder="Répéter le mot de passe">
                 </div>
                 @endif
+                @endif
+
+                {{-- Événement lié (un seul, colonne directe) --}}
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                        Événement lié
+                        <span class="text-gray-400 font-normal">(vide = tous)</span>
+                    </label>
+                    <select wire:model="id_evenement"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm">
+                        <option value="">-- Tous les événements --</option>
+                        @foreach($evenements as $evt)
+                        <option value="{{ $evt->id }}">{{ $evt->nom }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
                 <div class="flex justify-end gap-3 pt-2">
                     <button wire:click="closeModal"

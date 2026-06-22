@@ -28,18 +28,16 @@
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
             $navItems = [
-                ['route' => 'cdd.dashboard',             'icon' => 'fa-gauge',          'label' => 'Dashboard'],
-                ['route' => 'cdd.entreprises',           'icon' => 'fa-building',       'label' => 'Mes Entreprises'],
-                ['route' => 'cdd.participants',          'icon' => 'fa-users',          'label' => 'Mes Participants'],
-                ['route' => 'cdd.inscriptions',          'icon' => 'fa-clipboard-list', 'label' => 'Inscriptions'],
-                ['route' => 'cdd.souhaits',              'icon' => 'fa-heart',          'label' => 'Souhaits RDV'],
-                ['route' => 'cdd.statistiques-souhaits', 'icon' => 'fa-chart-bar',      'label' => 'Stats Souhaits'],
-                ['route' => 'cdd.catalogue',             'icon' => 'fa-book-open',      'label' => 'Catalogue'],
-                ['route' => 'cdd.demandes-aide',         'icon' => 'fa-circle-question','label' => "Demandes d'aide"],
-            ];
+    ['route' => 'cdd.dashboard',     'icon' => 'fa-gauge',           'label' => 'Dashboard'],
+    ['route' => 'cdd.inscriptions',  'icon' => 'fa-clipboard-list',  'label' => 'Mes Inscriptions'],
+    ['route' => 'cdd.demandes-aide', 'icon' => 'fa-circle-question', 'label' => "Demande d'aide"],
+];
             @endphp
 
+            {{-- ✅ CORRIGÉ : on n'affiche un lien que si la route existe réellement,
+                 sinon route() planterait sur les pages pas encore créées --}}
             @foreach($navItems as $item)
+            @continue(!\Illuminate\Support\Facades\Route::has($item['route']))
             <a href="{{ route($item['route']) }}"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                 {{ request()->routeIs($item['route'])

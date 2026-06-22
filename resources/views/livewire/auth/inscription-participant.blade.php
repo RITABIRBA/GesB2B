@@ -1,483 +1,602 @@
-<div class="min-h-screen flex" style="background-color: #f8f9fa;">
+<div class="min-h-screen flex items-center justify-center p-6"
+    style="background-color: #f8f9fa;">
+    <div class="w-full max-w-2xl">
 
-    {{-- PARTIE GAUCHE --}}
-    <div class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
-        style="background: linear-gradient(135deg, #006B34 0%, #007A3D 50%, #005a2d 100%);">
-
-        <div class="flex items-center gap-3">
-            <img src="{{ asset('images/logo-ccibf.png') }}"
-                alt="CCI-BF" class="w-12 h-12 object-contain rounded-xl">
-            <div>
-                <h1 class="text-2xl font-bold">GesB2B</h1>
-                <p class="text-green-300 text-sm">CCI-BF Platform</p>
-            </div>
-        </div>
-
-        <div>
-            <h2 class="text-4xl font-bold mb-4 leading-tight">
-                Rejoignez votre entreprise
-            </h2>
-            <p class="text-green-200 text-lg mb-8">
-                Inscrivez-vous en tant que membre d'une entreprise
-                déjà enregistrée sur la plateforme.
-            </p>
-            <div class="space-y-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
-                        style="background-color: rgba(200, 16, 46, 0.3);">
-                        <i class="fa-solid fa-building text-white text-sm"></i>
-                    </div>
-                    <span class="text-green-100">Liez-vous à votre entreprise via l'IFU</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
-                        style="background-color: rgba(200, 16, 46, 0.3);">
-                        <i class="fa-solid fa-user-check text-white text-sm"></i>
-                    </div>
-                    <span class="text-green-100">Le représentant valide votre adhésion</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
-                        style="background-color: rgba(200, 16, 46, 0.3);">
-                        <i class="fa-solid fa-handshake text-white text-sm"></i>
-                    </div>
-                    <span class="text-green-100">Participez aux forums B2B</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="text-green-300 text-sm">
-            © {{ date('Y') }} CCI-BF — Tous droits réservés
-        </div>
-    </div>
-
-    {{-- PARTIE DROITE --}}
-    <div class="w-full lg:w-1/2 flex items-start justify-center p-8 overflow-y-auto">
-        <div class="w-full max-w-md">
-
-            {{-- Logo mobile --}}
-            <div class="lg:hidden flex items-center gap-3 mb-6 justify-center">
+        {{-- Header --}}
+        <div class="text-center mb-8">
+            <a href="{{ url('/') }}" class="inline-flex items-center gap-3 mb-4">
                 <img src="{{ asset('images/logo-ccibf.png') }}"
-                    alt="CCI-BF" class="w-12 h-12 object-contain rounded-xl">
-                <h1 class="text-2xl font-bold text-gray-800">GesB2B</h1>
-            </div>
-
-            <div class="mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">S'inscrire</h2>
-                <p class="text-gray-500 mt-1">
-                    Créez votre compte membre d'entreprise
-                </p>
-            </div>
-
-            {{-- Info --}}
-            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-700 flex items-start gap-2">
-                <i class="fa-solid fa-circle-info mt-0.5 flex-shrink-0"></i>
-                <div>
-                    Vous devez connaître le <strong>numéro IFU</strong> de votre entreprise.
-                    Votre représentant devra <strong>valider votre adhésion</strong>
-                    avant que vous puissiez accéder à la plateforme.
+                    alt="CCI-BF" class="w-12 h-12 object-contain">
+                <div class="text-left">
+                    <h1 class="text-xl font-bold text-gray-800">Business Forum</h1>
+                    <p class="text-xs text-gray-400">CCI-BF Platform</p>
                 </div>
+            </a>
+            <h2 class="text-2xl font-bold text-gray-800">Inscription</h2>
+            <p class="text-gray-500 text-sm mt-1">
+                Remplissez ce formulaire pour vous préinscrire
+            </p>
+        </div>
+
+        {{-- CONFIRMATION --}}
+        @if($confirme)
+        <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
+                style="background-color: #007A3D;">
+                <i class="fa-solid fa-circle-check text-white text-4xl"></i>
             </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-3">
+                Préinscription envoyée !
+            </h3>
+            <p class="text-gray-600 mb-4">
+                Votre dossier a bien été reçu. L'équipe CCI-BF va traiter
+                votre demande dans les meilleurs délais.
+            </p>
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-left">
+                <p class="text-sm font-bold text-blue-700 mb-2">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    Prochaines étapes :
+                </p>
+                <ul class="text-xs text-blue-600 space-y-1.5">
+                    <li><i class="fa-solid fa-check text-green-500 mr-1"></i> Votre dossier sera examiné par l'administration</li>
+                    <li><i class="fa-solid fa-check text-green-500 mr-1"></i> Vous serez contacté pour la validation</li>
+                    <li><i class="fa-solid fa-check text-green-500 mr-1"></i> Après validation, vous recevrez vos identifiants de connexion</li>
+                </ul>
+            </div>
+            <div class="flex gap-3 justify-center">
+                <a href="{{ url('/') }}"
+                    class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition text-sm font-medium">
+                    <i class="fa-solid fa-home mr-1"></i> Accueil
+                </a>
+                <a href="{{ route('login') }}"
+                    class="px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90 text-sm"
+                    style="background-color: #C8102E;">
+                    <i class="fa-solid fa-right-to-bracket mr-1"></i> Se connecter
+                </a>
+            </div>
+        </div>
+        @else
 
-            <div class="space-y-5">
+        {{-- Barre de progression --}}
+        <div class="flex items-center mb-6">
+            @foreach([1 => 'Type', 2 => 'Informations', 3 => 'Confirmation'] as $num => $label)
+            <div class="flex items-center {{ $num < 3 ? 'flex-1' : '' }}">
+                <div class="flex flex-col items-center">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition
+                        {{ $etape >= $num ? 'text-white' : 'text-gray-400 border-2 border-gray-300' }}"
+                        style="{{ $etape >= $num ? 'background-color: #C8102E;' : '' }}">
+                        @if($etape > $num)
+                        <i class="fa-solid fa-check text-xs"></i>
+                        @else
+                        {{ $num }}
+                        @endif
+                    </div>
+                    <span class="text-xs font-medium mt-1 {{ $etape >= $num ? 'text-gray-800' : 'text-gray-400' }}">
+                        {{ $label }}
+                    </span>
+                </div>
+                @if($num < 3)
+                <div class="flex-1 h-0.5 mx-2 mb-4 {{ $etape > $num ? '' : 'bg-gray-200' }}"
+                    style="{{ $etape > $num ? 'background-color: #C8102E;' : '' }}"></div>
+                @endif
+            </div>
+            @endforeach
+        </div>
 
-                {{-- IFU --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                        <i class="fa-solid fa-building mr-1" style="color: #007A3D;"></i>
-                        Numéro IFU de votre entreprise *
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+            {{-- ÉTAPE 1 : TYPE D'INSCRIT --}}
+            @if($etape == 1)
+            <div class="p-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-user" style="color: #C8102E;"></i>
+                    Qui êtes-vous ?
+                </h3>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <label class="cursor-pointer">
+                        <input type="radio" wire:model.live="type_inscrit"
+                            value="particulier" class="hidden peer">
+                        <div class="p-5 border-2 rounded-xl text-center transition
+                            peer-checked:border-red-500 peer-checked:bg-red-50
+                            hover:bg-gray-50 border-gray-200">
+                            <i class="fa-solid fa-user text-3xl mb-3 block text-gray-300
+                                peer-checked:text-red-500"></i>
+                            <p class="font-bold text-gray-800">Particulier</p>
+                            <p class="text-xs text-gray-400 mt-1">
+                                Je m'inscris en mon nom propre
+                                (étudiant, professionnel, etc.)
+                            </p>
+                        </div>
                     </label>
-                    <input wire:model.live="ifu" type="text"
-                        maxlength="9"
-                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm font-mono uppercase"
-                        placeholder="Ex: 12345678A">
-                    <p class="text-xs text-gray-400 mt-1">
-                        Format : 8 chiffres + 1 lettre (ex: 12345678A)
+                    <label class="cursor-pointer">
+                        <input type="radio" wire:model.live="type_inscrit"
+                            value="membre_entreprise" class="hidden peer">
+                        <div class="p-5 border-2 rounded-xl text-center transition
+                            peer-checked:border-green-500 peer-checked:bg-green-50
+                            hover:bg-gray-50 border-gray-200">
+                            <i class="fa-solid fa-building text-3xl mb-3 block text-gray-300"></i>
+                            <p class="font-bold text-gray-800">Membre d'entreprise</p>
+                            <p class="text-xs text-gray-400 mt-1">
+                                Je représente une entreprise
+                                déjà enregistrée
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+                {{-- IFU si membre d'entreprise --}}
+                @if($type_inscrit === 'membre_entreprise')
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-5">
+                    <p class="text-sm font-bold text-blue-700 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-building"></i>
+                        Numéro IFU de votre entreprise
                     </p>
-                    @error('ifu')
-                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                    @enderror
+                    <p class="text-xs text-blue-600 mb-3">
+                        Saisissez l'IFU pour lier votre compte à l'entreprise.
+                    </p>
+                    <input wire:model.live="ifu"
+                        type="text"
+                        maxlength="9"
+                        placeholder="Ex: 12345678A"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm font-mono uppercase bg-white">
 
                     @if($entreprise_trouvee)
-                    <div class="mt-2 bg-green-50 border border-green-300 rounded-xl p-3 flex items-center gap-3">
+                    <div class="mt-3 bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0"
                             style="background-color: #007A3D;">
                             {{ strtoupper(substr($entreprise_trouvee->nom, 0, 1)) }}
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-green-700">
-                                <i class="fa-solid fa-circle-check mr-1"></i>
-                                Entreprise trouvée !
-                            </p>
+                            <p class="font-bold text-green-800 text-sm">{{ $entreprise_trouvee->nom }}</p>
                             <p class="text-xs text-green-600">
-                                {{ $entreprise_trouvee->nom }}
-                                · {{ $entreprise_trouvee->secteur_activite }}
-                                · {{ $entreprise_trouvee->ville }}, {{ $entreprise_trouvee->pays }}
+                                {{ $entreprise_trouvee->secteur_activite }}
+                                — {{ $entreprise_trouvee->ville }}
                             </p>
                         </div>
+                        <i class="fa-solid fa-circle-check text-green-500 text-xl ml-auto"></i>
                     </div>
-                    @elseif(strlen($ifu) >= 3)
-                    <div class="mt-2 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-xmark flex-shrink-0"></i>
-                        Aucune entreprise trouvée avec ce numéro IFU.
-                    </div>
-                    @endif
-                </div>
-
-                {{-- Nom / Prénom --}}
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Nom *</label>
-                        <input wire:model="nom" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
-                            placeholder="Votre nom">
-                        @error('nom')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Prénom *</label>
-                        <input wire:model="prenom" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
-                            placeholder="Votre prénom">
-                        @error('prenom')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                        @enderror
-                    </div>
-                </div>
-
-                {{-- Genre --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Genre *</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="cursor-pointer">
-                            <input type="radio" wire:model="genre" value="homme" class="hidden peer">
-                            <div class="p-3 border-2 rounded-xl text-center transition text-sm
-                                peer-checked:border-blue-400 peer-checked:bg-blue-50
-                                hover:bg-gray-50 border-gray-200 text-gray-600">
-                                <i class="fa-solid fa-mars text-blue-500 mr-1"></i> Homme
-                            </div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" wire:model="genre" value="femme" class="hidden peer">
-                            <div class="p-3 border-2 rounded-xl text-center transition text-sm
-                                peer-checked:border-pink-400 peer-checked:bg-pink-50
-                                hover:bg-gray-50 border-gray-200 text-gray-600">
-                                <i class="fa-solid fa-venus text-pink-500 mr-1"></i> Femme
-                            </div>
-                        </label>
-                    </div>
-                    @error('genre')
-                        <span class="text-red-500 text-xs">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                {{-- Fonction --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Fonction *</label>
-                    <select wire:model.live="fonction"
-                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm">
-                        <option value="">-- Choisir votre fonction --</option>
-                        @foreach($fonctions as $f)
-                        <option value="{{ $f }}">{{ $f }}</option>
-                        @endforeach
-                    </select>
-                    @if($fonction == 'Autre')
-                    <input wire:model="fonction_autre" type="text"
-                        class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
-                        placeholder="Précisez votre fonction...">
-                    @endif
-                    @error('fonction')
-                        <span class="text-red-500 text-xs">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                {{-- Téléphone --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Téléphone *</label>
-                    <input wire:model="telephone" type="text"
-                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
-                        placeholder="Ex: +226 70 00 00 00">
-                    @error('telephone')
-                        <span class="text-red-500 text-xs">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                {{-- ============================================================
-                     PROFIL PARTENAIRE RECHERCHÉ
-                ============================================================ --}}
-                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2 text-sm">
-                        <i class="fa-solid fa-handshake" style="color: #C8102E;"></i>
-                        Profil partenaire recherché
-                    </h4>
-
-                    {{-- Zone géographique --}}
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                            Zone géographique ciblée *
-                        </label>
-                        <select wire:model="zone_geographique"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
-                            <option value="">-- Choisir --</option>
-                            @foreach($zonesGeographiques as $zone)
-                            <option value="{{ $zone }}">{{ $zone }}</option>
-                            @endforeach
-                        </select>
-                        @error('zone_geographique')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    {{-- Secteurs recherchés (max 3) --}}
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Secteurs d'activité recherchés *
-                            <span class="text-gray-400 font-normal">(max 3 — {{ count($secteurs_recherche) }}/3)</span>
-                        </label>
-                        <div class="grid grid-cols-2 gap-2">
-                            @foreach($secteurs as $option)
-                            <button type="button" wire:click="toggleSecteurRecherche('{{ $option }}')"
-                                class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
-                                    {{ in_array($option, $secteurs_recherche) ? 'border-red-400 bg-red-50 text-red-700 font-medium' : (count($secteurs_recherche) >= 3 && !in_array($option, $secteurs_recherche) ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed' : 'border-gray-200 bg-white hover:border-red-300 text-gray-600') }}">
-                                <i class="fa-solid {{ in_array($option, $secteurs_recherche) ? 'fa-circle-check text-red-500' : 'fa-circle text-gray-300' }}"></i>
-                                {{ $option }}
-                            </button>
-                            @endforeach
-                        </div>
-                        @if(in_array('Autre', $secteurs_recherche))
-                        <input wire:model="secteur_recherche_autre" type="text"
-                            class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
-                            placeholder="Précisez le secteur recherché...">
-                        @error('secteur_recherche_autre')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                        @enderror
-                        @endif
-                        @error('secteurs_recherche')
-                            <span class="text-red-500 text-xs block mt-1">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    {{-- Types de partenariat (max 3) --}}
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Type de partenariat recherché *
-                            <span class="text-gray-400 font-normal">(max 3 — {{ count($types_partenariat) }}/3)</span>
-                        </label>
-                        <div class="grid grid-cols-2 gap-2">
-                            @foreach($typesPartenariatOptions as $option)
-                            <button type="button" wire:click="toggleTypePartenariat('{{ $option }}')"
-                                class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
-                                    {{ in_array($option, $types_partenariat) ? 'border-green-400 bg-green-50 text-green-700 font-medium' : (count($types_partenariat) >= 3 && !in_array($option, $types_partenariat) ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed' : 'border-gray-200 bg-white hover:border-green-300 text-gray-600') }}">
-                                <i class="fa-solid {{ in_array($option, $types_partenariat) ? 'fa-circle-check text-green-500' : 'fa-circle text-gray-300' }}"></i>
-                                {{ $option }}
-                            </button>
-                            @endforeach
-                        </div>
-                        @if(in_array('Autre', $types_partenariat))
-                        <input wire:model="type_partenariat_autre" type="text"
-                            class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm bg-white"
-                            placeholder="Précisez le type de partenariat...">
-                        @error('type_partenariat_autre')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                        @enderror
-                        @endif
-                        @error('types_partenariat')
-                            <span class="text-red-500 text-xs block mt-1">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    {{-- Profils de partenaire (max 3) --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Profil de partenaire recherché
-                            <span class="text-gray-400 font-normal">(max 3 — {{ count($profils_partenaire) }}/3)</span>
-                        </label>
-                        <div class="grid grid-cols-2 gap-2">
-                            @foreach($profilsPartenariatOptions as $option)
-                            <button type="button" wire:click="toggleProfilPartenaire('{{ $option }}')"
-                                class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm transition text-left
-                                    {{ in_array($option, $profils_partenaire) ? 'border-blue-400 bg-blue-50 text-blue-700 font-medium' : (count($profils_partenaire) >= 3 && !in_array($option, $profils_partenaire) ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed' : 'border-gray-200 bg-white hover:border-blue-300 text-gray-600') }}">
-                                <i class="fa-solid {{ in_array($option, $profils_partenaire) ? 'fa-circle-check text-blue-500' : 'fa-circle text-gray-300' }}"></i>
-                                {{ $option }}
-                            </button>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Email optionnel --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                        Email
-                        <span class="text-gray-400 font-normal">(optionnel)</span>
-                    </label>
-                    <input wire:model.live="email" type="email"
-                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
-                        placeholder="votre@email.com">
-                    @if(!$email)
-                    <p class="text-xs text-orange-500 mt-1">
-                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                        Sans email, vous vous connecterez uniquement avec votre code d'accès.
+                    @elseif($erreur_ifu)
+                    <p class="mt-2 text-xs text-red-500 flex items-center gap-1">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        {{ $erreur_ifu }}
                     </p>
+                    @elseif(strlen($ifu) >= 8)
+                    <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Recherche en cours...
+                    </div>
                     @endif
-                    @error('email')
-                        <span class="text-red-500 text-xs">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                {{-- Mot de passe si email fourni --}}
-                @if($email)
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Mot de passe *</label>
-                        <input wire:model="password" type="password"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
-                            placeholder="Min. 8 caractères">
-                        @error('password')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Confirmer *</label>
-                        <input wire:model="password_confirmation" type="password"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
-                            placeholder="Répéter">
-                    </div>
                 </div>
                 @endif
 
-                {{-- Bouton --}}
-                <button wire:click="sinscrire"
-                    wire:loading.attr="disabled"
-                    wire:loading.class="opacity-70 cursor-not-allowed"
-                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg flex items-center justify-center gap-2"
-                    style="background-color: #C8102E;">
-                    <span wire:loading.remove>
-                        <i class="fa-solid fa-user-plus mr-1"></i>
-                        Créer mon compte
-                    </span>
-                    <span wire:loading>
-                        <i class="fa-solid fa-spinner fa-spin mr-1"></i>
-                        Création en cours...
-                    </span>
-                </button>
+                {{-- ✅ Événement (optionnel) — liste de cartes détaillées --}}
+                <div class="mb-5">
+                    <label class="block text-gray-600 text-sm font-medium mb-3">
+                        Événement souhaité
+                        <span class="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
 
-                <div class="text-center space-y-2">
-                    <p class="text-sm text-gray-500">
-                        Déjà inscrit ?
-                        <a href="{{ route('login') }}" class="font-medium hover:underline"
-                            style="color: #007A3D;">Se connecter</a>
-                    </p>
-                    <p class="text-sm text-gray-500">
-                        Vous représentez une entreprise ?
-                        <a href="{{ route('inscription.entreprise') }}" class="font-medium hover:underline"
-                            style="color: #C8102E;">Inscrire mon entreprise</a>
-                    </p>
+                    @if($evenements->isEmpty())
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center text-sm text-gray-400">
+                        <i class="fa-solid fa-calendar-xmark text-2xl mb-2 block text-gray-300"></i>
+                        Aucun événement disponible pour le moment.
+                    </div>
+                    @else
+                    <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
+
+                        <label class="cursor-pointer block">
+                            <input type="radio" wire:model.live="id_evenement" value="" class="hidden peer">
+                            <div class="p-4 border-2 rounded-xl transition flex items-center gap-3
+                                peer-checked:border-gray-400 peer-checked:bg-gray-50
+                                hover:bg-gray-50 border-gray-200">
+                                <i class="fa-solid fa-ban text-gray-400 text-lg"></i>
+                                <span class="text-sm font-medium text-gray-600">Je ne sais pas encore / Aucun événement</span>
+                            </div>
+                        </label>
+
+                        @foreach($evenements as $evt)
+                        @php
+                            $estB2B    = ($evt->type_evenement ?? 'avec_b2b') === 'avec_b2b';
+                            $gratuit   = ($evt->type_paiement ?? 'payant') === 'gratuit';
+                            $dateDebut = \Carbon\Carbon::parse($evt->date_debut);
+                            $dateFin   = $evt->date_fin ? \Carbon\Carbon::parse($evt->date_fin) : null;
+                        @endphp
+                        <label class="cursor-pointer block">
+                            <input type="radio" wire:model.live="id_evenement" value="{{ $evt->id }}" class="hidden peer">
+                            <div class="p-4 border-2 rounded-xl transition
+                                peer-checked:border-red-400 peer-checked:bg-red-50
+                                hover:bg-gray-50 border-gray-200">
+
+                                <div class="flex items-start justify-between gap-3 flex-wrap">
+                                    <div class="flex-1 min-w-[200px]">
+                                        <p class="font-bold text-gray-800">{{ $evt->nom }}</p>
+                                        <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-500 flex-wrap">
+                                            <span><i class="fa-solid fa-calendar mr-1 text-gray-400"></i>
+                                                {{ $dateDebut->format('d/m/Y') }}
+                                                @if($dateFin && !$dateFin->isSameDay($dateDebut))
+                                                → {{ $dateFin->format('d/m/Y') }}
+                                                @endif
+                                            </span>
+                                            @if($evt->ville)
+                                            <span><i class="fa-solid fa-location-dot mr-1 text-gray-400"></i>{{ $evt->ville }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                                        @if($estB2B)
+                                        <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white bg-blue-600">
+                                            <i class="fa-solid fa-handshake mr-1"></i> B2B
+                                        </span>
+                                        @else
+                                        <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white bg-purple-600">
+                                            Événement
+                                        </span>
+                                        @endif
+
+                                        @if($gratuit)
+                                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold text-white bg-green-600">
+                                            <i class="fa-solid fa-gift mr-1"></i> Gratuit
+                                        </span>
+                                        @else
+                                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold text-white" style="background-color: #C8102E;">
+                                            <i class="fa-solid fa-ticket mr-1"></i> Payant
+                                        </span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if(!$gratuit && $evt->montant_inscription)
+                                <p class="text-xs font-bold mt-2" style="color: #C8102E;">
+                                    {{ number_format($evt->montant_inscription, 0, ',', ' ') }} FCFA
+                                </p>
+                                @endif
+                            </div>
+                        </label>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
 
-            </div>
-        </div>
-    </div>
-
-    {{-- ============================================================
-         MODAL SUCCÈS
-    ============================================================ --}}
-    @if($showSuccessModal)
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]">
-
-            {{-- Header --}}
-            <div class="px-8 py-6 rounded-t-2xl text-white text-center"
-                style="background: linear-gradient(135deg, #007A3D, #005a2d);">
-                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 bg-white/20">
-                    <i class="fa-solid fa-circle-check text-4xl"></i>
+                <div class="flex justify-between">
+                    <a href="{{ route('login') }}"
+                        class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition text-sm font-medium flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </a>
+                    <button wire:click="suivant"
+                        class="px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
+                        style="background-color: #C8102E;">
+                        Continuer <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                 </div>
-                <h3 class="text-xl font-bold">Compte créé !</h3>
-                <p class="text-green-200 text-sm mt-1">
-                    En attente de validation par le représentant
-                </p>
             </div>
+            @endif
 
-            <div class="p-8 space-y-4">
+            {{-- ÉTAPE 2 : INFORMATIONS PERSONNELLES --}}
+            @if($etape == 2)
+            <div class="p-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-address-card" style="color: #C8102E;"></i>
+                    Informations personnelles
+                </h3>
 
-                {{-- Entreprise --}}
                 @if($entreprise_trouvee)
-                <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0"
                         style="background-color: #007A3D;">
                         {{ strtoupper(substr($entreprise_trouvee->nom, 0, 1)) }}
                     </div>
                     <div>
-                        <p class="text-xs text-gray-400">Entreprise</p>
+                        <p class="text-xs text-gray-400">Vous représentez</p>
                         <p class="font-bold text-gray-800">{{ $entreprise_trouvee->nom }}</p>
-                        <p class="text-xs text-gray-500">
-                            {{ $entreprise_trouvee->secteur_activite }}
-                            · {{ $entreprise_trouvee->ville }}
+                    </div>
+                </div>
+                @endif
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Nom *</label>
+                        <input wire:model="nom" type="text"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                        @error('nom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Prénom *</label>
+                        <input wire:model="prenom" type="text"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                        @error('prenom') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Genre *</label>
+                        <select wire:model="genre"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                            <option value="">-- Choisir --</option>
+                            <option value="homme">Homme</option>
+                            <option value="femme">Femme</option>
+                        </select>
+                        @error('genre') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone *</label>
+                        <input wire:model="telephone" type="text"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                            placeholder="+226 70 00 00 00">
+                        @error('telephone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Email
+                            <span class="text-gray-400 font-normal">(recommandé)</span>
+                        </label>
+                        <input wire:model="email" type="email"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                            placeholder="votre@email.com">
+                        @error('email') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                            Date de naissance
+                        </label>
+                        <input wire:model="date_naissance" type="date"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                        @error('date_naissance') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Fonction --}}
+                    <div class="col-span-2">
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Fonction</label>
+                        <select wire:model.live="fonction"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                            <option value="">-- Choisir --</option>
+                            @foreach($fonctions as $f)
+                            <option value="{{ $f }}">{{ $f }}</option>
+                            @endforeach
+                        </select>
+                        @if($fonction === 'Autre')
+                        <input wire:model.live="fonction_autre" type="text"
+                            class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                            placeholder="Précisez votre fonction...">
+                        @endif
+                    </div>
+
+                    {{-- Filière + Université si Étudiant --}}
+                    @if($estEtudiant)
+                    <div class="col-span-2">
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p class="text-xs font-bold text-blue-700 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                                Informations académiques
+                            </p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                                        Filière *
+                                    </label>
+                                    <input wire:model="filiere" type="text"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
+                                        placeholder="Ex: Informatique, Droit, Médecine...">
+                                    @error('filiere')
+                                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                                        Université / École *
+                                    </label>
+                                    <input wire:model="universite" type="text"
+                                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
+                                        placeholder="Ex: Université Aube Nouvelle...">
+                                    @error('universite')
+                                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Pays --}}
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Pays *</label>
+                        <select wire:model.live="pays"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                            <option value="">-- Choisir --</option>
+                            @foreach($pays_liste as $p)
+                            <option value="{{ $p }}">{{ $p }}</option>
+                            @endforeach
+                        </select>
+                        @error('pays') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Ville avec "Autre" + datalist --}}
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville *</label>
+                        @if($pays && count($villesDisponibles) > 1)
+                        <select wire:model.live="ville"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                            <option value="">-- Choisir --</option>
+                            @foreach($villesDisponibles as $v)
+                            <option value="{{ $v }}">{{ $v }}</option>
+                            @endforeach
+                        </select>
+
+                        @if($ville === 'Autre')
+                        <div class="mt-2">
+                            <input wire:model="ville_autre"
+                                list="villes-suggestions"
+                                type="text"
+                                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                                placeholder="Saisissez votre ville...">
+                            <datalist id="villes-suggestions">
+                                <option value="Ouagadougou">
+                                <option value="Bobo-Dioulasso">
+                                <option value="Koudougou">
+                                <option value="Banfora">
+                                <option value="Ouahigouya">
+                                <option value="Kaya">
+                                <option value="Abidjan">
+                                <option value="Dakar">
+                                <option value="Bamako">
+                                <option value="Lomé">
+                                <option value="Cotonou">
+                                <option value="Niamey">
+                                <option value="Lagos">
+                                <option value="Accra">
+                                <option value="Paris">
+                                <option value="Lyon">
+                                <option value="Marseille">
+                            </datalist>
+                        </div>
+                        @error('ville_autre')
+                            <span class="text-red-500 text-xs">{{ $message }}</span>
+                        @enderror
+                        @endif
+
+                        @else
+                        <input wire:model="ville"
+                            list="villes-libres"
+                            type="text"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                            placeholder="Ex: Ouagadougou">
+                        <datalist id="villes-libres">
+                            <option value="Ouagadougou">
+                            <option value="Bobo-Dioulasso">
+                            <option value="Abidjan">
+                            <option value="Dakar">
+                            <option value="Bamako">
+                            <option value="Paris">
+                            <option value="Lyon">
+                        </datalist>
+                        @endif
+                        @error('ville') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="flex justify-between mt-6">
+                    <button wire:click="precedent"
+                        class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition text-sm font-medium flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Précédent
+                    </button>
+                    <button wire:click="suivant"
+                        class="px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
+                        style="background-color: #C8102E;">
+                        Continuer <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+            @endif
+
+            {{-- ÉTAPE 3 : CONFIRMATION --}}
+            @if($etape == 3)
+            <div class="p-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check" style="color: #007A3D;"></i>
+                    Récapitulatif
+                </h3>
+
+                <div class="space-y-3 mb-6">
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <p class="text-xs font-bold text-gray-500 mb-2">IDENTITÉ</p>
+                        <p class="font-bold text-gray-800">{{ $nom }} {{ $prenom }}</p>
+                        <p class="text-sm text-gray-600">
+                            {{ $genre == 'homme' ? 'M.' : 'Mme' }}
+                            @if($fonction) — {{ $fonction }} @endif
+                        </p>
+                        @if($date_naissance)
+                        <p class="text-xs text-gray-400 mt-1">
+                            Né(e) le {{ \Carbon\Carbon::parse($date_naissance)->format('d/m/Y') }}
+                        </p>
+                        @endif
+                        @if($estEtudiant && $filiere)
+                        <div class="mt-2 bg-blue-50 rounded-lg px-3 py-2 text-xs text-blue-600 flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            {{ $filiere }} — {{ $universite }}
+                        </div>
+                        @endif
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <p class="text-xs font-bold text-gray-500 mb-2">CONTACT</p>
+                        <p class="text-sm text-gray-700">
+                            <i class="fa-solid fa-phone mr-1 text-gray-400"></i>{{ $telephone }}
+                        </p>
+                        @if($email)
+                        <p class="text-sm text-gray-700 mt-1">
+                            <i class="fa-solid fa-envelope mr-1 text-gray-400"></i>{{ $email }}
+                        </p>
+                        @endif
+                        <p class="text-sm text-gray-700 mt-1">
+                            <i class="fa-solid fa-location-dot mr-1 text-gray-400"></i>
+                            {{ $ville === 'Autre' ? $ville_autre : $ville }}, {{ $pays }}
                         </p>
                     </div>
-                </div>
-                @endif
 
-                {{-- Code d'accès --}}
-                <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-center">
-                    <p class="text-xs text-red-500 font-medium mb-1">
-                        <i class="fa-solid fa-key mr-1"></i>
-                        Votre code d'accès
-                    </p>
-                    <p class="font-mono font-bold text-red-700 text-3xl tracking-widest">
-                        {{ $code_acces_genere }}
-                    </p>
-                    <p class="text-xs text-red-400 mt-1">
-                        Notez ce code ! Il vous permettra de vous connecter.
-                    </p>
-                </div>
+                    @if($entreprise_trouvee)
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                        <p class="text-xs font-bold text-green-700 mb-1">ENTREPRISE</p>
+                        <p class="font-semibold text-gray-800">{{ $entreprise_trouvee->nom }}</p>
+                        <p class="text-xs text-gray-500">IFU : {{ $entreprise_trouvee->ifu }}</p>
+                    </div>
+                    @endif
 
-                {{-- Statut --}}
-                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-start gap-2">
-                    <i class="fa-solid fa-clock mt-0.5 flex-shrink-0"></i>
-                    <div>
-                        <p class="font-bold mb-1">En attente de validation</p>
-                        Votre demande d'adhésion à
-                        <strong>{{ $entreprise_trouvee->nom ?? '' }}</strong>
-                        est en cours de traitement.
+                    @if($id_evenement)
+                    @php $evt = $evenements->find($id_evenement); @endphp
+                    @if($evt)
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <p class="text-xs font-bold text-blue-700 mb-1">ÉVÉNEMENT</p>
+                        <p class="font-semibold text-gray-800">{{ $evt->nom }}</p>
+                        <p class="text-xs text-gray-500">
+                            {{ \Carbon\Carbon::parse($evt->date_debut)->format('d/m/Y') }}
+                            — {{ $evt->ville }}
+                        </p>
+                    </div>
+                    @endif
+                    @endif
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-700">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                        En soumettant ce formulaire, votre dossier sera examiné
+                        par l'administration. Vous serez contacté après validation.
                     </div>
                 </div>
 
-                {{-- Prochaines étapes --}}
-                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
-                    <p class="font-bold mb-1">
-                        <i class="fa-solid fa-list-check mr-1"></i>
-                        Prochaines étapes :
-                    </p>
-                    <ol class="space-y-1">
-                        <li>1. Votre adhésion sera validée par le représentant</li>
-                        <li>2. Connectez-vous avec votre code : <strong>{{ $code_acces_genere }}</strong></li>
-                        <li>3. Complétez votre profil partenaire</li>
-                        <li>4. Émettez vos souhaits de RDV</li>
-                    </ol>
+                <div class="flex justify-between">
+                    <button wire:click="precedent"
+                        class="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition text-sm font-medium flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Précédent
+                    </button>
+                    <button wire:click="soumettre"
+                        wire:loading.attr="disabled"
+                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        class="px-8 py-3 rounded-xl text-white font-bold transition hover:opacity-90 text-sm shadow-lg flex items-center gap-2"
+                        style="background-color: #007A3D;">
+                        <span wire:loading.remove>
+                            <i class="fa-solid fa-paper-plane mr-1"></i>
+                            Soumettre ma préinscription
+                        </span>
+                        <span wire:loading>
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                            Envoi...
+                        </span>
+                    </button>
                 </div>
-
-                {{-- ← Bouton selon si email fourni ou non --}}
-                @if($email)
-                <button wire:click="allerAuDashboard"
-                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow flex items-center justify-center gap-2"
-                    style="background-color: #C8102E;">
-                    <i class="fa-solid fa-gauge"></i>
-                    Accéder à mon espace
-                </button>
-                @else
-                <a href="{{ route('login') }}"
-                    class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow flex items-center justify-center gap-2 block text-center"
-                    style="background-color: #C8102E;">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    Se connecter avec mon code
-                </a>
-                @endif
-
             </div>
-        </div>
-    </div>
-    @endif
+            @endif
 
+        </div>
+        @endif
+
+        <p class="text-center text-xs text-gray-400 mt-6">
+            Vous avez déjà un compte ?
+            <a href="{{ route('login') }}" class="underline hover:text-gray-600">
+                Se connecter
+            </a>
+        </p>
+    </div>
 </div>

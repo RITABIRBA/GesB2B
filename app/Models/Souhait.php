@@ -11,8 +11,10 @@ class Souhait extends Model
     protected $fillable = [
         'id_participant',
         'id_participant_cible',
+        'id_evenement',
         'priorite',
         'type',
+        'statut',
     ];
 
     public function participant()
@@ -23,5 +25,10 @@ class Souhait extends Model
     public function participantCible()
     {
         return $this->belongsTo(Participant::class, 'id_participant_cible');
+    }
+
+    public function evenement()
+    {
+        return $this->belongsTo(Evenement::class, 'id_evenement');
     }
 }

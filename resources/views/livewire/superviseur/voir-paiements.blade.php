@@ -1,4 +1,11 @@
 <div>
+    @if(session('success'))
+    <div class="bg-green-100 border border-green-300 text-green-700 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
+        <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
+        {{ session('success') }}
+    </div>
+    @endif
+
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
             <h3 class="text-xl font-bold text-gray-700">Paiements</h3>
@@ -9,7 +16,6 @@
         </div>
     </div>
 
-    {{-- Statistiques --}}
     <div class="grid grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow p-4 flex items-center gap-3 border-l-4 border-yellow-500">
             <i class="fa-solid fa-clock text-yellow-500 text-xl"></i>
@@ -41,13 +47,12 @@
         </div>
     </div>
 
-    {{-- Filtres --}}
-    <div class="flex gap-4 mb-5">
+    <div class="flex gap-4 mb-5 flex-wrap">
         <div class="relative w-full md:w-1/3">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
             <input wire:model.live="search" type="text"
                 placeholder="Rechercher un participant..."
-                class="w-full border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none text-sm">
+                class="w-full border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
         </div>
         <select wire:model.live="filtre_statut"
             class="border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
@@ -63,10 +68,10 @@
             <option value="virement">Virement</option>
             <option value="mobile_money">Mobile Money</option>
             <option value="carte">Carte</option>
+            <option value="cheque">Chèque</option>
         </select>
     </div>
 
-    {{-- Tableau --}}
     <div class="bg-white rounded-xl shadow overflow-hidden">
         <table class="w-full text-left">
             <thead style="background-color: #f8f9fa;">
@@ -77,7 +82,7 @@
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Mode</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Date</th>
                     <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Statut</th>
-                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Reçu</th>
+                    <th class="px-6 py-4 text-gray-500 font-semibold text-sm">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -113,11 +118,13 @@
                                 'virement'     => ['icon' => 'fa-building-columns', 'color' => '#2d5a8e', 'label' => 'Virement'],
                                 'mobile_money' => ['icon' => 'fa-mobile',           'color' => '#f59e0b', 'label' => 'Mobile Money'],
                                 'carte'        => ['icon' => 'fa-credit-card',      'color' => '#8b5cf6', 'label' => 'Carte'],
+                                'cheque'       => ['icon' => 'fa-money-check',      'color' => '#C8102E', 'label' => 'Chèque'],
                             ];
                             $mode = $modeIcons[$paiement->mode_paiement] ?? ['icon' => 'fa-money-bill', 'color' => '#6b7280', 'label' => $paiement->mode_paiement];
                         @endphp
-                        <span class="text-xs px-2 py-1 rounded-full text-white font-medium flex items-center gap-1 w-fit"
-                            style="background-color: {{ $mode['color'] }}">
+                        <span class="text-xs px-2 py-1 rounded-full text-white font-medium flex items-center gap-1 w-fit cursor-pointer"
+                            style="background-color: {{ $mode['color'] }}"
+                            @if($paiement->mode_paiement === 'cheque') wire:click="voirCheque({{ $paiement->id }})" @endif>
                             <i class="fa-solid {{ $mode['icon'] }}"></i>
                             {{ $mode['label'] }}
                         </span>
@@ -140,12 +147,29 @@
                         @endif
                     </td>
                     <td class="px-6 py-4">
-                        @if($paiement->recu)
-                            <span class="text-xs px-2 py-1 rounded-lg bg-green-100 text-green-700 font-medium">
-                                <i class="fa-solid fa-receipt mr-1"></i> Disponible
-                            </span>
+                        @if($paiement->statut == 'en_attente')
+                        <div class="flex gap-2">
+                            @if($paiement->mode_paiement === 'cheque')
+                            <button wire:click="voirCheque({{ $paiement->id }})"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90"
+                                style="background-color: #C8102E;">
+                                <i class="fa-solid fa-eye mr-1"></i> Vérifier
+                            </button>
+                            @else
+                            <button wire:click="ouvrirValider({{ $paiement->id }})"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90"
+                                style="background-color: #007A3D;">
+                                <i class="fa-solid fa-check mr-1"></i> Valider
+                            </button>
+                            <button wire:click="rejeterPaiement({{ $paiement->id }})"
+                                wire:confirm="Rejeter ce paiement ?"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700">
+                                <i class="fa-solid fa-xmark mr-1"></i> Rejeter
+                            </button>
+                            @endif
+                        </div>
                         @else
-                            <span class="text-xs text-gray-400">—</span>
+                        <span class="text-xs text-gray-400 italic">—</span>
                         @endif
                     </td>
                 </tr>
@@ -160,4 +184,108 @@
             </tbody>
         </table>
     </div>
+
+    {{-- MODAL VALIDER PAIEMENT --}}
+    @if($showValiderModal && $paiement_courant)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #007A3D, #005a2d);">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i> Valider le paiement
+                </h3>
+                <button wire:click="fermerValider" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-8">
+                <div class="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-200">
+                    <p class="font-bold text-gray-800">
+                        {{ $paiement_courant->inscription->participant->nom ?? '-' }}
+                        {{ $paiement_courant->inscription->participant->prenom ?? '' }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ $paiement_courant->inscription->evenement->nom ?? '-' }}
+                    </p>
+                    <p class="font-bold mt-2" style="color: #007A3D;">
+                        {{ number_format($paiement_courant->montant, 0, ',', ' ') }} FCFA
+                    </p>
+                </div>
+                <p class="text-sm text-gray-600 mb-5">
+                    Confirmez-vous la validation de ce paiement ?
+                    Le participant sera notifié et son inscription sera activée.
+                </p>
+                <div class="flex justify-end gap-3">
+                    <button wire:click="fermerValider"
+                        class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
+                        Annuler
+                    </button>
+                    <button wire:click="confirmerValider"
+                        class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow"
+                        style="background-color: #007A3D;">
+                        <i class="fa-solid fa-check mr-1"></i> Confirmer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ✅ MODAL DÉTAIL CHÈQUE --}}
+    @if($showChequeModal && $paiement_cheque)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-between items-center px-8 py-5 border-b"
+                style="background: linear-gradient(135deg, #C8102E, #a00d25);">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-money-check"></i> Paiement par chèque
+                </h3>
+                <button wire:click="fermerChequeModal" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-8">
+                <div class="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-200">
+                    <p class="font-bold text-gray-800">
+                        {{ $paiement_cheque->inscription->participant->nom ?? '-' }}
+                        {{ $paiement_cheque->inscription->participant->prenom ?? '' }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ $paiement_cheque->inscription->evenement->nom ?? '-' }}
+                    </p>
+                </div>
+
+                <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-center mb-5">
+                    <p class="text-xs text-red-500 font-medium mb-1">
+                        <i class="fa-solid fa-hashtag mr-1"></i> Numéro de chèque
+                    </p>
+                    <p class="font-mono font-bold text-2xl text-red-700 tracking-widest">
+                        {{ $paiement_cheque->numero_cheque ?? '—' }}
+                    </p>
+                </div>
+
+                <div class="bg-gray-50 rounded-xl p-4 mb-5">
+                    <p class="text-xs text-gray-500 mb-1">Montant</p>
+                    <p class="font-bold text-gray-800 text-xl">
+                        {{ number_format($paiement_cheque->montant, 0, ',', ' ') }} FCFA
+                    </p>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-700">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    Vérifiez physiquement que le chèque a bien été reçu avant de valider.
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button wire:click="rejeterPaiement({{ $paiement_cheque->id }})"
+                        wire:confirm="Rejeter ce paiement par chèque ?"
+                        class="px-5 py-2.5 rounded-xl text-white font-medium text-sm bg-red-600 hover:bg-red-700">
+                        <i class="fa-solid fa-xmark mr-1"></i> Rejeter
+                    <button wire:click="ouvrirValider({{ $paiement_cheque->id }})"
+    class="px-5 py-2.5 rounded-xl text-white font-medium text-sm transition hover:opacity-90"
+    style="background-color: #007A3D;">
+    <i class="fa-solid fa-check mr-1"></i> Continuer la validation
+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
 </div>

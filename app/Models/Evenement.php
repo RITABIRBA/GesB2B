@@ -12,10 +12,12 @@ class Evenement extends Model
         'id_type_evenement',
         'nom',
         'annee',
+        'type_evenement',
         'date_debut',
         'date_fin',
         'date_ouverture_inscriptions',
         'date_cloture_inscriptions',
+        'date_limite_rdv',
         'heure_debut',
         'heure_fin',
         'ville',
@@ -33,6 +35,51 @@ class Evenement extends Model
         'duree_rdv',
         'duree_pause',
     ];
+
+    protected $casts = [
+        'date_debut'                  => 'date',
+        'date_fin'                    => 'date',
+        'date_ouverture_inscriptions' => 'date',
+        'date_cloture_inscriptions'   => 'date',
+        'date_limite_rdv'             => 'date',
+    ];
+
+    // ─── Helpers ───────────────────────────────────────────
+
+    /**
+     * Vérifie si l'événement est de type B2B
+     */
+    public function estB2B(): bool
+    {
+        return ($this->type_evenement ?? 'avec_b2b') === 'avec_b2b';
+    }
+
+    /**
+     * Vérifie si les inscriptions sont encore ouvertes
+     */
+    public function inscriptionsOuvertes(): bool
+    {
+        $today = now()->toDateString();
+
+        if ($this->date_cloture_inscriptions &&
+            $today > $this->date_cloture_inscriptions->toDateString()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Vérifie si les souhaits sont encore ouverts
+     */
+    public function souhaitOuverts(): bool
+    {
+        if (!$this->date_limite_rdv) return true;
+        return now()->toDateString() <= $this->date_limite_rdv->toDateString();
+    }
+
+    // ─── Relations ─────────────────────────────────────────
+
     public function typeEvenement()
     {
         return $this->belongsTo(TypeEvenement::class, 'id_type_evenement');
@@ -51,5 +98,15 @@ class Evenement extends Model
     public function inscriptions()
     {
         return $this->hasMany(Inscription::class, 'id_evenement');
+    }
+
+    public function typesStands()
+    {
+        return $this->hasMany(TypeStand::class, 'id_evenement');
+    }
+
+    public function remises()
+    {
+        return $this->hasMany(RemiseEvenement::class, 'id_evenement');
     }
 }

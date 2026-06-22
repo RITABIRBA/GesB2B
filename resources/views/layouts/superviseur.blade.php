@@ -31,20 +31,26 @@
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
             $navItems = [
-                ['route' => 'superviseur.dashboard',    'icon' => 'fa-gauge',           'label' => 'Dashboard'],
-                ['route' => 'superviseur.evenements',   'icon' => 'fa-calendar',        'label' => 'Événements'],
-                ['route' => 'superviseur.entreprises',  'icon' => 'fa-building',        'label' => 'Entreprises'],
-                ['route' => 'superviseur.participants', 'icon' => 'fa-users',           'label' => 'Participants'],
-                ['route' => 'superviseur.inscriptions', 'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions'],
-                ['route' => 'superviseur.paiements',    'icon' => 'fa-money-bill',      'label' => 'Paiements'],
-                ['route' => 'superviseur.rendez-vous',  'icon' => 'fa-handshake',       'label' => 'Rendez-vous'],
-                ['route' => 'superviseur.badges',       'icon' => 'fa-id-badge',        'label' => 'Badges'],
-                ['route' => 'superviseur.gestion-acces','icon' => 'fa-users-gear',      'label' => 'Gestion des CDD'],
-                ['route' => 'superviseur.demandes-aide','icon' => 'fa-circle-question', 'label' => "Demandes d'aide"],
-            ];
+    ['route' => 'superviseur.dashboard',           'icon' => 'fa-gauge',           'label' => 'Dashboard'],
+    ['route' => 'superviseur.evenements',           'icon' => 'fa-calendar',        'label' => 'Événements'],
+    ['route' => 'superviseur.gestion-entreprises',  'icon' => 'fa-building-circle-arrow-right', 'label' => 'Ajouter entreprise'],
+    ['route' => 'superviseur.entreprises',          'icon' => 'fa-building',        'label' => 'Entreprises'],
+    ['route' => 'superviseur.gestion-participants', 'icon' => 'fa-user-plus',       'label' => 'Ajouter participant'],
+    ['route' => 'superviseur.participants',         'icon' => 'fa-users',           'label' => 'Participants'],
+    ['route' => 'superviseur.inscriptions',         'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions'],
+    ['route' => 'superviseur.paiements',            'icon' => 'fa-money-bill',      'label' => 'Paiements'],
+    ['route' => 'superviseur.rendez-vous',          'icon' => 'fa-handshake',       'label' => 'Rendez-vous'],
+    ['route' => 'superviseur.badges',               'icon' => 'fa-id-badge',        'label' => 'Badges'],
+    ['route' => 'superviseur.gestion-acces',        'icon' => 'fa-users-gear',      'label' => 'Gestion des CDD'],
+    ['route' => 'superviseur.chefs-delegation',     'icon' => 'fa-user-tie',        'label' => 'Chefs de Délégation'],
+    ['route' => 'superviseur.remises',              'icon' => 'fa-tags',            'label' => 'Remises'],
+    ['route' => 'superviseur.demandes-aide',        'icon' => 'fa-circle-question', 'label' => "Demandes d'aide"],
+    ['route' => 'superviseur.stands', 'icon' => 'fa-store', 'label' => 'Stands'],
+];
             @endphp
 
             @foreach($navItems as $item)
+            @continue(!\Illuminate\Support\Facades\Route::has($item['route']))
             <a href="{{ route($item['route']) }}"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                 {{ request()->routeIs($item['route'])

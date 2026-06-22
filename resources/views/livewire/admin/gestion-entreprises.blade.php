@@ -114,6 +114,13 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex gap-2 flex-wrap">
+                            {{-- ✅ NOUVEAU : Bouton Voir la fiche complète --}}
+                            <a href="{{ route('admin.fiche-entreprise', $entreprise->id) }}"
+                                class="px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-indigo-600 transition hover:bg-indigo-700"
+                                title="Voir la fiche complète">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+
                             @if($entreprise->statut_validation == 'en_attente')
                             <button wire:click="valider({{ $entreprise->id }})"
                                 wire:confirm="Valider {{ $entreprise->nom }} ?"

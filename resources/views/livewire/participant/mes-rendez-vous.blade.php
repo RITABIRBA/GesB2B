@@ -35,16 +35,40 @@
         </select>
     </div>
 
-    {{-- Info absences --}}
+    {{-- ✅ Info absences (modifié : indique uniquement le signalement journée) --}}
     <div class="bg-yellow-50 border border-yellow-200 rounded-xl px-6 py-4 mb-6 text-sm text-yellow-700 flex items-start gap-2">
         <i class="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0"></i>
         <div>
-            <p class="font-semibold mb-1">Absence à un rendez-vous ?</p>
-            Cliquez sur <strong>"Signaler mon absence"</strong> sur le RDV concerné.
-            Votre partenaire sera notifié et des participants de remplacement
-            compatibles lui seront proposés automatiquement.
+            <p class="font-semibold mb-1">Absence à un ou plusieurs rendez-vous ?</p>
+            Utilisez le bloc <strong>"Signaler une absence pour toute une journée"</strong>
+            ci-dessous. Vos partenaires seront notifiés et des remplaçants compatibles
+            leur seront proposés automatiquement.
         </div>
     </div>
+
+    {{-- Signaler absence pour toute une journée --}}
+    @if($datesAvecRdv->isNotEmpty())
+    <div class="bg-white rounded-xl shadow p-5 mb-6">
+        <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-xmark" style="color: #C8102E;"></i>
+            Signaler une absence pour toute une journée
+        </h4>
+        <p class="text-sm text-gray-500 mb-4">
+            Si vous êtes absent toute une journée, signalez-le ici plutôt que d'annuler
+            chaque rendez-vous individuellement. Tous vos partenaires de ce jour seront notifiés.
+        </p>
+        <div class="flex flex-wrap gap-3">
+            @foreach($datesAvecRdv as $date)
+            <button wire:click="signalerAbsenceJournee('{{ $date }}')"
+                wire:confirm="Êtes-vous sûr de vouloir signaler votre absence pour le {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }} ? Tous vos rendez-vous de cette journée seront annulés."
+                class="px-4 py-2.5 rounded-xl border-2 border-red-200 text-red-600 font-medium text-sm hover:bg-red-50 transition flex items-center gap-2">
+                <i class="fa-solid fa-calendar-day"></i>
+                {{ \Carbon\Carbon::parse($date)->locale('fr')->translatedFormat('l d F Y') }}
+            </button>
+            @endforeach
+        </div>
+    </div>
+    @endif
 
     {{-- Statistiques --}}
     <div class="grid grid-cols-4 gap-4 mb-6">
@@ -94,7 +118,6 @@
             $estParticipant1 = $rdv->id_participant1 == $participant->id;
             $partenaire      = $estParticipant1 ? $rdv->participant2 : $rdv->participant1;
 
-            // Vérifie si le souhait est mutuel
             $estMutuel = \App\Models\Souhait::where('id_participant', $rdv->id_participant1)
                 ->where('id_participant_cible', $rdv->id_participant2)
                 ->exists()
@@ -102,7 +125,6 @@
                 ->where('id_participant_cible', $rdv->id_participant1)
                 ->exists();
 
-            // Liste des remplaçants proposés pour ce RDV (si applicable)
             $candidatsRemplacement = $remplacants[$rdv->id] ?? collect();
         @endphp
 
@@ -118,7 +140,6 @@
             <div class="flex items-start justify-between gap-4 flex-wrap">
                 <div class="flex items-start gap-4 flex-1">
 
-                    {{-- Numéro de table --}}
                     <div class="w-14 h-14 rounded-xl flex flex-col items-center justify-center text-white font-bold flex-shrink-0"
                         style="background-color: {{ $rdv->statut == 'annule' ? '#9ca3af' : '#007A3D' }}">
                         @if($rdv->numero_table)
@@ -130,7 +151,6 @@
                     </div>
 
                     <div class="flex-1">
-                        {{-- Partenaire --}}
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <p class="font-bold text-gray-800 text-lg">
                                 {{ $partenaire->nom ?? '-' }}
@@ -160,7 +180,6 @@
                         </p>
                         @endif
 
-                        {{-- Horaire + Salle --}}
                         <div class="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
                             @if($rdv->date)
                             <span>
@@ -199,42 +218,24 @@
                     </div>
                 </div>
 
-                {{-- Statut + Actions --}}
+                {{-- ✅ Statut uniquement, plus de bouton "Signaler mon absence" --}}
                 <div class="flex flex-col items-end gap-2 flex-shrink-0">
 
                     @if($rdv->statut == 'a_planifier')
                     <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-gray-500">
                         <i class="fa-solid fa-hourglass-half mr-1"></i> À planifier
                     </span>
-                    <button wire:click="signalerAbsence({{ $rdv->id }})"
-                        wire:confirm="Confirmer votre absence ? Votre partenaire sera notifié."
-                        class="px-4 py-2 rounded-xl text-white text-xs font-bold bg-orange-500 transition hover:bg-orange-600 flex items-center gap-2 shadow">
-                        <i class="fa-solid fa-user-slash"></i>
-                        Signaler mon absence
-                    </button>
 
                     @elseif($rdv->statut == 'planifie')
                     <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">
                         <i class="fa-solid fa-calendar-check mr-1"></i> Planifié
                     </span>
-                    <button wire:click="signalerAbsence({{ $rdv->id }})"
-                        wire:confirm="Confirmer votre absence ? Votre partenaire sera notifié."
-                        class="px-4 py-2 rounded-xl text-white text-xs font-bold bg-orange-500 transition hover:bg-orange-600 flex items-center gap-2 shadow">
-                        <i class="fa-solid fa-user-slash"></i>
-                        Signaler mon absence
-                    </button>
 
                     @elseif($rdv->statut == 'confirme')
                     <span class="px-3 py-1 rounded-full text-xs text-white font-medium"
                         style="background-color: #007A3D;">
                         <i class="fa-solid fa-circle-check mr-1"></i> Confirmé
                     </span>
-                    <button wire:click="signalerAbsence({{ $rdv->id }})"
-                        wire:confirm="Confirmer votre absence ? Votre partenaire sera notifié."
-                        class="px-4 py-2 rounded-xl text-white text-xs font-bold bg-orange-500 transition hover:bg-orange-600 flex items-center gap-2 shadow">
-                        <i class="fa-solid fa-user-slash"></i>
-                        Signaler mon absence
-                    </button>
 
                     @elseif($rdv->statut == 'annule')
                     @if($rdv->absent_participant_id == $participant->id)
@@ -263,7 +264,6 @@
                 </div>
             </div>
 
-            {{-- Message si annulé --}}
             @if($rdv->statut == 'annule')
             <div class="mt-4 pt-4 border-t">
 
@@ -275,7 +275,6 @@
                     et reçoit une liste de remplaçants compatibles.
                 </div>
                 @else
-                {{-- Proposition de remplaçants pour le participant présent --}}
                 <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
                     <p class="text-sm font-semibold text-orange-700 mb-1 flex items-center gap-2">
                         <i class="fa-solid fa-circle-info"></i>

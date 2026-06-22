@@ -3,336 +3,298 @@
 namespace App\Livewire\Auth;
 
 use Livewire\Component;
-use App\Models\User;
 use App\Models\Participant;
 use App\Models\Entreprise;
-use Illuminate\Support\Facades\Hash;
+use App\Models\Evenement;
+use App\Models\Inscription;
 
-/**
- * Inscription d'un membre d'entreprise
- *
- * Le membre entre son IFU pour être lié à son entreprise.
- * Le représentant de l'entreprise reçoit une demande
- * d'adhésion qu'il peut valider ou rejeter.
- */
 class InscriptionParticipant extends Component
 {
-    
-    // ÉTAPE 1 — INFOS PERSONNELLES
-    
+    public int $etape = 1;
 
-    public string $nom      = '';
-    public string $prenom   = '';
-    public string $genre    = '';
-    public string $fonction = '';
-    public string $fonction_autre = '';
+    public string $type_inscrit = 'particulier';
 
-    
-    // ÉTAPE 2 — ENTREPRISE (par IFU)
-    
+    public string $ifu               = '';
+    public $entreprise_trouvee       = null;
+    public string $erreur_ifu        = '';
 
-    public string $ifu = '';
-    public $entreprise_trouvee = null;
+    public string $nom               = '';
+    public string $prenom            = '';
+    public string $genre             = '';
+    public string $email             = '';
+    public string $telephone         = '';
+    public string $fonction          = '';
+    public string $fonction_autre    = '';
+    public string $date_naissance    = '';
+    public string $filiere           = '';
+    public string $universite        = '';
+    public string $pays              = 'Burkina Faso';
+    public string $ville             = '';
+    public string $ville_autre       = '';
 
-    
-    // PROFIL PARTENAIRE RECHERCHÉ (max 3 chacun)
-    
-
-    public string $zone_geographique = '';
-
-    public array  $secteurs_recherche      = [];
-    public string $secteur_recherche_autre = '';
-
-    public array  $types_partenariat       = [];
-    public string $type_partenariat_autre  = '';
-
-    public array  $profils_partenaire      = [];
-
-    
-    // COMPTE
-    
-
-    public string $telephone  = '';
-    public string $email      = '';
-    public string $password   = '';
-    public string $password_confirmation = '';
-
-    
-    // RÉSULTAT
-    
-
-    public bool   $showSuccessModal  = false;
-    public string $code_acces_genere = '';
-
-
-    // LISTES
-    
+    public $id_evenement = '';
+    public bool $confirme = false;
 
     public array $fonctions = [
-        'Directeur Général',
-        'Directeur Commercial',
-        'PDG',
-        'Gérant',
-        'Responsable Export',
-        'Responsable Partenariats',
-        'Chargé de Développement',
-        'Commercial',
-        'Technicien',
-        'Représentant',
-        'Autre',
+        'Directeur Général', 'Directeur Commercial', 'PDG', 'Gérant',
+        'Responsable Export', 'Responsable Partenariats',
+        'Chargé de Développement', 'Représentant', 'Étudiant', 'Autre',
     ];
 
-    public array $secteurs = [
-        'Agriculture et agro-alimentaire',
-        'Environnement',
-        'Industrie textile',
-        'Biens de consommation',
-        'Energie',
-        'Formation',
-        'Tourisme',
-        'TIC',
-        'Sous-traitance',
-        'Artisanat',
-        'Distribution',
-        'Prestation',
-        'Industrie manufacturière',
-        'Enseignement',
-        'Services aux entreprises',
-        'BTP',
-        'Activités médicales et pharmaceutiques',
-        'Autre',
+    public array $pays_liste = [
+        'Burkina Faso', 'Côte d\'Ivoire', 'Mali', 'Sénégal',
+        'Ghana', 'Togo', 'Bénin', 'Niger', 'Guinée', 'Cameroun',
+        'Nigeria', 'France', 'Allemagne', 'États-Unis', 'Chine', 'Autre',
+    ];
+
+    public array $villes_par_pays = [
+        'Burkina Faso'   => ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou', 'Banfora', 'Ouahigouya', 'Autre'],
+        'Côte d\'Ivoire' => ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'Autre'],
+        'Mali'           => ['Bamako', 'Sikasso', 'Mopti', 'Kayes', 'Autre'],
+        'Sénégal'        => ['Dakar', 'Thiès', 'Kaolack', 'Saint-Louis', 'Autre'],
+        'Ghana'          => ['Accra', 'Kumasi', 'Tamale', 'Autre'],
+        'Togo'           => ['Lomé', 'Sokodé', 'Kara', 'Autre'],
+        'Bénin'          => ['Cotonou', 'Porto-Novo', 'Parakou', 'Autre'],
+        'Niger'          => ['Niamey', 'Zinder', 'Maradi', 'Autre'],
+        'Guinée'         => ['Conakry', 'Nzérékoré', 'Kankan', 'Autre'],
+        'Cameroun'       => ['Yaoundé', 'Douala', 'Garoua', 'Autre'],
+        'Nigeria'        => ['Lagos', 'Kano', 'Abuja', 'Autre'],
+        'France'         => ['Paris', 'Lyon', 'Marseille', 'Autre'],
+        'Allemagne'      => ['Berlin', 'Hambourg', 'Munich', 'Autre'],
+        'États-Unis'     => ['New York', 'Los Angeles', 'Chicago', 'Autre'],
+        'Chine'          => ['Pékin', 'Shanghai', 'Guangzhou', 'Autre'],
+        'Autre'          => ['Autre'],
     ];
 
     public array $zonesGeographiques = [
-        'Locale',
-        'Nationale',
-        'Régionale (CEDEAO)',
-        'Africaine',
-        'Internationale',
+        'UEMOA (Afrique de l\'Ouest)',
+        'CEMAC (Afrique Centrale)',
+        'Afrique du Nord (Maghreb)',
+        'Afrique de l\'Est (EAC)',
+        'Afrique Australe (SADC)',
+        'Afrique (toute la région)',
+
+        'Union Européenne',
+        'Europe de l\'Ouest',
+        'Europe de l\'Est',
+        'Europe (toute la région)',
+
+        'Amérique du Nord',
+        'Amérique Centrale et Caraïbes',
+        'Amérique du Sud',
+        'Amériques (toute la région)',
+
+        'Asie de l\'Est',
+        'Asie du Sud-Est',
+        'Asie du Sud',
+        'Moyen-Orient',
+        'Asie (toute la région)',
+
+        'Océanie',
+
+        'Locale (mon pays uniquement)',
+        'Internationale (toutes zones)',
     ];
 
-    public array $typesPartenariatOptions = [
-        'Alliance commerciale',
-        'Alliance financière',
-        'Alliance industrielle',
-        'Autre',
-    ];
+    public function getVillesDisponibles(): array
+    {
+        return $this->villes_par_pays[$this->pays] ?? ['Autre'];
+    }
 
-    public array $profilsPartenariatOptions = [
-        'Consultant',
-        'Distributeur',
-        'Exportateur',
-        'Fabricant / Producteur',
-        'Investisseur',
-        'Importateur',
-        'Prestataire de service',
-        'Sous-traitant',
-        'Innovation',
-        'R&D',
-    ];
+    public function updatedPays(): void
+    {
+        $this->ville       = '';
+        $this->ville_autre = '';
+    }
 
-    // HELPERS
-   
+    public function updatedVille(): void
+    {
+        if ($this->ville !== 'Autre') {
+            $this->ville_autre = '';
+        }
+    }
+
+    public function updatedIfu(): void
+    {
+        $this->entreprise_trouvee = null;
+        $this->erreur_ifu         = '';
+
+        if (strlen(trim($this->ifu)) >= 8) {
+            $entreprise = Entreprise::where('ifu', strtoupper(trim($this->ifu)))->first();
+            if ($entreprise) {
+                $this->entreprise_trouvee = $entreprise;
+            } else {
+                $this->erreur_ifu = 'Aucune entreprise trouvée avec cet IFU.';
+            }
+        }
+    }
 
     /**
-     * Cherche l'entreprise en temps réel quand l'IFU change.
+     * ✅ mb_strtolower() gère correctement les accents
+     * (É, è, etc.) contrairement à strtolower().
      */
-    public function updatedIfu(string $value): void
+    public function getEstEtudiantProperty(): bool
     {
-        if (strlen($value) >= 9) {
-            $this->entreprise_trouvee = Entreprise::where('ifu', strtoupper($value))->first();
-        } else {
-            $this->entreprise_trouvee = null;
+        $fonctionActive = $this->fonction === 'Autre'
+            ? mb_strtolower(trim($this->fonction_autre))
+            : mb_strtolower(trim($this->fonction));
+
+        return in_array($fonctionActive, ['étudiant', 'etudiant', 'étudiante', 'etudiante']);
+    }
+
+    public function getVilleFinalProperty(): string
+    {
+        if ($this->ville === 'Autre') {
+            return trim($this->ville_autre) ?: 'Autre';
+        }
+        return $this->ville;
+    }
+
+    public function suivant(): void
+    {
+        if ($this->etape === 1) {
+            if ($this->type_inscrit === 'membre_entreprise') {
+                if (!$this->entreprise_trouvee) {
+                    $this->erreur_ifu = 'Veuillez saisir un IFU valide.';
+                    return;
+                }
+            }
+            $this->etape = 2;
+
+        } elseif ($this->etape === 2) {
+            $fonctionFinal = $this->fonction === 'Autre'
+                ? $this->fonction_autre
+                : $this->fonction;
+
+            $regles = [
+                'nom'            => 'required|string|max:255',
+                'prenom'         => 'required|string|max:255',
+                'genre'          => 'required|in:homme,femme',
+                'telephone'      => 'required|string|max:20',
+                'email'          => 'nullable|email|max:255',
+                'date_naissance' => 'nullable|date|before:today',
+                'pays'           => 'required|string',
+            ];
+
+            if ($this->ville === 'Autre') {
+                $regles['ville_autre'] = 'required|string|max:255';
+            } else {
+                $regles['ville'] = 'required|string';
+            }
+
+            if ($this->estEtudiant) {
+                $regles['filiere']    = 'required|string|max:255';
+                $regles['universite'] = 'required|string|max:255';
+            }
+
+            $this->validate($regles, [
+                'nom.required'        => 'Le nom est obligatoire.',
+                'prenom.required'     => 'Le prénom est obligatoire.',
+                'genre.required'      => 'Le genre est obligatoire.',
+                'telephone.required'  => 'Le téléphone est obligatoire.',
+                'pays.required'       => 'Le pays est obligatoire.',
+                'ville.required'      => 'La ville est obligatoire.',
+                'ville_autre.required'=> 'Veuillez saisir votre ville.',
+                'filiere.required'    => 'La filière est obligatoire pour un étudiant.',
+                'universite.required' => "L'université est obligatoire pour un étudiant.",
+            ]);
+
+            if ($this->fonction === 'Autre') {
+                $this->fonction = $fonctionFinal;
+            }
+
+            $this->etape = 3;
         }
     }
 
-    /**
-     * Génère un code d'accès unique.
-     * Format : 3 lettres du nom + 4 chiffres
-     * Exemple : DIA7823
-     */
-    private function genererCodeAcces(string $nom): string
+    public function precedent(): void
     {
-        do {
-            $code = strtoupper(substr($nom, 0, 3) . rand(1000, 9999));
-        } while (Participant::where('code_acces', $code)->exists());
-
-        return $code;
+        if ($this->etape > 1) $this->etape--;
     }
 
-    
-    // TOGGLES — PROFIL PARTENAIRE (max 3 chacun)
-    
-
-    public function toggleSecteurRecherche(string $option): void
+    public function soumettre(): void
     {
-        if (in_array($option, $this->secteurs_recherche)) {
-            $this->secteurs_recherche = array_values(array_diff($this->secteurs_recherche, [$option]));
-        } elseif (count($this->secteurs_recherche) < 3) {
-            $this->secteurs_recherche[] = $option;
+        $code_acces = strtoupper(substr($this->nom, 0, 3) . rand(1000, 9999));
+
+        $villeFinal = $this->ville === 'Autre'
+            ? (trim($this->ville_autre) ?: 'Autre')
+            : $this->ville;
+
+        $data = [
+            'nom'                   => $this->nom,
+            'prenom'                => $this->prenom,
+            'genre'                 => $this->genre,
+            'email'                 => $this->email ?: null,
+            'telephone'             => $this->telephone,
+            'fonction'              => $this->fonction,
+            'pays'                  => $this->pays,
+            'ville'                 => $villeFinal,
+            'date_naissance'        => $this->date_naissance ?: null,
+            'filiere'               => $this->estEtudiant ? ($this->filiere ?: null) : null,
+            'universite'            => $this->estEtudiant ? ($this->universite ?: null) : null,
+            'code_acces'            => $code_acces,
+            // ✅ CORRIGÉ : un particulier indépendant n'est pas un "representant"
+            'role'                  => 'participant',
+            'statut_historique'     => 'actif',
+            'statut_preinscription' => 'en_attente',
+            'participation_rdv'     => true,
+        ];
+
+        if ($this->type_inscrit === 'membre_entreprise' && $this->entreprise_trouvee) {
+            $data['id_entreprise'] = $this->entreprise_trouvee->id;
+            // Le visiteur qui s'inscrit en indiquant l'IFU de son entreprise
+            // devient le représentant officiel de cette entreprise.
+            $data['role']          = 'representant';
         }
 
-        if (!in_array('Autre', $this->secteurs_recherche)) {
-            $this->secteur_recherche_autre = '';
-        }
-    }
-
-    public function toggleTypePartenariat(string $option): void
-    {
-        if (in_array($option, $this->types_partenariat)) {
-            $this->types_partenariat = array_values(array_diff($this->types_partenariat, [$option]));
-        } elseif (count($this->types_partenariat) < 3) {
-            $this->types_partenariat[] = $option;
+        if ($this->id_evenement) {
+            $data['id_evenement'] = $this->id_evenement;
         }
 
-        if (!in_array('Autre', $this->types_partenariat)) {
-            $this->type_partenariat_autre = '';
-        }
-    }
+        $participant = Participant::create($data);
 
-    public function toggleProfilPartenaire(string $option): void
-    {
-        if (in_array($option, $this->profils_partenaire)) {
-            $this->profils_partenaire = array_values(array_diff($this->profils_partenaire, [$option]));
-        } elseif (count($this->profils_partenaire) < 3) {
-            $this->profils_partenaire[] = $option;
-        }
-    }
+        if ($this->id_evenement) {
+            $evenement = Evenement::find($this->id_evenement);
+            if ($evenement && $evenement->inscriptionsOuvertes()) {
 
-    
-    // INSCRIPTION
-    
-    public function sinscrire(): void
-    {
-        // ← Si "Autre" on utilise la saisie libre
-        if ($this->fonction === 'Autre') {
-            $this->fonction = $this->fonction_autre;
-        }
+                $montant        = $evenement->montant_inscription ?? 0;
+                $statutPaiement = 'en_attente';
 
-        $this->validate([
-            'nom'                => 'required|string|max:255',
-            'prenom'             => 'required|string|max:255',
-            'genre'              => 'required|string',
-            'fonction'           => 'required|string|max:255',
-            'telephone'          => 'required|string|max:20',
-            'ifu'                => 'required|string',
-            'email'              => 'nullable|email|unique:users,email',
-            'password'           => $this->email ? 'required|min:8|confirmed' : 'nullable',
-            'zone_geographique'  => 'required|string|max:255',
-            'secteurs_recherche' => 'required|array|min:1|max:3',
-            'types_partenariat'  => 'required|array|min:1|max:3',
-            'profils_partenaire' => 'nullable|array|max:3',
-        ], [
-            'nom.required'                => 'Le nom est obligatoire.',
-            'prenom.required'             => 'Le prénom est obligatoire.',
-            'genre.required'              => 'Le genre est obligatoire.',
-            'fonction.required'           => 'La fonction est obligatoire.',
-            'telephone.required'          => 'Le téléphone est obligatoire.',
-            'ifu.required'                => 'Le numéro IFU est obligatoire pour rejoindre une entreprise.',
-            'email.unique'                => 'Cet email est déjà utilisé.',
-            'password.required'           => 'Le mot de passe est obligatoire.',
-            'password.min'                => 'Minimum 8 caractères.',
-            'password.confirmed'          => 'Les mots de passe ne correspondent pas.',
-            'zone_geographique.required'  => 'La zone géographique est obligatoire.',
-            'secteurs_recherche.required' => 'Sélectionnez au moins un secteur recherché.',
-            'secteurs_recherche.min'      => 'Sélectionnez au moins un secteur recherché.',
-            'types_partenariat.required'  => 'Sélectionnez au moins un type de partenariat.',
-            'types_partenariat.min'       => 'Sélectionnez au moins un type de partenariat.',
-        ]);
+                if ($evenement->type_paiement == 'gratuit') {
+                    $montant        = 0;
+                    $statutPaiement = 'paye';
+                } elseif ($evenement->type_paiement == 'par_entreprise'
+                    && $participant->id_entreprise) {
+                    $montant        = 0;
+                    $statutPaiement = 'en_attente';
+                }
 
-        if (in_array('Autre', $this->secteurs_recherche) && !$this->secteur_recherche_autre) {
-            $this->addError('secteur_recherche_autre', 'Précisez le secteur recherché.');
-            return;
-        }
-
-        if (in_array('Autre', $this->types_partenariat) && !$this->type_partenariat_autre) {
-            $this->addError('type_partenariat_autre', 'Précisez le type de partenariat.');
-            return;
-        }
-
-        // ← Vérifie que l'entreprise existe
-        $entreprise = Entreprise::where('ifu', strtoupper($this->ifu))->first();
-
-        if (!$entreprise) {
-            $this->addError('ifu', 'Aucune entreprise trouvée avec ce numéro IFU. Vérifiez auprès de votre représentant.');
-            return;
-        }
-
-        // ← Génère le code d'accès
-        $code_acces = $this->genererCodeAcces($this->nom);
-
-        // ← Crée le compte USER si email fourni
-        if ($this->email) {
-            $userExiste = User::where('email', $this->email)->exists();
-            if (!$userExiste) {
-                $user = User::create([
-                    'name'     => $this->nom . ' ' . $this->prenom,
-                    'email'    => $this->email,
-                    'password' => Hash::make($this->password),
+                Inscription::create([
+                    'id_participant'   => $participant->id,
+                    'id_evenement'     => $this->id_evenement,
+                    'date_inscription' => now()->toDateString(),
+                    'montant_paye'     => $montant,
+                    'statut_paiement'  => $statutPaiement,
+                    'statut_presence'  => 'absent',
                 ]);
-                $user->assignRole('participant');
             }
         }
 
-        // ← Remplace "Autre" par la saisie libre dans les sélections
-        $secteursRecherche = $this->secteurs_recherche;
-        if (($idx = array_search('Autre', $secteursRecherche)) !== false && $this->secteur_recherche_autre) {
-            $secteursRecherche[$idx] = $this->secteur_recherche_autre;
-        }
-
-        $typesPartenariat = $this->types_partenariat;
-        if (($idx = array_search('Autre', $typesPartenariat)) !== false && $this->type_partenariat_autre) {
-            $typesPartenariat[$idx] = $this->type_partenariat_autre;
-        }
-
-        // ← Crée le PARTICIPANT avec statut en_attente
-        // Le représentant devra valider cette adhésion
-        Participant::create([
-            'id_entreprise'      => $entreprise->id,
-            'id_cdd'             => $entreprise->id_cdd,
-            'nom'                => $this->nom,
-            'prenom'             => $this->prenom,
-            'genre'              => $this->genre,
-            'fonction'           => $this->fonction,
-            'email'              => $this->email ?: null,
-            'telephone'          => $this->telephone,
-            'code_acces'         => $code_acces,
-            'role'               => 'membre',
-            'participation_rdv'  => true,
-            'statut_historique'  => 'en_attente',
-            'statut_adhesion'    => 'en_attente',
-            // ← Hérite du secteur de l'entreprise
-            'secteur_activite'   => $entreprise->secteur_activite,
-            'sous_secteur'       => $entreprise->sous_secteur,
-            'pays'               => $entreprise->pays,
-            'ville'              => $entreprise->ville,
-            // ← Profil partenaire propre au membre
-            'zone_geographique'  => $this->zone_geographique,
-            'secteurs_recherche' => json_encode($secteursRecherche),
-            'types_partenariat'  => json_encode($typesPartenariat),
-            'profils_partenaire' => json_encode($this->profils_partenaire),
-        ]);
-
-        $this->code_acces_genere  = $code_acces;
-        $this->entreprise_trouvee = $entreprise;
-        $this->showSuccessModal   = true;
+        $this->confirme = true;
     }
-    public function allerAuDashboard(): mixed
-{
-    return redirect()->route('participant.dashboard');
-}
-
-   
-    // RENDER
-    
 
     public function render()
     {
         return view('livewire.auth.inscription-participant', [
-            'secteurs'                  => $this->secteurs,
-            'zonesGeographiques'        => $this->zonesGeographiques,
-            'typesPartenariatOptions'   => $this->typesPartenariatOptions,
-            'profilsPartenariatOptions' => $this->profilsPartenariatOptions,
+            'evenements'        => Evenement::where('date_fin', '>=', now()->toDateString())
+                ->where(function ($q) {
+                    $q->whereNull('date_cloture_inscriptions')
+                      ->orWhere('date_cloture_inscriptions', '>=', now()->toDateString());
+                })
+                ->orderBy('date_debut')
+                ->get(),
+            'villesDisponibles' => $this->getVillesDisponibles(),
+            'estEtudiant'       => $this->estEtudiant,
         ])->layout('layouts.guest');
     }
 }

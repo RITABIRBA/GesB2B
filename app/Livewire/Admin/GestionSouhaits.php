@@ -6,19 +6,17 @@ use Livewire\Component;
 use App\Models\Souhait;
 use App\Models\Participant;
 use App\Models\Evenement;
+use App\Models\Notification;
 
 class GestionSouhaits extends Component
 {
-    // Filtres liste participants
-    public string $search          = '';
+    public string $search           = '';
     public string $filtre_evenement = '';
 
-    // Modal matchmaking
     public bool   $showModalMatch        = false;
     public int    $participant_match_id  = 0;
     public string $search_cible          = '';
 
-    // Modal souhait manuel
     public bool   $showModal             = false;
     public bool   $isEditing             = false;
     public $souhait_id                   = null;
@@ -28,13 +26,9 @@ class GestionSouhaits extends Component
     public $type                         = 'envoye';
     public $participantsCibles           = [];
 
-    // Messages
     public string $alertSuccess = '';
     public string $alertError   = '';
 
-    /**
-     * Quand le participant change, filtre les cibles du même événement.
-     */
     public function updatedIdParticipant($value): void
     {
         $this->participantsCibles   = [];
@@ -54,10 +48,6 @@ class GestionSouhaits extends Component
         }
     }
 
-    /**
-     * Ouvre le modal de matchmaking pour un participant.
-     * Affiche tous les participants compatibles du même événement.
-     */
     public function ouvrirMatchmaking(int $id): void
     {
         $this->alertSuccess        = '';
@@ -75,9 +65,51 @@ class GestionSouhaits extends Component
     }
 
     /**
-     * Crée un souhait depuis le matchmaking admin.
-     * Le souhait est créé en faveur du participant sélectionné.
-     * Détecte automatiquement si le souhait est mutuel.
+     * ✅ Calcule la compatibilité avec les VRAIS champs JSON
+     * (mêmes que MesSouhaits.php côté participant)
+     */
+    private function calculerCompatibilite(Participant $moi, Participant $cible): int
+    {
+        if (!$moi->profilB2BComplet()) {
+            return 0;
+        }
+
+        $points = 0;
+
+        $secteursRecherche = is_array($moi->secteurs_recherche)
+            ? $moi->secteurs_recherche
+            : (json_decode($moi->secteurs_recherche ?? '[]', true) ?: []);
+
+        if (!empty($secteursRecherche) && $cible->secteur_activite
+            && in_array($cible->secteur_activite, $secteursRecherche)) {
+            $points++;
+        }
+
+        if ($moi->zone_geographique && $cible->zone_geographique
+            && $moi->zone_geographique === $cible->zone_geographique) {
+            $points++;
+        }
+
+        $typesPartenariatMoi = is_array($moi->types_partenariat)
+            ? $moi->types_partenariat
+            : (json_decode($moi->types_partenariat ?? '[]', true) ?: []);
+
+        $typesPartenariatCible = is_array($cible->types_partenariat)
+            ? $cible->types_partenariat
+            : (json_decode($cible->types_partenariat ?? '[]', true) ?: []);
+
+        if (!empty($typesPartenariatMoi) && !empty($typesPartenariatCible)
+            && count(array_intersect($typesPartenariatMoi, $typesPartenariatCible)) > 0) {
+            $points++;
+        }
+
+        return $points;
+    }
+
+    /**
+     * ✅ Crée un souhait depuis le matchmaking admin.
+     * Si mutuel → notifie les DEUX participants.
+     * Si unilatéral → aucune notification (silence, comme demandé).
      */
     public function matchmaker(int $id_cible): void
     {
@@ -85,13 +117,13 @@ class GestionSouhaits extends Component
         $this->alertError   = '';
 
         $participant = Participant::find($this->participant_match_id);
+        $cible       = Participant::find($id_cible);
 
-        if (!$participant) {
+        if (!$participant || !$cible) {
             $this->alertError = 'Participant non trouvé.';
             return;
         }
 
-        // Vérifie si le souhait existe déjà
         $dejaEmis = Souhait::where('id_participant', $participant->id)
             ->where('id_participant_cible', $id_cible)
             ->exists();
@@ -101,33 +133,50 @@ class GestionSouhaits extends Component
             return;
         }
 
-        // Calcule la priorité automatiquement
         $dernierePriorite = Souhait::where('id_participant', $participant->id)
             ->max('priorite') ?? 0;
 
-        // Vérifie si le souhait est mutuel
-        $estMutuel = Souhait::where('id_participant', $id_cible)
+        $souhaitRetour = Souhait::where('id_participant', $id_cible)
             ->where('id_participant_cible', $participant->id)
-            ->exists();
+            ->first();
+
+        $estMutuel = (bool) $souhaitRetour;
 
         Souhait::create([
             'id_participant'       => $participant->id,
             'id_participant_cible' => $id_cible,
+            'id_evenement'         => $participant->id_evenement,
             'priorite'             => $dernierePriorite + 1,
             'type'                 => $estMutuel ? 'mutuel' : 'envoye',
+            'statut'               => $estMutuel ? 'accepte' : 'en_attente',
         ]);
 
-        // Si mutuel, met à jour le souhait de la cible
         if ($estMutuel) {
-            Souhait::where('id_participant', $id_cible)
-                ->where('id_participant_cible', $participant->id)
-                ->update(['type' => 'mutuel']);
-        }
+            $souhaitRetour->update([
+                'type'   => 'mutuel',
+                'statut' => 'accepte',
+            ]);
 
-        $cible = Participant::find($id_cible);
+            // ✅ Notification UNIQUEMENT en cas de mutuel
+            Notification::create([
+                'id_participant' => $participant->id,
+                'contenu'        => "🎉 Souhait mutuel avec {$cible->nom} {$cible->prenom} ! Un rendez-vous va être planifié.",
+                'date_envoie'    => now()->toDateString(),
+                'type'           => 'systeme',
+            ]);
+
+            Notification::create([
+                'id_participant' => $cible->id,
+                'contenu'        => "🎉 Souhait mutuel avec {$participant->nom} {$participant->prenom} ! Un rendez-vous va être planifié.",
+                'date_envoie'    => now()->toDateString(),
+                'type'           => 'systeme',
+            ]);
+        }
+        // ✅ Si unilatéral : aucune notification envoyée (silence)
+
         $this->alertSuccess = 'Souhait créé : '
-            . $participant->nom . ' → ' . ($cible->nom ?? '-')
-            . ($estMutuel ? ' 🎉 Mutuel !' : '');
+            . $participant->nom . ' → ' . $cible->nom
+            . ($estMutuel ? ' 🎉 Mutuel ! Notifications envoyées.' : ' (en attente, pas de notification envoyée)');
     }
 
     public function openModal(): void
@@ -175,9 +224,12 @@ class GestionSouhaits extends Component
             'priorite'             => 'required|integer|min:1|max:20',
         ]);
 
+        $participant = Participant::find($this->id_participant);
+
         $data = [
             'id_participant'       => $this->id_participant,
             'id_participant_cible' => $this->id_participant_cible,
+            'id_evenement'         => $participant->id_evenement ?? null,
             'priorite'             => $this->priorite,
             'type'                 => $this->type,
         ];
@@ -201,12 +253,10 @@ class GestionSouhaits extends Component
 
     public function render()
     {
-        // Participant en cours de matchmaking
         $participantMatch = $this->participant_match_id
             ? Participant::with('entreprise')->find($this->participant_match_id)
             : null;
 
-        // Candidats pour le matchmaking (même événement, pas même entreprise)
         $candidatsMatch = collect();
         if ($participantMatch) {
             $idsCibles = Souhait::where('id_participant', $participantMatch->id)
@@ -234,12 +284,7 @@ class GestionSouhaits extends Component
                 })
                 ->get()
                 ->map(function ($p) use ($participantMatch, $idsCibles) {
-                    // Score de compatibilité
-                    $points = 0;
-                    if ($participantMatch->secteur_recherche && $p->secteur_activite == $participantMatch->secteur_recherche) $points++;
-                    if ($participantMatch->zone_geographique && $p->zone_geographique == $participantMatch->zone_geographique) $points++;
-                    if ($participantMatch->type_partenaire && $p->type_partenaire == $participantMatch->type_partenaire) $points++;
-                    $p->score_compatibilite = $points;
+                    $p->score_compatibilite = $this->calculerCompatibilite($participantMatch, $p);
                     $p->souhait_emis        = in_array($p->id, $idsCibles);
                     return $p;
                 })
@@ -251,7 +296,6 @@ class GestionSouhaits extends Component
         }
 
         return view('livewire.admin.gestion-souhaits', [
-            // Liste de tous les participants avec leurs infos complètes
             'participants' => Participant::with('entreprise')
                 ->when($this->search, function ($q) {
                     $q->where(function ($q) {
@@ -272,14 +316,17 @@ class GestionSouhaits extends Component
                     $p->nb_souhaits = Souhait::where('id_participant', $p->id)->count();
                     $p->nb_mutuels  = Souhait::where('id_participant', $p->id)
                         ->where('type', 'mutuel')->count();
+                    $p->profil_complet = $p->profilB2BComplet();
                     return $p;
                 }),
 
-            // Liste des souhaits
             'souhaits' => Souhait::with([
                     'participant.entreprise',
                     'participantCible.entreprise',
                 ])
+                ->when($this->filtre_evenement, fn($q) =>
+                    $q->where('id_evenement', $this->filtre_evenement)
+                )
                 ->when($this->search, fn($q) =>
                     $q->whereHas('participant', fn($q) =>
                         $q->where('nom', 'like', '%' . $this->search . '%')
@@ -290,11 +337,9 @@ class GestionSouhaits extends Component
                 ->orderBy('priorite')
                 ->get(),
 
-            'evenements'      => Evenement::orderBy('nom')->get(),
+            'evenements'       => Evenement::orderBy('nom')->get(),
             'participantMatch' => $participantMatch,
             'candidatsMatch'   => $candidatsMatch,
-
-            // Pour le modal souhait manuel
             'tousParticipants' => Participant::with('entreprise')->orderBy('nom')->get(),
         ])->layout('layouts.admin', ['title' => 'Souhaits & Matchmaking']);
     }

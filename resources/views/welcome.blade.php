@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GesB2B — CCI-BF</title>
+    <title>Business Forum — CCI-BF</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -136,23 +136,6 @@
             box-shadow: 0 20px 40px rgba(0,122,61,0.12);
             border-color: #007A3D;
         }
-        .sticky-cta {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 49;
-            background: rgba(255,255,255,0.97);
-            backdrop-filter: blur(12px);
-            border-top: 2px solid #f0f0f0;
-            box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
     </style>
 </head>
 <body class="antialiased bg-white">
@@ -162,9 +145,10 @@
         style="background: rgba(255,255,255,0.98); backdrop-filter: blur(20px);">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <img src="{{ asset('images/logo-ccibf.png') }}" alt="CCI-BF" class="w-11 h-11 object-contain">
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-11 h-11 object-contain">
                 <div>
-                    <h1 class="text-lg font-bold text-gray-900 leading-none">GesB2B</h1>
+                    <h1 class="text-lg font-bold text-gray-900 leading-none">Business Forum</h1>
                     <p class="text-xs mt-0.5" style="color: #007A3D;">CCI-BF Platform</p>
                 </div>
             </div>
@@ -179,13 +163,13 @@
                 @else
                 <a href="{{ route('inscription.participant') }}"
                     class="hidden md:flex px-5 py-2.5 rounded-xl font-semibold text-sm transition items-center gap-2 border-2"
-                    style="color: #C8102E; border-color: #C8102E;">
+                    style="color: #007A3D; border-color: #007A3D;">
                     <i class="fa-solid fa-user-plus text-xs"></i> S'inscrire
                 </a>
                 <a href="{{ route('inscription.entreprise') }}"
                     class="hidden md:flex px-5 py-2.5 rounded-xl font-semibold text-sm transition items-center gap-2 border-2"
-                    style="color: #007A3D; border-color: #007A3D;">
-                    <i class="fa-solid fa-building text-xs"></i> Inscrire mon entreprise
+                    style="color: #C8102E; border-color: #C8102E;">
+                    <i class="fa-solid fa-building text-xs"></i> Mon entreprise
                 </a>
                 <a href="{{ route('login') }}"
                     class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 flex items-center gap-2"
@@ -211,8 +195,8 @@
                         Plateforme officielle CCI-BF
                     </div>
                     <h1 class="text-6xl font-extrabold leading-none mb-6 tracking-tight">
-                        Rencontres<br>
-                        <span style="color: rgba(255,255,255,0.6);">B2B</span>
+                        Business<br>
+                        <span style="color: rgba(255,255,255,0.6);">Forum</span>
                         <span style="color: #C8102E;"> .</span>
                     </h1>
                     <p class="text-white/70 text-xl mb-10 leading-relaxed max-w-lg">
@@ -248,7 +232,8 @@
                             Accès sécurisé avec gestion des rôles et permissions
                         </p>
                     </div>
-                    <div class="glass rounded-2xl p-7 value-card" style="animation: float 4s ease-in-out 1s infinite;">
+                    <div class="glass rounded-2xl p-7 value-card"
+                        style="animation: float 4s ease-in-out 1s infinite;">
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
                             style="background: rgba(200,16,46,0.2);">
                             <i class="fa-solid fa-wand-magic-sparkles text-white text-xl"></i>
@@ -258,7 +243,8 @@
                             Match-making automatique et optimisé des rendez-vous
                         </p>
                     </div>
-                    <div class="glass rounded-2xl p-7 value-card" style="animation: float 4s ease-in-out 0.5s infinite;">
+                    <div class="glass rounded-2xl p-7 value-card"
+                        style="animation: float 4s ease-in-out 0.5s infinite;">
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
                             style="background: rgba(200,16,46,0.2);">
                             <i class="fa-solid fa-mobile-screen text-white text-xl"></i>
@@ -268,7 +254,8 @@
                             Disponible sur tous les appareils, partout et à tout moment
                         </p>
                     </div>
-                    <div class="glass rounded-2xl p-7 value-card" style="animation: float 4s ease-in-out 1.5s infinite;">
+                    <div class="glass rounded-2xl p-7 value-card"
+                        style="animation: float 4s ease-in-out 1.5s infinite;">
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
                             style="background: rgba(200,16,46,0.2);">
                             <i class="fa-solid fa-bolt text-white text-xl"></i>
@@ -289,8 +276,17 @@
 
     {{-- SECTION ÉVÉNEMENTS À VENIR --}}
     @php
-        $evenementsAVenir = \App\Models\Evenement::where('date_fin', '>=', now()->toDateString())
-            ->where('date_ouverture_inscriptions', '<=', now()->toDateString())
+        $today = now()->toDateString();
+
+        $evenementsAVenir = \App\Models\Evenement::where('date_fin', '>=', $today)
+            ->where(function ($q) use ($today) {
+                $q->whereNull('date_ouverture_inscriptions')
+                  ->orWhere('date_ouverture_inscriptions', '<=', $today);
+            })
+            ->where(function ($q) use ($today) {
+                $q->whereNull('date_cloture_inscriptions')
+                  ->orWhere('date_cloture_inscriptions', '>=', $today);
+            })
             ->orderBy('date_debut', 'asc')
             ->get();
     @endphp
@@ -303,7 +299,7 @@
                     Événements
                 </div>
                 <h2 class="text-4xl font-bold text-gray-900 mb-4">
-                    Vos prochaines opportunités d'affaires
+                    Vos prochaines opportunités
                 </h2>
                 <div class="divider mx-auto mb-4"></div>
                 <p class="text-gray-500 text-lg max-w-xl mx-auto">
@@ -312,28 +308,51 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 @foreach($evenementsAVenir as $evt)
                 @php
                     $gratuit   = ($evt->type_paiement ?? 'payant') === 'gratuit';
-                    $nbJours   = (int) \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($evt->date_debut), false);
-                    $dateDebut = \Carbon\Carbon::parse($evt->date_debut)->locale('fr')->translatedFormat('d M Y');
+                    $estB2B    = ($evt->type_evenement ?? 'avec_b2b') === 'avec_b2b';
+                    $nbJours   = (int) \Carbon\Carbon::now()->diffInDays(
+                        \Carbon\Carbon::parse($evt->date_debut), false
+                    );
+                    $dateDebut = \Carbon\Carbon::parse($evt->date_debut)
+                        ->locale('fr')->translatedFormat('d M Y');
                     $dateFin   = $evt->date_fin && $evt->date_fin !== $evt->date_debut
-                        ? \Carbon\Carbon::parse($evt->date_fin)->locale('fr')->translatedFormat('d M Y')
+                        ? \Carbon\Carbon::parse($evt->date_fin)
+                            ->locale('fr')->translatedFormat('d M Y')
                         : null;
                 @endphp
-                <div class="event-card bg-white rounded-2xl overflow-hidden">
+                <div class="event-card bg-white rounded-2xl overflow-hidden flex flex-col h-full">
                     {{-- Bandeau coloré en haut --}}
-                    <div class="h-2 w-full" style="background: linear-gradient(90deg, #007A3D, #C8102E);"></div>
+                    <div class="h-2 w-full"
+                        style="background: linear-gradient(90deg,
+                            {{ $estB2B ? '#007A3D' : '#2d5a8e' }},
+                            #C8102E);"></div>
 
-                    <div class="p-6">
-                        {{-- Badge type + délai --}}
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs px-3 py-1 rounded-full font-semibold text-white"
-                                style="background-color: {{ $gratuit ? '#007A3D' : '#C8102E' }}">
-                                <i class="fa-solid {{ $gratuit ? 'fa-gift' : 'fa-ticket' }} mr-1"></i>
-                                {{ $gratuit ? 'Gratuit' : 'Payant' }}
-                            </span>
+                    <div class="p-6 flex flex-col flex-1">
+                        {{-- Badge type événement + délai --}}
+                        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                @if($estB2B)
+                                <span class="text-xs px-2.5 py-1 rounded-full font-bold text-white"
+                                    style="background-color: #007A3D;">
+                                    <i class="fa-solid fa-handshake mr-1"></i> B2B
+                                </span>
+                                @else
+                                <span class="text-xs px-2.5 py-1 rounded-full font-bold text-white"
+                                    style="background-color: #2d5a8e;">
+                                    <i class="fa-solid fa-calendar-star mr-1"></i> Événement
+                                </span>
+                                @endif
+
+                                <span class="text-xs px-2.5 py-1 rounded-full font-semibold text-white"
+                                    style="background-color: {{ $gratuit ? '#059669' : '#C8102E' }}">
+                                    <i class="fa-solid {{ $gratuit ? 'fa-gift' : 'fa-ticket' }} mr-1"></i>
+                                    {{ $gratuit ? 'Gratuit' : 'Payant' }}
+                                </span>
+                            </div>
+
                             @if($nbJours >= 0)
                             <span class="text-xs font-semibold text-gray-400">
                                 <i class="fa-solid fa-clock mr-1"></i>
@@ -381,8 +400,49 @@
                             @endif
                         </div>
 
+                        {{-- Dates d'ouverture et de clôture des inscriptions --}}
+                        @if($evt->date_ouverture_inscriptions || $evt->date_cloture_inscriptions)
+                        <div class="mt-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 space-y-1">
+                            @if($evt->date_ouverture_inscriptions)
+                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                                <i class="fa-solid fa-door-open w-3.5 text-green-500"></i>
+                                <span>
+                                    Ouverture inscriptions :
+                                    <strong class="text-gray-700">
+                                        {{ \Carbon\Carbon::parse($evt->date_ouverture_inscriptions)->locale('fr')->translatedFormat('d M Y') }}
+                                    </strong>
+                                </span>
+                            </div>
+                            @endif
+                            @if($evt->date_cloture_inscriptions)
+                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                                <i class="fa-solid fa-door-closed w-3.5 text-red-500"></i>
+                                <span>
+                                    Clôture inscriptions :
+                                    <strong class="text-gray-700">
+                                        {{ \Carbon\Carbon::parse($evt->date_cloture_inscriptions)->locale('fr')->translatedFormat('d M Y') }}
+                                    </strong>
+                                </span>
+                            </div>
+                            @endif
+                        </div>
+                        @endif
+
+                        {{-- Info B2B ou non --}}
+                        @if($estB2B)
+                        <div class="mt-3 bg-green-50 border border-green-200 rounded-xl px-3 py-2 text-xs text-green-700 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i>
+                            Inclut des rendez-vous d'affaires B2B
+                        </div>
+                        @else
+                        <div class="mt-3 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-xs text-blue-700 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Événement sans rendez-vous B2B
+                        </div>
+                        @endif
+
                         {{-- Pied de carte --}}
-                        <div class="border-t border-gray-100 mt-4 pt-4">
+                        <div class="border-t border-gray-100 mt-auto pt-4">
                             @if($evt->type_paiement === 'par_entreprise')
                             <p class="text-xs text-gray-400 flex items-center gap-1">
                                 <i class="fa-solid fa-building" style="color: #007A3D;"></i>
@@ -420,15 +480,16 @@
                 </p>
             </div>
             <div class="relative">
-                <div class="hidden lg:block absolute top-10 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gray-200 to-transparent mx-32"></div>
+                <div class="hidden lg:block absolute top-10 left-0 right-0 h-0.5
+                    bg-gradient-to-r from-transparent via-gray-200 to-transparent mx-32"></div>
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
                     @php
                     $etapes = [
-                        ['num' => '01', 'icon' => 'fa-building',       'color' => '#007A3D', 'label' => 'Inscription entreprise', 'desc' => "L'entreprise s'inscrit et renseigne son profil complet sur la plateforme"],
-                        ['num' => '02', 'icon' => 'fa-user-check',     'color' => '#2d5a8e', 'label' => 'Validation CDD',         'desc' => 'Le chef de délégation valide les informations de l\'entreprise'],
-                        ['num' => '03', 'icon' => 'fa-credit-card',    'color' => '#C8102E', 'label' => 'Paiement',               'desc' => 'Paiement sécurisé via Orange Money, Moov Money ou carte bancaire'],
-                        ['num' => '04', 'icon' => 'fa-heart',          'color' => '#8b5cf6', 'label' => 'Souhaits RDV',           'desc' => 'Les participants émettent leurs souhaits de rencontre par priorité'],
-                        ['num' => '05', 'icon' => 'fa-calendar-check', 'color' => '#007A3D', 'label' => 'Planning généré',        'desc' => 'Le système génère automatiquement le planning optimisé des RDV'],
+                        ['num' => '01', 'icon' => 'fa-building',       'color' => '#007A3D', 'label' => 'Inscription',       'desc' => "Participants et entreprises s'inscrivent et renseignent leur profil complet"],
+                        ['num' => '02', 'icon' => 'fa-user-check',     'color' => '#2d5a8e', 'label' => 'Validation',        'desc' => "L'administration valide les dossiers d'inscription"],
+                        ['num' => '03', 'icon' => 'fa-credit-card',    'color' => '#C8102E', 'label' => 'Paiement',          'desc' => 'Paiement sécurisé via Mobile Money, carte bancaire ou chèque'],
+                        ['num' => '04', 'icon' => 'fa-heart',          'color' => '#8b5cf6', 'label' => 'Souhaits RDV',      'desc' => 'Les participants émettent leurs souhaits de rencontre par priorité (événements B2B)'],
+                        ['num' => '05', 'icon' => 'fa-calendar-check', 'color' => '#007A3D', 'label' => 'Planning généré',   'desc' => 'Le système génère automatiquement le planning optimisé des RDV'],
                     ];
                     @endphp
                     @foreach($etapes as $etape)
@@ -437,7 +498,9 @@
                             style="background-color: {{ $etape['color'] }}">
                             <i class="fa-solid {{ $etape['icon'] }}"></i>
                         </div>
-                        <span class="text-xs font-bold text-gray-300 tracking-widest">{{ $etape['num'] }}</span>
+                        <span class="text-xs font-bold text-gray-300 tracking-widest">
+                            {{ $etape['num'] }}
+                        </span>
                         <h4 class="font-bold text-gray-900 mt-1 mb-2">{{ $etape['label'] }}</h4>
                         <p class="text-gray-400 text-xs leading-relaxed">{{ $etape['desc'] }}</p>
                     </div>
@@ -451,8 +514,12 @@
     <section id="fonctionnalites" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
-                <div class="section-tag text-white" style="background-color: #007A3D;">Fonctionnalités</div>
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">Une solution complète et digitalisée</h2>
+                <div class="section-tag text-white" style="background-color: #007A3D;">
+                    Fonctionnalités
+                </div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Une solution complète et digitalisée
+                </h2>
                 <div class="divider mx-auto mb-4"></div>
                 <p class="text-gray-500 text-lg max-w-xl mx-auto">
                     Une solution complète pour gérer vos forums économiques de bout en bout
@@ -462,11 +529,11 @@
                 @php
                 $features = [
                     ['icon' => 'fa-wand-magic-sparkles', 'color' => '#007A3D', 'title' => 'Match-making intelligent',  'desc' => 'Le système génère automatiquement le planning optimal en priorisant les rendez-vous mutuels.'],
-                    ['icon' => 'fa-mobile-screen',       'color' => '#C8102E', 'title' => 'Paiement Mobile Money',     'desc' => 'Paiement Orange Money et Moov Money avec confirmation OTP. Carte bancaire acceptée.'],
-                    ['icon' => 'fa-id-badge',            'color' => '#2d5a8e', 'title' => 'Badge électronique',        'desc' => 'Génération automatique de badges électroniques avec QR code scannable après validation du paiement.'],
+                    ['icon' => 'fa-mobile-screen',       'color' => '#C8102E', 'title' => 'Paiement flexible',         'desc' => 'Paiement Orange Money, Moov Money, carte bancaire ou chèque. Individuel ou par entreprise.'],
+                    ['icon' => 'fa-id-badge',            'color' => '#2d5a8e', 'title' => 'Badge électronique',        'desc' => 'Génération automatique de badges électroniques avec QR code scannable après validation.'],
                     ['icon' => 'fa-rotate',              'color' => '#8b5cf6', 'title' => 'Gestion des absences',      'desc' => 'Signalement des absences et re-match automatique pour remplacer les participants absents.'],
-                    ['icon' => 'fa-book-open',           'color' => '#007A3D', 'title' => 'Catalogue en ligne',        'desc' => 'Moteur de recherche des entreprises et participants visible après clôture des inscriptions.'],
-                    ['icon' => 'fa-shield-halved',       'color' => '#C8102E', 'title' => 'Multi-rôles sécurisé',      'desc' => "Six rôles distincts avec des droits d'accès adaptés à chaque acteur du forum."],
+                    ['icon' => 'fa-calendar-star',       'color' => '#007A3D', 'title' => 'Multi-types d\'événements', 'desc' => "Événements avec ou sans B2B. Ouvert à tous : entreprises, particuliers, étudiants."],
+                    ['icon' => 'fa-shield-halved',       'color' => '#C8102E', 'title' => 'Multi-rôles sécurisé',      'desc' => "Plusieurs rôles distincts avec des droits d'accès adaptés à chaque acteur du forum."],
                 ];
                 @endphp
                 @foreach($features as $feature)
@@ -495,10 +562,10 @@
             <img src="{{ asset('images/logo-ccibf.png') }}"
                 alt="CCI-BF" class="w-16 h-16 object-contain mx-auto mb-8 opacity-90">
             <h2 class="text-5xl font-extrabold text-white mb-6 leading-tight">
-                Rejoignez la plateforme
+                Business Forum
             </h2>
             <p class="text-white/60 text-xl mb-10 leading-relaxed">
-                Gérez vos rencontres B2B de manière professionnelle,
+                Gérez vos événements et rencontres de manière professionnelle,
                 efficace et entièrement digitalisée.
             </p>
             <div class="flex items-center justify-center gap-5 flex-wrap">
@@ -509,9 +576,6 @@
                     <i class="fa-solid fa-gauge"></i> Mon espace
                 </a>
                 @else
-                <a href="{{ route('login') }}" class="btn-primary shadow-2xl">
-                    <i class="fa-solid fa-right-to-bracket"></i> Se connecter
-                </a>
                 <a href="{{ route('inscription.participant') }}"
                     class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
                     style="color: #C8102E;">
@@ -520,7 +584,10 @@
                 <a href="{{ route('inscription.entreprise') }}"
                     class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
                     style="color: #007A3D;">
-                    <i class="fa-solid fa-building"></i> Inscrire mon entreprise
+                    <i class="fa-solid fa-building"></i> Mon entreprise
+                </a>
+                <a href="{{ route('login') }}" class="btn-primary shadow-2xl">
+                    <i class="fa-solid fa-right-to-bracket"></i> Se connecter
                 </a>
                 @endauth
             </div>
@@ -528,14 +595,14 @@
     </section>
 
     {{-- FOOTER --}}
-    <footer style="background-color: #0d1f16;" class="py-10 pb-24 text-white/40">
+    <footer style="background-color: #0d1f16;" class="py-10 text-white/40">
         <div class="max-w-7xl mx-auto px-6">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="flex items-center gap-4">
                     <img src="{{ asset('images/logo-ccibf.png') }}"
                         alt="CCI-BF" class="w-10 h-10 object-contain opacity-80">
                     <div>
-                        <p class="font-bold text-white text-sm">GesB2B</p>
+                        <p class="font-bold text-white text-sm">Business Forum</p>
                         <p class="text-xs">Chambre de Commerce et d'Industrie du Burkina Faso</p>
                     </div>
                 </div>
@@ -547,31 +614,6 @@
             </div>
         </div>
     </footer>
-
-    {{-- BARRE STICKY EN BAS — visiteurs non connectés uniquement --}}
-    @guest
-    <div class="sticky-cta">
-        <span class="text-sm font-semibold text-gray-600 hidden sm:block">
-            <i class="fa-solid fa-circle-info mr-1" style="color: #007A3D;"></i>
-            Rejoignez GesB2B :
-        </span>
-        <a href="{{ route('inscription.participant') }}"
-            class="px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 border-2 whitespace-nowrap"
-            style="color: #C8102E; border-color: #C8102E;">
-            <i class="fa-solid fa-user-plus text-xs"></i> S'inscrire
-        </a>
-        <a href="{{ route('inscription.entreprise') }}"
-            class="px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 border-2 whitespace-nowrap"
-            style="color: #007A3D; border-color: #007A3D;">
-            <i class="fa-solid fa-building text-xs"></i> Inscrire mon entreprise
-        </a>
-        <a href="{{ route('login') }}"
-            class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 flex items-center gap-2 whitespace-nowrap"
-            style="background-color: #C8102E;">
-            <i class="fa-solid fa-right-to-bracket text-xs"></i> Se connecter
-        </a>
-    </div>
-    @endguest
 
 </body>
 </html>

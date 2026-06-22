@@ -58,6 +58,24 @@
         </a>
     </div>
 
+    {{-- ✅ NOUVEAU : Événement sans B2B --}}
+    @elseif($evenementSansB2B)
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-blue-100">
+            <i class="fa-solid fa-calendar-check text-3xl text-blue-500"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">Pas de rendez-vous B2B pour cet événement</h3>
+        <p class="text-gray-500 text-sm mb-4">
+            L'événement <strong>{{ $evenement->nom }}</strong> ne propose pas de rendez-vous
+            d'affaires B2B. Votre inscription est confirmée, profitez de l'événement !
+        </p>
+        <a href="{{ route('entreprise.dashboard') }}"
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium transition hover:opacity-90"
+            style="background-color: #007A3D;">
+            <i class="fa-solid fa-house"></i> Retour au dashboard
+        </a>
+    </div>
+
     @else
 
     {{-- Bandeau fermeture --}}
@@ -81,6 +99,25 @@
             <span class="font-bold">{{ max($joursRestants - 3, 0) }} jour(s)</span>.
             Finalisez dès que possible.
         </p>
+    </div>
+    @endif
+
+    {{-- Bandeau profil B2B incomplet --}}
+    @if(!$souhaitsfermes && !$profilB2BComplet)
+    <div class="bg-orange-50 border border-orange-300 rounded-xl p-5 mb-6 flex items-center gap-4 flex-wrap">
+        <i class="fa-solid fa-triangle-exclamation text-orange-500 text-2xl"></i>
+        <div class="flex-1 min-w-[260px]">
+            <p class="font-bold text-orange-700">Profil B2B incomplet</p>
+            <p class="text-sm text-orange-600 mt-0.5">
+                Complétez votre zone géographique, vos secteurs recherchés et vos types de
+                partenariat pour voir les participants compatibles et émettre des souhaits.
+            </p>
+        </div>
+        <a href="{{ route('entreprise.completer-profil-b2b') }}"
+            class="px-5 py-2.5 rounded-xl text-white text-sm font-bold whitespace-nowrap transition hover:opacity-90"
+            style="background-color: #C8102E;">
+            <i class="fa-solid fa-user-pen mr-1"></i> Compléter maintenant
+        </a>
     </div>
     @endif
 
@@ -138,8 +175,37 @@
         @endif
     </div>
 
-    {{-- Liste des candidats --}}
-    @if(!$souhaitsfermes)
+    {{-- ════════════════════════════════════════════════════ --}}
+    {{-- LISTE DES CANDIDATS AVEC ONGLETS --}}
+    {{-- ════════════════════════════════════════════════════ --}}
+    @if(!$souhaitsfermes && $profilB2BComplet)
+
+    {{-- Onglets --}}
+    <div class="flex gap-2 mb-5 bg-white rounded-xl shadow p-1.5 w-fit">
+        <button wire:click="changerOnglet('compatibles')"
+            class="px-5 py-2.5 rounded-lg text-sm font-semibold transition flex items-center gap-2
+                {{ $onglet === 'compatibles' ? 'text-white shadow' : 'text-gray-500 hover:bg-gray-50' }}"
+            style="{{ $onglet === 'compatibles' ? 'background-color: #007A3D;' : '' }}">
+            <i class="fa-solid fa-star"></i>
+            Compatibles
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold
+                {{ $onglet === 'compatibles' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700' }}">
+                {{ $nbCompatibles }}
+            </span>
+        </button>
+        <button wire:click="changerOnglet('tous')"
+            class="px-5 py-2.5 rounded-lg text-sm font-semibold transition flex items-center gap-2
+                {{ $onglet === 'tous' ? 'text-white shadow' : 'text-gray-500 hover:bg-gray-50' }}"
+            style="{{ $onglet === 'tous' ? 'background-color: #C8102E;' : '' }}">
+            <i class="fa-solid fa-users"></i>
+            Tous les participants
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold
+                {{ $onglet === 'tous' ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600' }}">
+                {{ $nbTous }}
+            </span>
+        </button>
+    </div>
+
     <div class="mb-5">
         <div class="relative">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
@@ -149,21 +215,30 @@
         </div>
     </div>
 
+    @php
+        $listeAffichee = $onglet === 'compatibles' ? $candidatsCompatibles : $candidatsTous;
+    @endphp
+
     <div class="mb-8">
         <h4 class="text-base font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <i class="fa-solid fa-users" style="color: #007A3D;"></i>
-            Participants de l'événement
+            @if($onglet === 'compatibles')
+            <i class="fa-solid fa-star" style="color: #007A3D;"></i>
+            Participants compatibles avec votre profil
+            @else
+            <i class="fa-solid fa-users" style="color: #C8102E;"></i>
+            Tous les participants de l'événement
+            @endif
             <span class="text-sm font-normal text-gray-400">
-                ({{ $candidats->total() }} disponible(s))
+                ({{ $listeAffichee->total() }})
             </span>
-            @if($candidats->hasPages())
+            @if($listeAffichee->hasPages())
             <span class="text-xs font-normal text-gray-400 ml-auto">
-                Page {{ $candidats->currentPage() }} / {{ $candidats->lastPage() }}
+                Page {{ $listeAffichee->currentPage() }} / {{ $listeAffichee->lastPage() }}
             </span>
             @endif
         </h4>
 
-        @forelse($candidats as $p)
+        @forelse($listeAffichee as $p)
         @php $points = $p->score_compatibilite; @endphp
 
         <div class="bg-white rounded-xl shadow mb-4 overflow-hidden {{ $p->souhait_emis ? 'opacity-75' : '' }}">
@@ -346,9 +421,9 @@
                     $monZone = $participant->zone_geographique;
                     $mesSecteursRecherche = is_array($participant->secteurs_recherche) ? $participant->secteurs_recherche : (json_decode($participant->secteurs_recherche ?? '[]', true) ?: []);
                     $mesTypesPartenariat  = is_array($participant->types_partenariat)  ? $participant->types_partenariat  : (json_decode($participant->types_partenariat  ?? '[]', true) ?: []);
-                    $matchSecteur = empty($mesSecteursRecherche) || in_array($p->secteur_activite, $mesSecteursRecherche);
-                    $matchZone    = !$monZone || !$p->zone_geographique || $monZone === $p->zone_geographique;
-                    $matchType    = empty($mesTypesPartenariat) || empty($pTypesPartenariat) || count(array_intersect($mesTypesPartenariat, $pTypesPartenariat)) > 0;
+                    $matchSecteur = !empty($mesSecteursRecherche) && in_array($p->secteur_activite, $mesSecteursRecherche);
+                    $matchZone    = $monZone && $p->zone_geographique && $monZone === $p->zone_geographique;
+                    $matchType    = !empty($mesTypesPartenariat) && !empty($pTypesPartenariat) && count(array_intersect($mesTypesPartenariat, $pTypesPartenariat)) > 0;
                 @endphp
                 <div class="flex flex-wrap gap-2 mb-4">
                     <span class="text-xs px-2 py-1 rounded-full font-medium {{ $matchSecteur ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400' }}">
@@ -374,10 +449,6 @@
                     <span class="px-5 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-400 flex items-center gap-2 cursor-not-allowed">
                         <i class="fa-solid fa-lock"></i>Maximum atteint
                     </span>
-                    @elseif($points == 0)
-                    <span class="px-5 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-400 flex items-center gap-2 cursor-not-allowed">
-                        <i class="fa-solid fa-ban"></i>Non compatible
-                    </span>
                     @else
                     <button wire:click="emettresouhait({{ $p->id }})"
                         wire:loading.attr="disabled"
@@ -402,14 +473,20 @@
         <div class="bg-white rounded-xl shadow p-12 text-center text-gray-400">
             <i class="fa-solid fa-users text-5xl mb-3 block text-gray-300"></i>
             <p class="text-lg font-medium">Aucun participant disponible</p>
-            <p class="text-sm mt-1">Aucun autre participant compatible n'est disponible pour le moment.</p>
+            <p class="text-sm mt-1">
+                @if($onglet === 'compatibles')
+                Aucun participant compatible n'est disponible. Consultez l'onglet "Tous les participants".
+                @else
+                Aucun autre participant n'est disponible pour le moment.
+                @endif
+            </p>
         </div>
         @endforelse
 
         {{-- Pagination --}}
-        @if($candidats->hasPages())
+        @if($listeAffichee->hasPages())
         <div class="mt-6 flex justify-center">
-            {{ $candidats->links() }}
+            {{ $listeAffichee->links() }}
         </div>
         @endif
     </div>

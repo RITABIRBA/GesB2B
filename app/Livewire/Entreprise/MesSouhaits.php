@@ -18,13 +18,22 @@ class MesSouhaits extends Component
 {
     use WithPagination;
 
+    public string $onglet = 'compatibles'; // compatibles | tous
+
     public string $search       = '';
     public string $alertSuccess = '';
     public string $alertError   = '';
 
     public function updatedSearch(): void
     {
-        $this->resetPage();
+        $this->resetPage('pageCompatibles');
+        $this->resetPage('pageTous');
+    }
+
+    public function changerOnglet(string $onglet): void
+    {
+        $this->onglet = $onglet;
+        $this->search = '';
     }
 
     private function getRepresentant(): ?Participant
@@ -46,6 +55,11 @@ class MesSouhaits extends Component
 
         if (!$participant) {
             $this->alertError = 'Représentant non trouvé.';
+            return;
+        }
+
+        if (!$participant->profilB2BComplet()) {
+            $this->alertError = 'Veuillez d\'abord compléter votre profil B2B (zone géographique, secteurs et types de partenariat recherchés).';
             return;
         }
 
@@ -78,17 +92,13 @@ class MesSouhaits extends Component
         }
 
         $cible = Participant::find($id_cible);
-        $scoreCompatibilite = $this->calculerCompatibilite($participant, $cible);
-
-        if ($scoreCompatibilite === 0) {
-            $this->alertError = 'Ce participant n\'est pas compatible avec votre profil.';
-            return;
-        }
 
         if (!$this->ontDisponibiliteCommune($participant, $cible)) {
             $this->alertError = 'Vous n\'avez aucune disponibilité commune avec ce participant.';
             return;
         }
+
+        $scoreCompatibilite = $this->calculerCompatibilite($participant, $cible);
 
         $dernierePriorite = Souhait::where('id_participant', $participant->id)
             ->max('priorite') ?? 0;
@@ -150,7 +160,7 @@ class MesSouhaits extends Component
             ? '🎉 Souhait mutuel ! Ce participant vous cherche aussi. Un RDV a été créé.'
             : ($scoreCompatibilite >= 2
                 ? '✅ Souhait émis ! Profils compatibles.'
-                : '⚠️ Souhait émis avec compatibilité partielle.');
+                : '✅ Souhait émis avec un autre participant de l\'événement.');
     }
 
     public function supprimer(int $id): void
@@ -261,21 +271,23 @@ class MesSouhaits extends Component
 
     private function calculerCompatibilite(Participant $moi, Participant $cible): int
     {
+        if (!$moi->profilB2BComplet()) {
+            return 0;
+        }
+
         $points = 0;
 
         $secteursRecherche = is_array($moi->secteurs_recherche)
             ? $moi->secteurs_recherche
             : (json_decode($moi->secteurs_recherche ?? '[]', true) ?: []);
 
-        if (!empty($secteursRecherche) && $cible->secteur_activite) {
-            if (in_array($cible->secteur_activite, $secteursRecherche)) $points++;
-        } elseif (empty($secteursRecherche)) {
+        if (!empty($secteursRecherche) && $cible->secteur_activite
+            && in_array($cible->secteur_activite, $secteursRecherche)) {
             $points++;
         }
 
-        if ($moi->zone_geographique && $cible->zone_geographique) {
-            if ($moi->zone_geographique === $cible->zone_geographique) $points++;
-        } else {
+        if ($moi->zone_geographique && $cible->zone_geographique
+            && $moi->zone_geographique === $cible->zone_geographique) {
             $points++;
         }
 
@@ -287,9 +299,8 @@ class MesSouhaits extends Component
             ? $cible->types_partenariat
             : (json_decode($cible->types_partenariat ?? '[]', true) ?: []);
 
-        if (!empty($typesPartenariatMoi) && !empty($typesPartenariatCible)) {
-            if (count(array_intersect($typesPartenariatMoi, $typesPartenariatCible)) > 0) $points++;
-        } else {
+        if (!empty($typesPartenariatMoi) && !empty($typesPartenariatCible)
+            && count(array_intersect($typesPartenariatMoi, $typesPartenariatCible)) > 0) {
             $points++;
         }
 
@@ -308,6 +319,10 @@ class MesSouhaits extends Component
             ? Evenement::find($participant->id_evenement)
             : null;
 
+        // ✅ NOUVEAU : détecte si l'événement n'a pas de B2B
+        $evenementSansB2B = $evenement
+            && ($evenement->type_evenement ?? 'avec_b2b') === 'sans_b2b';
+
         $souhaitsfermes = $evenement ? $this->souhaitsfermes($evenement) : false;
         $minSouhaits    = $evenement->min_souhaits ?? 5;
         $maxSouhaits    = $evenement->max_souhaits ?? 20;
@@ -319,6 +334,8 @@ class MesSouhaits extends Component
             );
         }
 
+        $profilB2BComplet = $participant ? $participant->profilB2BComplet() : false;
+
         $souhaits = $participant
             ? Souhait::with('participantCible.entreprise')
                 ->where('id_participant', $participant->id)
@@ -329,10 +346,15 @@ class MesSouhaits extends Component
         $nbSouhaits = $souhaits->count();
         $idsCibles  = $souhaits->pluck('id_participant_cible')->toArray();
 
-        $candidats = collect();
+        $candidatsCompatibles = $this->paginatorVide('pageCompatibles');
+        $candidatsTous        = $this->paginatorVide('pageTous');
 
-        if ($participant && $inscriptionValide && !$souhaitsfermes) {
-            $candidatsTous = Participant::with('entreprise')
+        $nbCompatibles = 0;
+        $nbTous        = 0;
+
+        // ✅ Condition : ajout de !$evenementSansB2B
+        if ($participant && $inscriptionValide && !$souhaitsfermes && $profilB2BComplet && !$evenementSansB2B) {
+            $tousLesCandidats = Participant::with('entreprise')
                 ->where('id_evenement', $participant->id_evenement)
                 ->where('id', '!=', $participant->id)
                 ->where('participation_rdv', true)
@@ -365,35 +387,61 @@ class MesSouhaits extends Component
                 ])
                 ->values();
 
-            // ─── Pagination manuelle (LOT D) ──────────────────────
-            $perPage = 4;
-            $page    = $this->getPage('page');
+            $compatibles = $tousLesCandidats->filter(fn($p) => $p->score_compatibilite >= 2)->values();
+            $tous        = $tousLesCandidats;
 
-            $candidats = new LengthAwarePaginator(
-                $candidatsTous->forPage($page, $perPage)->values(),
-                $candidatsTous->count(),
-                $perPage,
-                $page,
-                [
-                    'path'     => Paginator::resolveCurrentPath(),
-                    'pageName' => 'page',
-                ]
-            );
+            $nbCompatibles = $compatibles->count();
+            $nbTous        = $tous->count();
+
+            $candidatsCompatibles = $this->paginerCollection($compatibles, 'pageCompatibles');
+            $candidatsTous        = $this->paginerCollection($tous, 'pageTous');
         }
 
         return view('livewire.entreprise.mes-souhaits', [
-            'participant'       => $participant,
-            'inscriptionValide' => $inscriptionValide,
-            'souhaits'          => $souhaits,
-            'nbSouhaits'        => $nbSouhaits,
-            'minSouhaits'       => $minSouhaits,
-            'maxSouhaits'       => $maxSouhaits,
-            'objectifAtteint'   => $nbSouhaits >= $minSouhaits,
-            'maxAtteint'        => $nbSouhaits >= $maxSouhaits,
-            'candidats'         => $candidats,
-            'evenement'         => $evenement,
-            'souhaitsfermes'    => $souhaitsfermes,
-            'joursRestants'     => $joursRestants,
+            'participant'          => $participant,
+            'inscriptionValide'    => $inscriptionValide,
+            'profilB2BComplet'     => $profilB2BComplet,
+            'evenementSansB2B'     => $evenementSansB2B, // ✅ NOUVEAU
+            'souhaits'             => $souhaits,
+            'nbSouhaits'           => $nbSouhaits,
+            'minSouhaits'          => $minSouhaits,
+            'maxSouhaits'          => $maxSouhaits,
+            'objectifAtteint'      => $nbSouhaits >= $minSouhaits,
+            'maxAtteint'           => $nbSouhaits >= $maxSouhaits,
+            'candidatsCompatibles' => $candidatsCompatibles,
+            'candidatsTous'        => $candidatsTous,
+            'nbCompatibles'        => $nbCompatibles,
+            'nbTous'               => $nbTous,
+            'evenement'            => $evenement,
+            'souhaitsfermes'       => $souhaitsfermes,
+            'joursRestants'        => $joursRestants,
         ])->layout('layouts.entreprise', ['title' => 'Mes Souhaits RDV']);
+    }
+
+    private function paginatorVide(string $pageName): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator(
+            collect(), 0, 4, 1,
+            [
+                'path'     => Paginator::resolveCurrentPath(),
+                'pageName' => $pageName,
+            ]
+        );
+    }
+
+    private function paginerCollection($collection, string $pageName, int $perPage = 4): LengthAwarePaginator
+    {
+        $page = $this->getPage($pageName);
+
+        return new LengthAwarePaginator(
+            $collection->forPage($page, $perPage)->values(),
+            $collection->count(),
+            $perPage,
+            $page,
+            [
+                'path'     => Paginator::resolveCurrentPath(),
+                'pageName' => $pageName,
+            ]
+        );
     }
 }
