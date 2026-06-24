@@ -18,8 +18,7 @@
 
         <div class="p-6 text-center border-b border-green-800">
             <div class="flex items-center justify-center gap-2 mb-1">
-                <img src="{{ asset('images/logo-ccibf.png') }}"
-                    alt="CCI-BF" class="w-8 h-8 object-contain rounded-lg">
+                <img src="{{ asset('images/logo-ccibf.png') }}" alt="CCI-BF" class="w-8 h-8 object-contain rounded-lg">
                 <h1 class="text-xl font-bold text-white">GesB2B</h1>
             </div>
             <p class="text-xs text-green-300 mt-1">Espace CDD</p>
@@ -27,17 +26,23 @@
 
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
-            // ✅ Compteurs pour les badges — uniquement les participants assignés à ce CDD
             $cddUser = auth()->user();
+
             $inscriptionsEnAttente = \App\Models\Participant::where('id_cdd', $cddUser->id)
                 ->where('statut_preinscription', 'en_attente')
                 ->count();
-            $demandesAideEnAttente = \App\Models\DemandeAide::where('statut', 'en_attente')->count();
+
+            // ✅ Sécurisé si le modèle DemandeAide n'existe pas
+            try {
+                $demandesAideEnAttente = \App\Models\DemandeAide::where('statut', 'en_attente')->count();
+            } catch (\Exception $e) {
+                $demandesAideEnAttente = 0;
+            }
 
             $navItems = [
-                ['route' => 'cdd.dashboard',     'icon' => 'fa-gauge',           'label' => 'Dashboard',       'badge' => 0],
+                ['route' => 'cdd.dashboard',     'icon' => 'fa-gauge',           'label' => 'Dashboard',        'badge' => 0],
                 ['route' => 'cdd.inscriptions',  'icon' => 'fa-clipboard-list',  'label' => 'Mes Inscriptions', 'badge' => $inscriptionsEnAttente],
-                ['route' => 'cdd.demandes-aide', 'icon' => 'fa-circle-question', 'label' => "Demande d'aide",  'badge' => $demandesAideEnAttente],
+                ['route' => 'cdd.demandes-aide', 'icon' => 'fa-circle-question', 'label' => "Demande d'aide",   'badge' => $demandesAideEnAttente],
             ];
             @endphp
 
@@ -45,18 +50,11 @@
             @continue(!\Illuminate\Support\Facades\Route::has($item['route']))
             <a href="{{ route($item['route']) }}"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
-                {{ request()->routeIs($item['route'])
-                    ? 'text-white font-semibold shadow-lg'
-                    : 'text-green-100 hover:text-white hover:bg-white/10' }}"
-                @if(request()->routeIs($item['route']))
-                    style="background-color: #C8102E;"
-                @endif>
+                {{ request()->routeIs($item['route']) ? 'text-white font-semibold shadow-lg' : 'text-green-100 hover:text-white hover:bg-white/10' }}"
+                @if(request()->routeIs($item['route'])) style="background-color: #C8102E;" @endif>
                 <i class="fa-solid {{ $item['icon'] }} w-5 text-center
-                    {{ request()->routeIs($item['route'])
-                        ? 'text-white'
-                        : 'text-green-300 group-hover:text-white' }}"></i>
+                    {{ request()->routeIs($item['route']) ? 'text-white' : 'text-green-300 group-hover:text-white' }}"></i>
                 <span class="text-sm flex-1">{{ $item['label'] }}</span>
-                {{-- ✅ Badge --}}
                 @if($item['badge'] > 0)
                 <span class="ml-auto min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center
                     {{ request()->routeIs($item['route']) ? 'bg-white text-red-600' : 'bg-red-500 text-white' }}">
@@ -69,8 +67,7 @@
 
         <div class="p-4 border-t border-green-800">
             <div class="flex items-center gap-3 px-3 py-2 mb-2">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                    style="background-color: #C8102E;">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style="background-color: #C8102E;">
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 </div>
                 <div>
@@ -80,10 +77,8 @@
             </div>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit"
-                    class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-green-100 hover:bg-red-600 hover:text-white transition-all duration-200 text-sm">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    Déconnexion
+                <button type="submit" class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-green-100 hover:bg-red-600 hover:text-white transition-all duration-200 text-sm">
+                    <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
                 </button>
             </form>
         </div>
@@ -94,14 +89,12 @@
 
         <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center flex-shrink-0">
             <div class="flex items-center gap-3">
-                <img src="{{ asset('images/logo-ccibf.png') }}"
-                    alt="CCI-BF" class="w-8 h-8 object-contain">
+                <img src="{{ asset('images/logo-ccibf.png') }}" alt="CCI-BF" class="w-8 h-8 object-contain">
                 <span class="text-2xl font-bold" style="color: #C8102E;">CCI-BF</span>
                 <span class="text-gray-300">|</span>
                 <h2 class="text-lg font-semibold text-gray-700">{{ $title ?? 'Dashboard' }}</h2>
             </div>
             <div class="flex items-center gap-4">
-                {{-- ✅ Alerte dans le header --}}
                 @if($inscriptionsEnAttente > 0)
                 <a href="{{ route('cdd.inscriptions') }}"
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white transition hover:opacity-90"
@@ -111,28 +104,21 @@
                 </a>
                 @endif
                 <span class="text-sm text-gray-500">
-                    <i class="fa-regular fa-clock mr-1"></i>
-                    {{ now()->format('d/m/Y') }}
+                    <i class="fa-regular fa-clock mr-1"></i>{{ now()->format('d/m/Y') }}
                 </span>
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style="background-color: #C8102E;">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background-color: #C8102E;">
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 </div>
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-8">
-            {{ $slot }}
-        </main>
+        <main class="flex-1 overflow-y-auto p-8">{{ $slot }}</main>
 
     </div>
-
 </div>
 
 @livewireScripts
-<div wire:loading.flex
-    class="fixed inset-0 z-[9999] items-center justify-center"
-    style="background: rgba(0,0,0,0.4);">
+<div wire:loading.flex class="fixed inset-0 z-[9999] items-center justify-center" style="background: rgba(0,0,0,0.4);">
     <div class="bg-white rounded-2xl shadow-2xl px-10 py-8 flex flex-col items-center gap-4">
         <div class="w-14 h-14 rounded-full border-4 border-gray-200 border-t-red-600 animate-spin"></div>
         <p class="text-gray-700 font-semibold text-sm">Chargement en cours...</p>

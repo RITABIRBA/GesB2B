@@ -17,7 +17,13 @@ class CompleterProfilB2B extends Component
     public array  $profils_partenaire      = [];
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
-    public array  $disponibilites          = []; // ✅ NOUVEAU
+    public array  $disponibilites          = [];
+    public string $secteur_activite        = ''; // ✅ NOUVEAU
+    public string $sous_secteur            = ''; // ✅ NOUVEAU
+
+    // Secteur toujours auto pour l'entreprise
+    public bool   $secteurAutoEntreprise = true;
+    public string $secteurNomEntreprise  = '';
 
     public array $zonesGeographiques = [
         'UEMOA (Afrique de l\'Ouest)', 'CEMAC (Afrique Centrale)',
@@ -49,19 +55,24 @@ class CompleterProfilB2B extends Component
         'BTP', 'Activités médicales et pharmaceutiques', 'Autre',
     ];
 
+    private function getEntrepriseEtRepresentant(): array
+    {
+        $entreprise   = Entreprise::where('email_responsable', auth()->user()->email)->first();
+        $representant = $entreprise
+            ? Participant::where('id_entreprise', $entreprise->id)->where('role', 'representant')->first()
+            : null;
+        return [$entreprise, $representant];
+    }
+
     private function getRepresentant(): ?Participant
     {
-        $entreprise = Entreprise::where('email_responsable', auth()->user()->email)->first();
-        if (!$entreprise) return null;
-
-        return Participant::where('id_entreprise', $entreprise->id)
-            ->where('role', 'representant')
-            ->first();
+        [, $representant] = $this->getEntrepriseEtRepresentant();
+        return $representant;
     }
 
     public function mount(): void
     {
-        $participant = $this->getRepresentant();
+        [$entreprise, $participant] = $this->getEntrepriseEtRepresentant();
 
         if ($participant) {
             $this->zone_geographique       = $participant->zone_geographique ?? '';
@@ -72,9 +83,15 @@ class CompleterProfilB2B extends Component
             $this->secteur_recherche_autre = $participant->secteur_recherche_autre ?? '';
             $this->disponibilites          = $participant->disponibilites ?? [];
         }
+
+        // ✅ Secteur toujours récupéré depuis l'entreprise pour le représentant
+        if ($entreprise) {
+            $this->secteur_activite     = $entreprise->secteur_activite ?? '';
+            $this->sous_secteur         = $entreprise->sous_secteur ?? '';
+            $this->secteurNomEntreprise = $entreprise->nom;
+        }
     }
 
-    // ✅ Génère les jours de l'événement du représentant
     public function getJoursEvenementProperty(): array
     {
         $participant = $this->getRepresentant();
@@ -85,13 +102,10 @@ class CompleterProfilB2B extends Component
 
         $debut = Carbon::parse($evenement->date_debut);
         $fin   = Carbon::parse($evenement->date_fin ?? $evenement->date_debut);
-
         $jours = [];
-        $period = CarbonPeriod::create($debut, $fin);
-        foreach ($period as $date) {
+        foreach (CarbonPeriod::create($debut, $fin) as $date) {
             $jours[] = $date->toDateString();
         }
-
         return $jours;
     }
 
@@ -142,18 +156,18 @@ class CompleterProfilB2B extends Component
         $participant = $this->getRepresentant();
 
         $participant->update([
+            'secteur_activite'       => $this->secteur_activite,
+            'sous_secteur'           => $this->sous_secteur ?: null,
             'zone_geographique'      => $this->zone_geographique,
             'types_partenariat'      => $this->types_partenariat,
-            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat)
-                ? $this->type_partenariat_autre : null,
+            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat) ? $this->type_partenariat_autre : null,
             'profils_partenaire'     => $this->profils_partenaire,
             'secteurs_recherche'     => $this->secteurs_recherche,
-            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche)
-                ? $this->secteur_recherche_autre : null,
-            'disponibilites'         => $this->disponibilites, // ✅ NOUVEAU
+            'secteur_recherche_autre'=> in_array('Autre', $this->secteurs_recherche) ? $this->secteur_recherche_autre : null,
+            'disponibilites'         => $this->disponibilites,
         ]);
 
-        session()->flash('success', 'Votre profil B2B a été complété ! Vous pouvez maintenant émettre des souhaits de rendez-vous.');
+        session()->flash('success', 'Votre profil B2B a été complété ! Vous pouvez maintenant émettre des souhaits.');
 
         return redirect()->route('entreprise.souhaits');
     }
