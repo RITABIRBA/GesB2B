@@ -170,7 +170,7 @@
                 </div>
                 @endif
 
-                {{-- ✅ Événement (optionnel) — liste de cartes détaillées --}}
+                {{-- Événement (optionnel) --}}
                 <div class="mb-5">
                     <label class="block text-gray-600 text-sm font-medium mb-3">
                         Événement souhaité
@@ -212,14 +212,18 @@
                                     <div class="flex-1 min-w-[200px]">
                                         <p class="font-bold text-gray-800">{{ $evt->nom }}</p>
                                         <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-500 flex-wrap">
-                                            <span><i class="fa-solid fa-calendar mr-1 text-gray-400"></i>
+                                            <span>
+                                                <i class="fa-solid fa-calendar mr-1 text-gray-400"></i>
                                                 {{ $dateDebut->format('d/m/Y') }}
                                                 @if($dateFin && !$dateFin->isSameDay($dateDebut))
                                                 → {{ $dateFin->format('d/m/Y') }}
                                                 @endif
                                             </span>
                                             @if($evt->ville)
-                                            <span><i class="fa-solid fa-location-dot mr-1 text-gray-400"></i>{{ $evt->ville }}</span>
+                                            <span>
+                                                <i class="fa-solid fa-location-dot mr-1 text-gray-400"></i>
+                                                {{ $evt->ville }}
+                                            </span>
                                             @endif
                                         </div>
                                     </div>
@@ -258,6 +262,26 @@
                     </div>
                     @endif
                 </div>
+
+                {{-- ✅ CDD référent (optionnel) --}}
+                @if($cdds->isNotEmpty())
+                <div class="mb-5">
+                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
+                        CDD référent
+                        <span class="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
+                    <p class="text-xs text-gray-400 mb-2">
+                        Si vous avez été contacté par un chargé de développement, sélectionnez-le ici.
+                    </p>
+                    <select wire:model="id_cdd"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm">
+                        <option value="">-- Aucun CDD référent --</option>
+                        @foreach($cdds as $cdd)
+                        <option value="{{ $cdd->id }}">{{ $cdd->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
 
                 <div class="flex justify-between">
                     <a href="{{ route('login') }}"
@@ -375,9 +399,7 @@
                             </p>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                                        Filière *
-                                    </label>
+                                    <label class="block text-gray-600 text-sm font-medium mb-1.5">Filière *</label>
                                     <input wire:model="filiere" type="text"
                                         class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
                                         placeholder="Ex: Informatique, Droit, Médecine...">
@@ -386,9 +408,7 @@
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                                        Université / École *
-                                    </label>
+                                    <label class="block text-gray-600 text-sm font-medium mb-1.5">Université / École *</label>
                                     <input wire:model="universite" type="text"
                                         class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
                                         placeholder="Ex: Université Aube Nouvelle...">
@@ -414,7 +434,7 @@
                         @error('pays') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
 
-                    {{-- Ville avec "Autre" + datalist --}}
+                    {{-- Ville --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Ville *</label>
                         @if($pays && count($villesDisponibles) > 1)
@@ -554,6 +574,20 @@
                         <p class="text-xs text-gray-500">
                             {{ \Carbon\Carbon::parse($evt->date_debut)->format('d/m/Y') }}
                             — {{ $evt->ville }}
+                        </p>
+                    </div>
+                    @endif
+                    @endif
+
+                    {{-- ✅ CDD sélectionné dans le récapitulatif --}}
+                    @if($id_cdd)
+                    @php $cddSelectionne = $cdds->find($id_cdd); @endphp
+                    @if($cddSelectionne)
+                    <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                        <p class="text-xs font-bold text-purple-700 mb-1">CDD RÉFÉRENT</p>
+                        <p class="font-semibold text-gray-800">
+                            <i class="fa-solid fa-user-tie mr-1 text-purple-500"></i>
+                            {{ $cddSelectionne->name }}
                         </p>
                     </div>
                     @endif

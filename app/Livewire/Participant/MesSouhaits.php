@@ -8,14 +8,16 @@ use App\Models\Souhait;
 use App\Models\Participant;
 use App\Models\Inscription;
 use App\Models\Evenement;
+use App\Mail\MatchMutuelNotification;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class MesSouhaits extends Component
 {
     use WithPagination;
 
-    public string $onglet = 'compatibles'; // compatibles | tous
-
+    public string $onglet = 'compatibles';
     public string $search       = '';
     public string $alertSuccess = '';
     public string $alertError   = '';
@@ -45,7 +47,7 @@ class MesSouhaits extends Component
         }
 
         if (!$participant->profilB2BComplet()) {
-            $this->alertError = 'Veuillez d\'abord compléter votre profil B2B (zone géographique, secteurs et types de partenariat recherchés).';
+            $this->alertError = 'Veuillez d\'abord compléter votre profil B2B.';
             return;
         }
 
@@ -89,6 +91,7 @@ class MesSouhaits extends Component
         $dernierePriorite = Souhait::where('id_participant', $participant->id)
             ->max('priorite') ?? 0;
 
+        // ✅ Détection du mutuel
         $souhaitRetour = Souhait::where('id_participant', $id_cible)
             ->where('id_participant_cible', $participant->id)
             ->first();
@@ -110,13 +113,42 @@ class MesSouhaits extends Component
                 'type'   => 'mutuel',
                 'statut' => $statut,
             ]);
+
+            // ✅ EMAIL MUTUEL — on envoie à chacun des deux participants
+            $nomEvenement = $evenement->nom ?? 'Business Forum';
+
+            if ($participant->email) {
+                try {
+                    Mail::to($participant->email)->send(
+                        new MatchMutuelNotification($participant, $cible, $nomEvenement)
+                    );
+                } catch (\Exception $e) {
+                    Log::error('Email mutuel échoué (participant)', [
+                        'participant_id' => $participant->id,
+                        'erreur'         => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            if ($cible->email) {
+                try {
+                    Mail::to($cible->email)->send(
+                        new MatchMutuelNotification($cible, $participant, $nomEvenement)
+                    );
+                } catch (\Exception $e) {
+                    Log::error('Email mutuel échoué (cible)', [
+                        'cible_id' => $cible->id,
+                        'erreur'   => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
         $this->alertSuccess = $estMutuel
-            ? '🎉 Souhait mutuel ! Ce participant vous cherche aussi. Un RDV sera généré.'
+            ? '🎉 Souhait mutuel ! Ce participant vous cherche aussi. Un email a été envoyé aux deux parties.'
             : ($scoreCompatibilite >= 2
                 ? '✅ Souhait émis ! Profils compatibles.'
-                : '✅ Souhait émis avec un autre participant de l\'événement.');
+                : '✅ Souhait émis avec succès.');
     }
 
     public function supprimer(int $id): void
@@ -158,12 +190,10 @@ class MesSouhaits extends Component
     {
         $participant = Participant::findForUser(auth()->user());
         $souhait     = Souhait::findOrFail($id);
-
         if ($souhait->priorite <= 1) return;
 
         $voisin = Souhait::where('id_participant', $participant->id)
-            ->where('priorite', $souhait->priorite - 1)
-            ->first();
+            ->where('priorite', $souhait->priorite - 1)->first();
 
         if ($voisin) $voisin->update(['priorite' => $souhait->priorite]);
         $souhait->update(['priorite' => $souhait->priorite - 1]);
@@ -174,12 +204,10 @@ class MesSouhaits extends Component
         $participant = Participant::findForUser(auth()->user());
         $souhait     = Souhait::findOrFail($id);
         $max         = Souhait::where('id_participant', $participant->id)->max('priorite');
-
         if ($souhait->priorite >= $max) return;
 
         $voisin = Souhait::where('id_participant', $participant->id)
-            ->where('priorite', $souhait->priorite + 1)
-            ->first();
+            ->where('priorite', $souhait->priorite + 1)->first();
 
         if ($voisin) $voisin->update(['priorite' => $souhait->priorite]);
         $souhait->update(['priorite' => $souhait->priorite + 1]);
@@ -222,17 +250,13 @@ class MesSouhaits extends Component
     {
         $dispoMoi   = $this->getDisponibilites($moi);
         $dispoCible = $this->getDisponibilites($cible);
-
         if (empty($dispoMoi) || empty($dispoCible)) return true;
-
         return count(array_intersect($dispoMoi, $dispoCible)) > 0;
     }
 
     private function calculerCompatibilite(Participant $moi, Participant $cible): int
     {
-        if (!$moi->profilB2BComplet()) {
-            return 0;
-        }
+        if (!$moi->profilB2BComplet()) return 0;
 
         $points = 0;
 
@@ -270,26 +294,19 @@ class MesSouhaits extends Component
     {
         return new \Illuminate\Pagination\LengthAwarePaginator(
             collect(), 0, 4, 1,
-            [
-                'path'     => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
-                'pageName' => $pageName,
-            ]
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'pageName' => $pageName]
         );
     }
 
     private function paginerCollection($collection, string $pageName, int $perPage = 4): \Illuminate\Pagination\LengthAwarePaginator
     {
         $page = $this->getPage($pageName);
-
         return new \Illuminate\Pagination\LengthAwarePaginator(
             $collection->forPage($page, $perPage)->values(),
             $collection->count(),
             $perPage,
             $page,
-            [
-                'path'     => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
-                'pageName' => $pageName,
-            ]
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'pageName' => $pageName]
         );
     }
 
@@ -297,15 +314,12 @@ class MesSouhaits extends Component
     {
         $participant = Participant::findForUser(auth()->user());
 
-        $inscriptionValide = $participant
-            ? $this->inscriptionEstValide($participant)
-            : false;
+        $inscriptionValide = $participant ? $this->inscriptionEstValide($participant) : false;
 
         $evenement = $participant && $participant->id_evenement
             ? Evenement::find($participant->id_evenement)
             : null;
 
-        // ✅ NOUVEAU : détecte si l'événement n'a pas de B2B
         $evenementSansB2B = $evenement
             && ($evenement->type_evenement ?? 'avec_b2b') === 'sans_b2b';
 
@@ -334,11 +348,9 @@ class MesSouhaits extends Component
 
         $candidatsCompatibles = $this->paginatorVide('pageCompatibles');
         $candidatsTous        = $this->paginatorVide('pageTous');
+        $nbCompatibles        = 0;
+        $nbTous               = 0;
 
-        $nbCompatibles = 0;
-        $nbTous        = 0;
-
-        // ✅ Condition : ajout de !$evenementSansB2B
         if ($participant && $inscriptionValide && !$souhaitsfermes && $profilB2BComplet && !$evenementSansB2B) {
             $tousLesCandidats = Participant::with('entreprise')
                 ->where('id_evenement', $participant->id_evenement)
@@ -360,6 +372,7 @@ class MesSouhaits extends Component
                     })
                 )
                 ->get()
+                // ✅ Filtre par disponibilité commune (jours partagés)
                 ->filter(fn($p) => $this->ontDisponibiliteCommune($participant, $p))
                 ->map(function ($p) use ($participant, $idsCibles) {
                     $p->score_compatibilite = $this->calculerCompatibilite($participant, $p);
@@ -389,7 +402,7 @@ class MesSouhaits extends Component
             'participant'          => $participant,
             'inscriptionValide'    => $inscriptionValide,
             'profilB2BComplet'     => $profilB2BComplet,
-            'evenementSansB2B'     => $evenementSansB2B, // ✅ NOUVEAU
+            'evenementSansB2B'     => $evenementSansB2B,
             'souhaits'             => $souhaits,
             'nbSouhaits'           => $nbSouhaits,
             'minSouhaits'          => $minSouhaits,

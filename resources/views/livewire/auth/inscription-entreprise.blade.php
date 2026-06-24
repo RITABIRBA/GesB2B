@@ -191,7 +191,7 @@
                             placeholder="contact@entreprise.com">
                     </div>
 
-                    {{-- ✅ Événement (optionnel) — liste de cartes détaillées --}}
+                    {{-- Événement (optionnel) --}}
                     <div class="col-span-2">
                         <label class="block text-gray-600 text-sm font-medium mb-3">
                             Événement souhaité
@@ -205,7 +205,6 @@
                         </div>
                         @else
                         <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
-
                             <label class="cursor-pointer block">
                                 <input type="radio" wire:model.live="id_evenement" value="" class="hidden peer">
                                 <div class="p-4 border-2 rounded-xl transition flex items-center gap-3
@@ -228,7 +227,6 @@
                                 <div class="p-4 border-2 rounded-xl transition
                                     peer-checked:border-red-400 peer-checked:bg-red-50
                                     hover:bg-gray-50 border-gray-200">
-
                                     <div class="flex items-start justify-between gap-3 flex-wrap">
                                         <div class="flex-1 min-w-[200px]">
                                             <p class="font-bold text-gray-800">{{ $evt->nom }}</p>
@@ -244,18 +242,14 @@
                                                 @endif
                                             </div>
                                         </div>
-
                                         <div class="flex items-center gap-1.5 flex-shrink-0">
                                             @if($estB2B)
                                             <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white bg-blue-600">
                                                 <i class="fa-solid fa-handshake mr-1"></i> B2B
                                             </span>
                                             @else
-                                            <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white bg-purple-600">
-                                                Événement
-                                            </span>
+                                            <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white bg-purple-600">Événement</span>
                                             @endif
-
                                             @if($gratuit)
                                             <span class="text-xs px-2 py-0.5 rounded-full font-semibold text-white bg-green-600">
                                                 <i class="fa-solid fa-gift mr-1"></i> Gratuit
@@ -267,7 +261,6 @@
                                             @endif
                                         </div>
                                     </div>
-
                                     @if(!$gratuit && $evt->montant_inscription)
                                     <p class="text-xs font-bold mt-2" style="color: #C8102E;">
                                         {{ number_format($evt->montant_inscription, 0, ',', ' ') }} FCFA
@@ -326,12 +319,24 @@
                         </select>
                         @error('rep_genre') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
+
+                    {{-- ✅ CORRECTION : Fonction avec liste déroulante au lieu de texte libre --}}
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Fonction</label>
-                        <input wire:model="rep_fonction" type="text"
-                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
-                            placeholder="Ex: Directeur Général">
+                        <select wire:model.live="rep_fonction"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm">
+                            <option value="">-- Choisir --</option>
+                            @foreach($fonctions as $f)
+                            <option value="{{ $f }}">{{ $f }}</option>
+                            @endforeach
+                        </select>
+                        @if($rep_fonction === 'Autre')
+                        <input wire:model="rep_fonction_autre" type="text"
+                            class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+                            placeholder="Précisez votre fonction...">
+                        @endif
                     </div>
+
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Téléphone *</label>
                         <input wire:model="rep_telephone" type="text"
@@ -392,6 +397,9 @@
                     <div class="bg-gray-50 rounded-xl p-4">
                         <p class="text-xs font-bold text-gray-500 mb-2">REPRÉSENTANT</p>
                         <p class="font-bold text-gray-800">{{ $rep_nom }} {{ $rep_prenom }}</p>
+                        @if($rep_fonction)
+                        <p class="text-sm text-gray-600">{{ $rep_fonction }}</p>
+                        @endif
                         <p class="text-sm text-gray-600">{{ $rep_telephone }}</p>
                         @if($rep_email)
                         <p class="text-sm text-gray-600">{{ $rep_email }}</p>

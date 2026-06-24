@@ -11,6 +11,7 @@ class Participant extends Model
     protected $fillable = [
         'id_entreprise',
         'id_evenement',
+        'id_cdd',
         'id_chef_delegation',
         'nom',
         'prenom',
@@ -60,43 +61,28 @@ class Participant extends Model
 
     // ─── Helpers ───────────────────────────────────────────
 
-    /**
-     * Vérifie si le participant est un étudiant
-     */
     public function estEtudiant(): bool
     {
         return strtolower($this->fonction ?? '') === 'étudiant'
             || strtolower($this->fonction ?? '') === 'etudiant';
     }
 
-    /**
-     * Vérifie si le participant est un sponsor
-     */
     public function estSponsor(): bool
     {
         return $this->statut_participant === 'sponsor';
     }
 
-    /**
-     * Vérifie si le participant est un partenaire
-     */
     public function estPartenaire(): bool
     {
         return $this->statut_participant === 'partenaire';
     }
 
-    /**
-     * Calcule l'âge du participant
-     */
     public function getAgeAttribute(): ?int
     {
         if (!$this->date_naissance) return null;
         return $this->date_naissance->age;
     }
 
-    /**
-     * Helper statique pour trouver le participant connecté.
-     */
     public static function findForUser($user): ?self
     {
         if (!$user) return null;
@@ -112,23 +98,33 @@ class Participant extends Model
 
         return null;
     }
-    /**
- * Vérifie si le profil B2B (critères de recherche) est complété.
- */
-public function profilB2BComplet(): bool
-{
-    $zone = !empty($this->zone_geographique);
 
-    $secteurs = is_array($this->secteurs_recherche)
-        ? $this->secteurs_recherche
-        : (json_decode($this->secteurs_recherche ?? '[]', true) ?: []);
+    public function profilB2BComplet(): bool
+    {
+        $zone = !empty($this->zone_geographique);
 
-    $types = is_array($this->types_partenariat)
-        ? $this->types_partenariat
-        : (json_decode($this->types_partenariat ?? '[]', true) ?: []);
+        $secteurs = is_array($this->secteurs_recherche)
+            ? $this->secteurs_recherche
+            : (json_decode($this->secteurs_recherche ?? '[]', true) ?: []);
 
-    return $zone && !empty($secteurs) && !empty($types);
-}
+        $types = is_array($this->types_partenariat)
+            ? $this->types_partenariat
+            : (json_decode($this->types_partenariat ?? '[]', true) ?: []);
+
+        return $zone && !empty($secteurs) && !empty($types);
+    }
+
+    public function montantApresRemise(float $montantBase): array
+    {
+        $pourcentage   = \App\Models\Remise::calculerMeilleureRemise($this);
+        $montantRemise = $montantBase * ($pourcentage / 100);
+        return [
+            'montant_brut'   => $montantBase,
+            'pourcentage'    => $pourcentage,
+            'montant_remise' => round($montantRemise, 2),
+            'montant_net'    => round($montantBase - $montantRemise, 2),
+        ];
+    }
 
     // ─── Relations ─────────────────────────────────────────
 
@@ -142,25 +138,16 @@ public function profilB2BComplet(): bool
         return $this->belongsTo(Evenement::class, 'id_evenement');
     }
 
-    public function chefDelegationOfficiel()
-{
-    return $this->belongsTo(ChefDelegation::class, 'chef_delegation_id');
-}
+    // ✅ NOUVEAU — relation CDD
+    public function cdd()
+    {
+        return $this->belongsTo(User::class, 'id_cdd');
+    }
 
-/**
- * Calcule le montant net à payer après remise éventuelle.
- */
-public function montantApresRemise(float $montantBase): array
-{
-    $pourcentage = \App\Models\Remise::calculerMeilleureRemise($this);
-    $montantRemise = $montantBase * ($pourcentage / 100);
-    return [
-        'montant_brut'    => $montantBase,
-        'pourcentage'     => $pourcentage,
-        'montant_remise'  => round($montantRemise, 2),
-        'montant_net'     => round($montantBase - $montantRemise, 2),
-    ];
-}
+    public function chefDelegationOfficiel()
+    {
+        return $this->belongsTo(ChefDelegation::class, 'chef_delegation_id');
+    }
 
     public function participantsSousDelegation()
     {

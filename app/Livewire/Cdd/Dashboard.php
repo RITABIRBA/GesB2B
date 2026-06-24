@@ -71,10 +71,6 @@ class Dashboard extends Component
         $this->cdd = ChefDelegation::where('id_user', auth()->id())->first();
     }
 
-    /**
-     * Vérifie si la fonction sélectionnée = Étudiant
-     * (mb_strtolower pour gérer les accents).
-     */
     public function getEstEtudiantProperty(): bool
     {
         $fonctionActive = $this->fonction === 'Autre'
@@ -84,9 +80,6 @@ class Dashboard extends Component
         return in_array($fonctionActive, ['étudiant', 'etudiant', 'étudiante', 'etudiante']);
     }
 
-    /**
-     * Vérifie si l'événement choisi pour l'ajout est un événement B2B.
-     */
     public function getEvenementSelectionneEstB2BProperty(): bool
     {
         if (!$this->id_evenement) return true;
@@ -124,7 +117,7 @@ class Dashboard extends Component
         $this->filiere        = '';
         $this->universite     = '';
         $this->pays           = $this->cdd && $this->cdd->pays_zone !== 'Autre' ? $this->cdd->pays_zone : '';
-        $this->ville           = '';
+        $this->ville          = '';
         $this->resetErrorBag();
     }
 
@@ -158,7 +151,9 @@ class Dashboard extends Component
             $this->fonction = $fonctionFinal;
         }
 
-        $code_acces = strtoupper(substr($this->nom, 0, 3) . rand(1000, 9999));
+        // ✅ CORRECTION : supprime les accents avant d'extraire les 3 premières lettres
+        $nom_sans_accent = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $this->nom);
+        $code_acces = strtoupper(substr($nom_sans_accent, 0, 3)) . rand(1000, 9999);
 
         $participant = Participant::create([
             'nom'                   => $this->nom,
@@ -390,8 +385,7 @@ class Dashboard extends Component
             ]);
         }
 
-        $this->alertSuccess = 'Souhait émis pour le compte du membre.'
-            . ($estMutuel ? ' 🎉 Mutuel !' : '');
+        $this->alertSuccess = 'Souhait émis pour le compte du membre.' . ($estMutuel ? ' 🎉 Mutuel !' : '');
     }
 
     public function retirerMembre(int $id): void
@@ -410,8 +404,8 @@ class Dashboard extends Component
     {
         if (!$this->cdd) {
             return view('livewire.cdd.dashboard', [
-                'membres'    => collect(),
-                'evenements' => collect(),
+                'membres'          => collect(),
+                'evenements'       => collect(),
                 'candidatsSouhait' => collect(),
             ])->layout('layouts.cdd', ['title' => 'Dashboard CDD']);
         }

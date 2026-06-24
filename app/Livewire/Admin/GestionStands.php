@@ -9,6 +9,10 @@ use App\Models\Evenement;
 use App\Models\Entreprise;
 use App\Models\Participant;
 use App\Models\Notification;
+use App\Mail\ReservationStandValidee;
+use App\Mail\ReservationStandRejetee;
+use App\Mail\StandAssigne;
+use Illuminate\Support\Facades\Mail;
 
 class GestionStands extends Component
 {
@@ -22,7 +26,6 @@ class GestionStands extends Component
     public $isEditing     = false;
     public $search        = '';
 
-    // Génération automatique simple (sans types)
     public $showGenerateModal     = false;
     public $id_evenement_generate = '';
     public $nombre_stands         = 10;
@@ -32,18 +35,18 @@ class GestionStands extends Component
     public $standings = ['standard', 'premium', 'vip'];
 
     // ════════════════════════════════════════════════════════
-    // ✅ GÉNÉRATION DE STANDS PAR TYPE (par lot, numéro auto)
+    // GÉNÉRATION DE STANDS PAR TYPE
     // ════════════════════════════════════════════════════════
 
-    public bool   $showGenererParTypeModal = false;
-    public        $genererpartype_id_evenement = '';
-    public array  $quantitesParType = []; // [type_stand_id => quantite]
+    public bool  $showGenererParTypeModal      = false;
+    public       $genererpartype_id_evenement  = '';
+    public array $quantitesParType             = [];
 
     public function ouvrirGenererParType(): void
     {
         $this->genererpartype_id_evenement = '';
-        $this->quantitesParType = [];
-        $this->showGenererParTypeModal = true;
+        $this->quantitesParType            = [];
+        $this->showGenererParTypeModal     = true;
         $this->resetErrorBag();
     }
 
@@ -78,14 +81,13 @@ class GestionStands extends Component
             return;
         }
 
-        // ✅ Numéro automatique : dernier numéro existant + 1
         $dernierNumero = Stand::where('id_evenement', $this->genererpartype_id_evenement)
             ->max('numero_stand') ?? 0;
 
         $compteur = $dernierNumero + 1;
 
         foreach ($this->quantitesParType as $typeStandId => $quantite) {
-            $quantite = (int) $quantite;
+            $quantite  = (int) $quantite;
             if ($quantite < 1) continue;
 
             $typeStand = TypeStand::find($typeStandId);
@@ -111,29 +113,29 @@ class GestionStands extends Component
     }
 
     // ════════════════════════════════════════════════════════
-    // ✅ ASSIGNATION D'UN STAND À UN PARTICIPANT
+    // ASSIGNATION D'UN STAND À UN PARTICIPANT
     // ════════════════════════════════════════════════════════
 
-    public bool $showAssignerModal = false;
-    public $stand_a_assigner       = null;
-    public string $rechercheParticipantAssign = '';
-    public bool $assign_motif_requis = false;
-    public string $assign_motif_gratuite = '';
+    public bool   $showAssignerModal              = false;
+    public        $stand_a_assigner               = null;
+    public string $rechercheParticipantAssign     = '';
+    public bool   $assign_motif_requis            = false;
+    public string $assign_motif_gratuite          = '';
 
     public function ouvrirAssignerStand(int $standId): void
     {
-        $this->stand_a_assigner = Stand::with('evenement')->findOrFail($standId);
+        $this->stand_a_assigner           = Stand::with('evenement')->findOrFail($standId);
         $this->rechercheParticipantAssign = '';
-        $this->assign_motif_gratuite = '';
-        $this->assign_motif_requis = (bool) $this->stand_a_assigner->est_gratuit;
-        $this->showAssignerModal = true;
+        $this->assign_motif_gratuite      = '';
+        $this->assign_motif_requis        = (bool) $this->stand_a_assigner->est_gratuit;
+        $this->showAssignerModal          = true;
         $this->resetErrorBag();
     }
 
     public function fermerAssignerStand(): void
     {
         $this->showAssignerModal = false;
-        $this->stand_a_assigner = null;
+        $this->stand_a_assigner  = null;
     }
 
     public function assignerAuParticipant(int $participantId): void
@@ -162,7 +164,9 @@ class GestionStands extends Component
         $numeroStand = $this->stand_a_assigner->numero_stand;
         $this->stand_a_assigner->update($data);
 
-        $nomComplet = $participant->nom . ' ' . $participant->prenom;
+        // Recharger le stand avec les relations
+        $standFrais = Stand::with(['evenement', 'typeStand'])->find($this->stand_a_assigner->id);
+
         $message = $this->stand_a_assigner->est_gratuit
             ? "🎉 Le Stand N°{$numeroStand} ({$this->stand_a_assigner->standing}) vous a été attribué gratuitement. Motif : {$this->assign_motif_gratuite}"
             : "📋 Le Stand N°{$numeroStand} ({$this->stand_a_assigner->standing}) vous a été assigné. Merci de procéder au paiement.";
@@ -174,12 +178,26 @@ class GestionStands extends Component
             'type'           => 'systeme',
         ]);
 
+        // ✅ EMAIL — stand assigné au participant
+        if ($participant->email && $standFrais) {
+            try {
+                Mail::to($participant->email)->send(
+                    new StandAssigne(
+                        $participant,
+                        $standFrais,
+                        $standFrais->evenement?->nom ?? 'Business Forum'
+                    )
+                );
+            } catch (\Exception $e) {}
+        }
+
+        $nomComplet = $participant->nom . ' ' . $participant->prenom;
         $this->fermerAssignerStand();
         session()->flash('success', "Stand N°{$numeroStand} assigné à {$nomComplet}.");
     }
 
     // ════════════════════════════════════════════════════════
-    // Génération automatique simple (héritée, optionnelle)
+    // GÉNÉRATION AUTOMATIQUE SIMPLE
     // ════════════════════════════════════════════════════════
 
     public function openGenerateModal()
@@ -209,7 +227,7 @@ class GestionStands extends Component
 
         for ($i = 1; $i <= $this->nombre_stands; $i++) {
             Stand::create([
-                'id_evenement'  => $this->id_evenement_generate,
+                'id_evenement' => $this->id_evenement_generate,
                 'id_entreprise' => null,
                 'numero_stand'  => $i,
                 'superficie'    => $this->superficie_default,
@@ -222,7 +240,7 @@ class GestionStands extends Component
     }
 
     // ════════════════════════════════════════════════════════
-    // Modal modification stand (manuel, déjà existant)
+    // CRUD STAND MANUEL
     // ════════════════════════════════════════════════════════
 
     public function openModal()
@@ -251,7 +269,7 @@ class GestionStands extends Component
 
     public function modifier($id)
     {
-        $stand = Stand::findOrFail($id);
+        $stand               = Stand::findOrFail($id);
         $this->stand_id      = $stand->id;
         $this->id_evenement  = $stand->id_evenement;
         $this->id_entreprise = $stand->id_entreprise;
@@ -265,10 +283,10 @@ class GestionStands extends Component
     public function sauvegarder()
     {
         $this->validate([
-            'id_evenement'  => 'required',
-            'numero_stand'  => 'required|integer',
-            'superficie'    => 'required',
-            'standing'      => 'required',
+            'id_evenement' => 'required',
+            'numero_stand' => 'required|integer',
+            'superficie'   => 'required',
+            'standing'     => 'required',
         ]);
 
         $data = [
@@ -296,21 +314,63 @@ class GestionStands extends Component
         session()->flash('success', 'Stand supprimé.');
     }
 
-    // ────────────────────────────────────────────────────────
-    // VALIDATION / REJET DES RÉSERVATIONS DE STANDS
-    // ────────────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════
+    // VALIDATION / REJET DES RÉSERVATIONS
+    // ════════════════════════════════════════════════════════
+
+    /**
+     * Récupère l'email et le nom du destinataire
+     * (entreprise ou participant selon qui a réservé)
+     */
+    private function getDestinataire(Stand $stand): array
+    {
+        // Cas entreprise
+        if ($stand->id_entreprise) {
+            $entreprise   = Entreprise::find($stand->id_entreprise);
+            $representant = Participant::where('id_entreprise', $stand->id_entreprise)
+                ->where('role', 'representant')
+                ->first();
+
+            return [
+                'email' => $representant?->email ?? $entreprise?->email_responsable,
+                'nom'   => $entreprise?->nom_responsable ?? $entreprise?->nom ?? 'Client',
+            ];
+        }
+
+        // Cas participant
+        if ($stand->id_participant) {
+            $participant = Participant::find($stand->id_participant);
+            return [
+                'email' => $participant?->email,
+                'nom'   => ($participant?->prenom . ' ' . $participant?->nom) ?? 'Participant',
+            ];
+        }
+
+        return ['email' => null, 'nom' => 'Client'];
+    }
 
     private function notifierRepresentant(Stand $stand, string $message): void
     {
-        if (!$stand->id_entreprise) return;
+        // Notifier le représentant de l'entreprise
+        if ($stand->id_entreprise) {
+            $representant = Participant::where('id_entreprise', $stand->id_entreprise)
+                ->where('role', 'representant')
+                ->first();
 
-        $representant = Participant::where('id_entreprise', $stand->id_entreprise)
-            ->where('role', 'representant')
-            ->first();
+            if ($representant) {
+                Notification::create([
+                    'id_participant' => $representant->id,
+                    'contenu'        => $message,
+                    'date_envoie'    => now()->toDateString(),
+                    'type'           => 'systeme',
+                ]);
+            }
+        }
 
-        if ($representant) {
+        // Notifier le participant direct
+        if ($stand->id_participant) {
             Notification::create([
-                'id_participant' => $representant->id,
+                'id_participant' => $stand->id_participant,
                 'contenu'        => $message,
                 'date_envoie'    => now()->toDateString(),
                 'type'           => 'systeme',
@@ -320,9 +380,10 @@ class GestionStands extends Component
 
     public function validerReservation($id)
     {
-        $stand = Stand::with('evenement')->findOrFail($id);
+        $stand = Stand::with(['evenement', 'typeStand'])->findOrFail($id);
 
-        if (!$stand->id_entreprise || $stand->statut_reservation !== 'en_attente') {
+        if ((!$stand->id_entreprise && !$stand->id_participant)
+            || $stand->statut_reservation !== 'en_attente') {
             session()->flash('error', 'Cette réservation ne peut pas être validée.');
             return;
         }
@@ -337,29 +398,56 @@ class GestionStands extends Component
 
         $stand->update($data);
 
-        $this->notifierRepresentant(
-            $stand,
-            $gratuit
-                ? "✅ Votre réservation du Stand N°{$stand->numero_stand} a été validée. Aucun paiement n'est requis."
-                : "✅ Votre réservation du Stand N°{$stand->numero_stand} a été validée. Vous pouvez maintenant procéder au paiement depuis « Mes Stands »."
-        );
+        $messageNotif = $gratuit
+            ? "✅ Votre réservation du Stand N°{$stand->numero_stand} a été validée. Aucun paiement n'est requis."
+            : "✅ Votre réservation du Stand N°{$stand->numero_stand} a été validée. Vous pouvez maintenant procéder au paiement depuis « Mes Stands ».";
+
+        $this->notifierRepresentant($stand, $messageNotif);
+
+        // ✅ EMAIL — réservation validée
+        $destinataire = $this->getDestinataire($stand);
+        if ($destinataire['email']) {
+            try {
+                Mail::to($destinataire['email'])->send(
+                    new ReservationStandValidee(
+                        $stand,
+                        $destinataire['nom'],
+                        $stand->evenement?->nom ?? 'Business Forum'
+                    )
+                );
+            } catch (\Exception $e) {}
+        }
 
         session()->flash('success', "Réservation du Stand N°{$stand->numero_stand} validée.");
     }
 
     public function rejeterReservation($id)
     {
-        $stand = Stand::with('evenement')->findOrFail($id);
+        $stand = Stand::with(['evenement', 'typeStand'])->findOrFail($id);
 
-        if (!$stand->id_entreprise || $stand->statut_reservation !== 'en_attente') {
+        if ((!$stand->id_entreprise && !$stand->id_participant)
+            || $stand->statut_reservation !== 'en_attente') {
             session()->flash('error', 'Cette réservation ne peut pas être rejetée.');
             return;
         }
 
-        $this->notifierRepresentant(
-            $stand,
-            "❌ Votre réservation du Stand N°{$stand->numero_stand} a été rejetée par l'administration. Vous pouvez réserver un autre stand disponible."
-        );
+        $messageNotif = "❌ Votre réservation du Stand N°{$stand->numero_stand} a été rejetée par l'administration. Vous pouvez réserver un autre stand disponible.";
+
+        $this->notifierRepresentant($stand, $messageNotif);
+
+        // ✅ EMAIL — réservation rejetée
+        $destinataire = $this->getDestinataire($stand);
+        if ($destinataire['email']) {
+            try {
+                Mail::to($destinataire['email'])->send(
+                    new ReservationStandRejetee(
+                        $stand,
+                        $destinataire['nom'],
+                        $stand->evenement?->nom ?? 'Business Forum'
+                    )
+                );
+            } catch (\Exception $e) {}
+        }
 
         $stand->update([
             'id_entreprise'         => null,
@@ -380,9 +468,9 @@ class GestionStands extends Component
                 ->where('id_evenement', $this->stand_a_assigner->id_evenement)
                 ->when($this->rechercheParticipantAssign, fn($q) =>
                     $q->where(function ($q) {
-                        $q->where('nom', 'like', '%' . $this->rechercheParticipantAssign . '%')
-                          ->orWhere('prenom', 'like', '%' . $this->rechercheParticipantAssign . '%')
-                          ->orWhere('fonction', 'like', '%' . $this->rechercheParticipantAssign . '%');
+                        $q->where('nom', 'like', '%'.$this->rechercheParticipantAssign.'%')
+                          ->orWhere('prenom', 'like', '%'.$this->rechercheParticipantAssign.'%')
+                          ->orWhere('fonction', 'like', '%'.$this->rechercheParticipantAssign.'%');
                     })
                 )
                 ->orderBy('nom')
@@ -397,21 +485,23 @@ class GestionStands extends Component
             'stands' => Stand::with(['evenement', 'entreprise', 'typeStand', 'participant'])
                 ->when($this->search, fn($q) =>
                     $q->where('numero_stand', 'like', '%'.$this->search.'%')
-                    ->orWhereHas('entreprise', fn($q) =>
-                        $q->where('nom', 'like', '%'.$this->search.'%')
-                    )->orWhereHas('participant', fn($q) =>
-                        $q->where('nom', 'like', '%'.$this->search.'%')
-                    )->orWhereHas('evenement', fn($q) =>
-                        $q->where('nom', 'like', '%'.$this->search.'%')
-                    )
+                      ->orWhereHas('entreprise', fn($q) =>
+                          $q->where('nom', 'like', '%'.$this->search.'%')
+                      )
+                      ->orWhereHas('participant', fn($q) =>
+                          $q->where('nom', 'like', '%'.$this->search.'%')
+                      )
+                      ->orWhereHas('evenement', fn($q) =>
+                          $q->where('nom', 'like', '%'.$this->search.'%')
+                      )
                 )
                 ->orderBy('id_evenement')
                 ->orderBy('numero_stand')
                 ->get(),
-            'evenements'                   => Evenement::orderBy('nom')->get(),
-            'entreprises'                  => Entreprise::where('statut_validation', 'valide')->orderBy('nom')->get(),
-            'typesStandsEvenementGenerer'  => $typesStandsEvenementGenerer,
-            'participantsPourAssignation'  => $participantsPourAssignation,
+            'evenements'                  => Evenement::orderBy('nom')->get(),
+            'entreprises'                 => Entreprise::where('statut_validation', 'valide')->orderBy('nom')->get(),
+            'typesStandsEvenementGenerer' => $typesStandsEvenementGenerer,
+            'participantsPourAssignation' => $participantsPourAssignation,
         ])->layout('layouts.admin', ['title' => 'Gestion des Stands']);
     }
 }

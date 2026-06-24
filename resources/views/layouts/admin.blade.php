@@ -8,42 +8,14 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     @livewireStyles
-
-    {{-- ← Styles d'impression --}}
     <style>
         @media print {
-            /* Cache tout sauf le contenu principal */
-            aside,
-            header,
-            .no-print {
-                display: none !important;
-            }
-
-            /* Affiche tout le contenu de la page */
-            body {
-                background: white !important;
-            }
-
-            main {
-                padding: 0 !important;
-                overflow: visible !important;
-            }
-
-            /* Assure que les couleurs s'impriment */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            /* Evite les coupures dans les tableaux */
-            tr {
-                page-break-inside: avoid;
-            }
-
-            /* Sauts de page */
-            .page-break {
-                page-break-before: always;
-            }
+            aside, header, .no-print { display: none !important; }
+            body { background: white !important; }
+            main { padding: 0 !important; overflow: visible !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            tr { page-break-inside: avoid; }
+            .page-break { page-break-before: always; }
         }
     </style>
 </head>
@@ -59,7 +31,7 @@
             <div class="flex items-center justify-center gap-2 mb-1">
                 <img src="{{ asset('images/logo-ccibf.png') }}"
                     alt="CCI-BF" class="w-8 h-8 object-contain rounded-lg">
-                <h1 class="text-xl font-bold text-white">GesB2B</h1>
+                <h1 class="text-xl font-bold text-white">Business Platform</h1>
             </div>
             <p class="text-xs text-green-300 mt-1">CCI-BF — Administration</p>
         </div>
@@ -67,21 +39,28 @@
         {{-- Navigation --}}
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
+            // ✅ Compteurs pour les badges de notification
+            $paiementsEnAttente    = \App\Models\Paiement::where('statut', 'en_attente')->count();
+            $inscriptionsEnAttente = \App\Models\Participant::where('statut_preinscription', 'en_attente')->count();
+            $standsEnAttente       = \App\Models\Stand::where('statut_reservation', 'en_attente')->count();
+            $demandesAideEnAttente = \App\Models\DemandeAide::where('statut', 'en_attente')->count();
+
             $navItems = [
-                ['route' => 'admin.dashboard',    'icon' => 'fa-gauge',           'label' => 'Dashboard'],
-                ['route' => 'admin.evenements',   'icon' => 'fa-calendar',        'label' => 'Événements'],
-                ['route' => 'admin.entreprises',  'icon' => 'fa-building',        'label' => 'Entreprises'],
-                ['route' => 'admin.participants', 'icon' => 'fa-users',           'label' => 'Participants'],
-                ['route' => 'admin.inscriptions', 'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions'],
-                ['route' => 'admin.paiements',    'icon' => 'fa-money-bill',      'label' => 'Paiements'],
-                ['route' => 'admin.stands',       'icon' => 'fa-store',           'label' => 'Stands'],
-                ['route' => 'admin.souhaits',     'icon' => 'fa-heart',           'label' => 'Souhaits RDV'],
-                ['route' => 'admin.rendez-vous',  'icon' => 'fa-handshake',       'label' => 'Rendez-vous'],
-                ['route' => 'admin.badges',       'icon' => 'fa-id-badge',        'label' => 'Badges'],
-                ['route' => 'admin.traducteurs',  'icon' => 'fa-language',        'label' => 'Traducteurs'],
-                ['route' => 'admin.notifications','icon' => 'fa-bell',            'label' => 'Notifications'],
-                ['route' => 'admin.chefs-delegation', 'icon' => 'fa-user-tie', 'label' => 'Chefs de délégation'],
-                ['route' => 'admin.demandes-aide', 'icon' => 'fa-circle-question', 'label' => "Demandes d'aide"],
+                ['route' => 'admin.dashboard',        'icon' => 'fa-gauge',           'label' => 'Dashboard',           'badge' => 0],
+                ['route' => 'admin.evenements',        'icon' => 'fa-calendar',        'label' => 'Événements',           'badge' => 0],
+                ['route' => 'admin.entreprises',       'icon' => 'fa-building',        'label' => 'Entreprises',          'badge' => 0],
+                ['route' => 'admin.participants',      'icon' => 'fa-users',           'label' => 'Participants',         'badge' => 0],
+                ['route' => 'admin.inscriptions',      'icon' => 'fa-clipboard-list',  'label' => 'Inscriptions',         'badge' => $inscriptionsEnAttente],
+                ['route' => 'admin.paiements',         'icon' => 'fa-money-bill',      'label' => 'Paiements',            'badge' => $paiementsEnAttente],
+                ['route' => 'admin.stands',            'icon' => 'fa-store',           'label' => 'Stands',               'badge' => $standsEnAttente],
+                ['route' => 'admin.souhaits',          'icon' => 'fa-heart',           'label' => 'Souhaits RDV',         'badge' => 0],
+                ['route' => 'admin.rendez-vous',       'icon' => 'fa-handshake',       'label' => 'Rendez-vous',          'badge' => 0],
+                ['route' => 'admin.badges',            'icon' => 'fa-id-badge',        'label' => 'Badges',               'badge' => 0],
+                ['route' => 'admin.traducteurs',       'icon' => 'fa-language',        'label' => 'Traducteurs',          'badge' => 0],
+                ['route' => 'admin.notifications',     'icon' => 'fa-bell',            'label' => 'Notifications',        'badge' => 0],
+                ['route' => 'admin.chefs-delegation',  'icon' => 'fa-user-tie',        'label' => 'Chefs de délégation',  'badge' => 0],
+                ['route' => 'admin.remises',           'icon' => 'fa-percent',         'label' => 'Remises',              'badge' => 0],
+                ['route' => 'admin.demandes-aide',     'icon' => 'fa-circle-question', 'label' => "Demandes d'aide",      'badge' => $demandesAideEnAttente],
             ];
             @endphp
 
@@ -98,7 +77,14 @@
                     {{ request()->routeIs($item['route'])
                         ? 'text-white'
                         : 'text-green-300 group-hover:text-white' }}"></i>
-                <span class="text-sm">{{ $item['label'] }}</span>
+                <span class="text-sm flex-1">{{ $item['label'] }}</span>
+                {{-- ✅ Badge de notification --}}
+                @if($item['badge'] > 0)
+                <span class="ml-auto min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center
+                    {{ request()->routeIs($item['route']) ? 'bg-white text-red-600' : 'bg-red-500 text-white' }}">
+                    {{ $item['badge'] > 99 ? '99+' : $item['badge'] }}
+                </span>
+                @endif
             </a>
             @endforeach
 
@@ -157,6 +143,34 @@
                 <h2 class="text-lg font-semibold text-gray-700">{{ $title ?? 'Dashboard' }}</h2>
             </div>
             <div class="flex items-center gap-4">
+                {{-- ✅ Résumé des alertes dans le header --}}
+                @if($paiementsEnAttente > 0 || $inscriptionsEnAttente > 0 || $standsEnAttente > 0)
+                <div class="flex items-center gap-2">
+                    @if($paiementsEnAttente > 0)
+                    <a href="{{ route('admin.paiements') }}"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white transition hover:opacity-90"
+                        style="background-color: #C8102E;">
+                        <i class="fa-solid fa-money-bill"></i>
+                        {{ $paiementsEnAttente }} paiement(s)
+                    </a>
+                    @endif
+                    @if($inscriptionsEnAttente > 0)
+                    <a href="{{ route('admin.inscriptions') }}"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white transition hover:opacity-90 bg-orange-500">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        {{ $inscriptionsEnAttente }} inscription(s)
+                    </a>
+                    @endif
+                    @if($standsEnAttente > 0)
+                    <a href="{{ route('admin.stands') }}"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white transition hover:opacity-90 bg-yellow-500">
+                        <i class="fa-solid fa-store"></i>
+                        {{ $standsEnAttente }} stand(s)
+                    </a>
+                    @endif
+                </div>
+                @endif
+
                 <span class="text-sm text-gray-500">
                     <i class="fa-regular fa-clock mr-1"></i>
                     {{ now()->format('d/m/Y') }}
@@ -178,7 +192,6 @@
 </div>
 
 @livewireScripts
-{{-- Module de chargement global --}}
 <div wire:loading.flex
     class="fixed inset-0 z-[9999] items-center justify-center"
     style="background: rgba(0,0,0,0.4);">

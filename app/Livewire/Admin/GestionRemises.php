@@ -134,7 +134,7 @@ class GestionRemises extends Component
             )
             ->latest()
             ->get(),
-        'evenements' => Evenement::orderBy('nom')->get(),
+        'evenements' => Evenement::where('type_paiement', '!=', 'gratuit')->orderBy('nom')->get(),
     ])->layout($layout, ['title' => 'Remises']);
 }
 }

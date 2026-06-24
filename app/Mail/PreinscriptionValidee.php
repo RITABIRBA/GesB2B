@@ -2,31 +2,33 @@
 
 namespace App\Mail;
 
-use App\Models\Participant;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use App\Models\Participant;
 
 class PreinscriptionValidee extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public Participant $participant;
-    public ?string $password;
+    public function __construct(
+        public Participant $participant,
+        public ?string     $motDePasse,
+    ) {}
 
-    public function __construct(Participant $participant, ?string $password = null)
+    public function envelope(): Envelope
     {
-        $this->participant = $participant;
-        $this->password    = $password;
+        return new Envelope(
+            subject: 'Votre inscription est validée — Business Forum',
+        );
     }
 
-    public function build()
+    public function content(): Content
     {
-        return $this->subject('✅ Votre préinscription a été validée — Business Forum CCI-BF')
-            ->view('emails.preinscription-validee')
-            ->with([
-                'participant' => $this->participant,
-                'password'    => $this->password,
-            ]);
+        return new Content(
+            view: 'emails.preinscription-validee',
+        );
     }
 }

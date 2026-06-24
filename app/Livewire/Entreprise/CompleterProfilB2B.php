@@ -5,6 +5,9 @@ namespace App\Livewire\Entreprise;
 use Livewire\Component;
 use App\Models\Participant;
 use App\Models\Entreprise;
+use App\Models\Evenement;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 
 class CompleterProfilB2B extends Component
 {
@@ -14,42 +17,19 @@ class CompleterProfilB2B extends Component
     public array  $profils_partenaire      = [];
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
+    public array  $disponibilites          = []; // ✅ NOUVEAU
 
-   public array $zonesGeographiques = [
-    // AFRIQUE — zones économiques
-    'UEMOA (Afrique de l\'Ouest)',
-    'CEMAC (Afrique Centrale)',
-    'Afrique du Nord (Maghreb)',
-    'Afrique de l\'Est (EAC)',
-    'Afrique Australe (SADC)',
-    'Afrique (toute la région)',
-
-    // EUROPE
-    'Union Européenne',
-    'Europe de l\'Ouest',
-    'Europe de l\'Est',
-    'Europe (toute la région)',
-
-    // AMÉRIQUES
-    'Amérique du Nord',
-    'Amérique Centrale et Caraïbes',
-    'Amérique du Sud',
-    'Amériques (toute la région)',
-
-    // ASIE
-    'Asie de l\'Est',
-    'Asie du Sud-Est',
-    'Asie du Sud',
-    'Moyen-Orient',
-    'Asie (toute la région)',
-
-    // OCÉANIE
-    'Océanie',
-
-    // GLOBAL
-    'Locale (mon pays uniquement)',
-    'Internationale (toutes zones)',
-];
+    public array $zonesGeographiques = [
+        'UEMOA (Afrique de l\'Ouest)', 'CEMAC (Afrique Centrale)',
+        'Afrique du Nord (Maghreb)', 'Afrique de l\'Est (EAC)',
+        'Afrique Australe (SADC)', 'Afrique (toute la région)',
+        'Union Européenne', 'Europe de l\'Ouest', 'Europe de l\'Est',
+        'Europe (toute la région)', 'Amérique du Nord',
+        'Amérique Centrale et Caraïbes', 'Amérique du Sud',
+        'Amériques (toute la région)', 'Asie de l\'Est', 'Asie du Sud-Est',
+        'Asie du Sud', 'Moyen-Orient', 'Asie (toute la région)',
+        'Océanie', 'Locale (mon pays uniquement)', 'Internationale (toutes zones)',
+    ];
 
     public array $typesPartenariatOptions = [
         'Alliance commerciale', 'Alliance financière', 'Alliance industrielle', 'Autre',
@@ -90,7 +70,29 @@ class CompleterProfilB2B extends Component
             $this->profils_partenaire      = $participant->profils_partenaire ?? [];
             $this->secteurs_recherche      = $participant->secteurs_recherche ?? [];
             $this->secteur_recherche_autre = $participant->secteur_recherche_autre ?? '';
+            $this->disponibilites          = $participant->disponibilites ?? [];
         }
+    }
+
+    // ✅ Génère les jours de l'événement du représentant
+    public function getJoursEvenementProperty(): array
+    {
+        $participant = $this->getRepresentant();
+        if (!$participant || !$participant->id_evenement) return [];
+
+        $evenement = Evenement::find($participant->id_evenement);
+        if (!$evenement || !$evenement->date_debut) return [];
+
+        $debut = Carbon::parse($evenement->date_debut);
+        $fin   = Carbon::parse($evenement->date_fin ?? $evenement->date_debut);
+
+        $jours = [];
+        $period = CarbonPeriod::create($debut, $fin);
+        foreach ($period as $date) {
+            $jours[] = $date->toDateString();
+        }
+
+        return $jours;
     }
 
     public function toggleTypePartenariat(string $type): void
@@ -148,6 +150,7 @@ class CompleterProfilB2B extends Component
             'secteurs_recherche'     => $this->secteurs_recherche,
             'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche)
                 ? $this->secteur_recherche_autre : null,
+            'disponibilites'         => $this->disponibilites, // ✅ NOUVEAU
         ]);
 
         session()->flash('success', 'Votre profil B2B a été complété ! Vous pouvez maintenant émettre des souhaits de rendez-vous.');
@@ -157,7 +160,8 @@ class CompleterProfilB2B extends Component
 
     public function render()
     {
-        return view('livewire.entreprise.completer-profil-b2-b')
-            ->layout('layouts.entreprise', ['title' => 'Compléter mon profil B2B']);
+        return view('livewire.entreprise.completer-profil-b2-b', [
+            'joursEvenement' => $this->joursEvenement,
+        ])->layout('layouts.entreprise', ['title' => 'Compléter mon profil B2B']);
     }
 }

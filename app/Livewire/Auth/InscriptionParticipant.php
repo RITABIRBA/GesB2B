@@ -7,6 +7,11 @@ use App\Models\Participant;
 use App\Models\Entreprise;
 use App\Models\Evenement;
 use App\Models\Inscription;
+use App\Models\User;
+use App\Mail\PreinscriptionRecue;
+use App\Mail\NouvellePreinscriptionCdd;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class InscriptionParticipant extends Component
 {
@@ -33,6 +38,7 @@ class InscriptionParticipant extends Component
     public string $ville_autre       = '';
 
     public $id_evenement = '';
+    public $id_cdd       = '';
     public bool $confirme = false;
 
     public array $fonctions = [
@@ -73,25 +79,20 @@ class InscriptionParticipant extends Component
         'Afrique de l\'Est (EAC)',
         'Afrique Australe (SADC)',
         'Afrique (toute la région)',
-
         'Union Européenne',
         'Europe de l\'Ouest',
         'Europe de l\'Est',
         'Europe (toute la région)',
-
         'Amérique du Nord',
         'Amérique Centrale et Caraïbes',
         'Amérique du Sud',
         'Amériques (toute la région)',
-
         'Asie de l\'Est',
         'Asie du Sud-Est',
         'Asie du Sud',
         'Moyen-Orient',
         'Asie (toute la région)',
-
         'Océanie',
-
         'Locale (mon pays uniquement)',
         'Internationale (toutes zones)',
     ];
@@ -129,10 +130,6 @@ class InscriptionParticipant extends Component
         }
     }
 
-    /**
-     * ✅ mb_strtolower() gère correctement les accents
-     * (É, è, etc.) contrairement à strtolower().
-     */
     public function getEstEtudiantProperty(): bool
     {
         $fonctionActive = $this->fonction === 'Autre'
@@ -188,15 +185,15 @@ class InscriptionParticipant extends Component
             }
 
             $this->validate($regles, [
-                'nom.required'        => 'Le nom est obligatoire.',
-                'prenom.required'     => 'Le prénom est obligatoire.',
-                'genre.required'      => 'Le genre est obligatoire.',
-                'telephone.required'  => 'Le téléphone est obligatoire.',
-                'pays.required'       => 'Le pays est obligatoire.',
-                'ville.required'      => 'La ville est obligatoire.',
-                'ville_autre.required'=> 'Veuillez saisir votre ville.',
-                'filiere.required'    => 'La filière est obligatoire pour un étudiant.',
-                'universite.required' => "L'université est obligatoire pour un étudiant.",
+                'nom.required'         => 'Le nom est obligatoire.',
+                'prenom.required'      => 'Le prénom est obligatoire.',
+                'genre.required'       => 'Le genre est obligatoire.',
+                'telephone.required'   => 'Le téléphone est obligatoire.',
+                'pays.required'        => 'Le pays est obligatoire.',
+                'ville.required'       => 'La ville est obligatoire.',
+                'ville_autre.required' => 'Veuillez saisir votre ville.',
+                'filiere.required'     => 'La filière est obligatoire pour un étudiant.',
+                'universite.required'  => "L'université est obligatoire pour un étudiant.",
             ]);
 
             if ($this->fonction === 'Autre') {
@@ -214,11 +211,20 @@ class InscriptionParticipant extends Component
 
     public function soumettre(): void
     {
-        $code_acces = strtoupper(substr($this->nom, 0, 3) . rand(1000, 9999));
+        // ✅ Supprime les accents avant d'extraire les 3 premières lettres
+        $nom_sans_accent = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $this->nom);
+        $code_acces = strtoupper(substr($nom_sans_accent, 0, 3)) . rand(1000, 9999);
 
         $villeFinal = $this->ville === 'Autre'
             ? (trim($this->ville_autre) ?: 'Autre')
             : $this->ville;
+
+        // ✅ Nom de l'événement résolu UNE SEULE FOIS pour tous les emails
+        $nomEvenement = 'Business Forum';
+        if ($this->id_evenement) {
+            $evenement = Evenement::find($this->id_evenement);
+            if ($evenement) $nomEvenement = $evenement->nom;
+        }
 
         $data = [
             'nom'                   => $this->nom,
@@ -233,17 +239,15 @@ class InscriptionParticipant extends Component
             'filiere'               => $this->estEtudiant ? ($this->filiere ?: null) : null,
             'universite'            => $this->estEtudiant ? ($this->universite ?: null) : null,
             'code_acces'            => $code_acces,
-            // ✅ CORRIGÉ : un particulier indépendant n'est pas un "representant"
             'role'                  => 'participant',
             'statut_historique'     => 'actif',
             'statut_preinscription' => 'en_attente',
             'participation_rdv'     => true,
+            'id_cdd'                => $this->id_cdd ?: null,
         ];
 
         if ($this->type_inscrit === 'membre_entreprise' && $this->entreprise_trouvee) {
             $data['id_entreprise'] = $this->entreprise_trouvee->id;
-            // Le visiteur qui s'inscrit en indiquant l'IFU de son entreprise
-            // devient le représentant officiel de cette entreprise.
             $data['role']          = 'representant';
         }
 
@@ -261,12 +265,16 @@ class InscriptionParticipant extends Component
                 $statutPaiement = 'en_attente';
 
                 if ($evenement->type_paiement == 'gratuit') {
+                    // Événement gratuit → paiement automatiquement validé
                     $montant        = 0;
                     $statutPaiement = 'paye';
+
                 } elseif ($evenement->type_paiement == 'par_entreprise'
                     && $participant->id_entreprise) {
+                    // ✅ CORRECTION : membre d'entreprise → pas de paiement individuel
+                    // L'entreprise paie pour tous ses membres → statut paye directement
                     $montant        = 0;
-                    $statutPaiement = 'en_attente';
+                    $statutPaiement = 'paye';
                 }
 
                 Inscription::create([
@@ -280,13 +288,47 @@ class InscriptionParticipant extends Component
             }
         }
 
+        // ✅ EMAIL 1 — Confirmation au participant
+        if ($participant->email) {
+            try {
+                Mail::to($participant->email)->send(
+                    new PreinscriptionRecue($participant, $nomEvenement)
+                );
+            } catch (\Exception $e) {
+                Log::error('Email participant échoué', [
+                    'participant_id' => $participant->id,
+                    'email'          => $participant->email,
+                    'erreur'         => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // ✅ EMAIL 2 — Notification au CDD désigné
+        if ($this->id_cdd) {
+            $cdd = User::find($this->id_cdd);
+            if ($cdd && $cdd->email) {
+                try {
+                    Mail::to($cdd->email)->send(
+                        new NouvellePreinscriptionCdd($participant, $cdd, $nomEvenement)
+                    );
+                } catch (\Exception $e) {
+                    Log::error('Email CDD échoué', [
+                        'cdd_id'         => $cdd->id,
+                        'email'          => $cdd->email,
+                        'participant_id' => $participant->id,
+                        'erreur'         => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
         $this->confirme = true;
     }
 
     public function render()
     {
         return view('livewire.auth.inscription-participant', [
-            'evenements'        => Evenement::where('date_fin', '>=', now()->toDateString())
+            'evenements' => Evenement::where('date_fin', '>=', now()->toDateString())
                 ->where(function ($q) {
                     $q->whereNull('date_cloture_inscriptions')
                       ->orWhere('date_cloture_inscriptions', '>=', now()->toDateString());
@@ -295,6 +337,7 @@ class InscriptionParticipant extends Component
                 ->get(),
             'villesDisponibles' => $this->getVillesDisponibles(),
             'estEtudiant'       => $this->estEtudiant,
+            'cdds'              => User::role('cdd')->orderBy('name')->get(),
         ])->layout('layouts.guest');
     }
 }

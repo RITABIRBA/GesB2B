@@ -10,23 +10,9 @@
     @livewireStyles
     <style>
 @media print {
-    /* Cache tout */
     body * { visibility: hidden; }
-
-    /* Affiche seulement le badge */
-    #badge-print, #badge-print * {
-        visibility: visible;
-    }
-
-    /* Centre le badge */
-    #badge-print {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-    }
-
-    /* Cache le bouton imprimer */
+    #badge-print, #badge-print * { visibility: visible; }
+    #badge-print { position: fixed; top: 0; left: 0; width: 100%; }
     .no-print { display: none !important; }
 }
 </style>
@@ -51,12 +37,13 @@
             @php
             $navItems = [
                 ['route' => 'participant.dashboard',   'icon' => 'fa-gauge',          'label' => 'Dashboard'],
-                ['route' => 'participant.profil',      'icon' => 'fa-user',           'label' => ' Profil'],
-                ['route' => 'participant.inscription', 'icon' => 'fa-clipboard-list', 'label' => ' Inscription'],
-                ['route' => 'participant.souhaits',    'icon' => 'fa-heart',          'label' => ' Souhaits'],
-                ['route' => 'participant.rendez-vous', 'icon' => 'fa-handshake',      'label' => ' RDV'],
-                ['route' => 'participant.planning',    'icon' => 'fa-calendar-check', 'label' => ' Planning'],
-                ['route' => 'participant.badge',       'icon' => 'fa-id-badge',       'label' => ' Badge'],
+                ['route' => 'participant.profil',      'icon' => 'fa-user',           'label' => 'Mon Profil'],
+                ['route' => 'participant.inscription', 'icon' => 'fa-clipboard-list', 'label' => 'Inscription'],
+                ['route' => 'participant.stands',      'icon' => 'fa-store',          'label' => 'Mes Stands'],
+                ['route' => 'participant.souhaits',    'icon' => 'fa-heart',          'label' => 'Souhaits RDV'],
+                ['route' => 'participant.rendez-vous', 'icon' => 'fa-handshake',      'label' => 'Rendez-vous'],
+                ['route' => 'participant.planning',    'icon' => 'fa-calendar-check', 'label' => 'Planning'],
+                ['route' => 'participant.badge',       'icon' => 'fa-id-badge',       'label' => 'Badge'],
                 ['route' => 'participant.catalogue',   'icon' => 'fa-book-open',      'label' => 'Catalogue'],
             ];
             @endphp
@@ -134,7 +121,6 @@
 @livewire('shared.demande-aide-widget')
 
 @livewireScripts
-{{-- Module de chargement global --}}
 <div wire:loading.flex
     class="fixed inset-0 z-[9999] items-center justify-center"
     style="background: rgba(0,0,0,0.4);">
@@ -142,6 +128,6 @@
         <div class="w-14 h-14 rounded-full border-4 border-gray-200 border-t-red-600 animate-spin"></div>
         <p class="text-gray-700 font-semibold text-sm">Chargement en cours...</p>
     </div>
-</div> 
+</div>
 </body>
 </html>

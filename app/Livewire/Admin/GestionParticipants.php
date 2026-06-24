@@ -10,6 +10,10 @@ use App\Models\Inscription;
 use App\Models\User;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Mail\PreinscriptionValidee;
+use App\Mail\PreinscriptionRejetee;
 
 class GestionParticipants extends Component
 {
@@ -25,7 +29,6 @@ class GestionParticipants extends Component
     public $telephone                = '';
     public $pays                     = '';
     public $ville                    = '';
-    // ✅ CORRIGÉ : valeur par défaut était 'representant'
     public $role                     = 'participant';
     public $statut_historique        = 'actif';
     public $participation_rdv        = true;
@@ -35,7 +38,6 @@ class GestionParticipants extends Component
     public $universite               = '';
     public $statut_participant       = 'classique';
 
-    // Infos activité
     public string $secteur_activite       = '';
     public string $secteur_activite_autre = '';
     public string $sous_secteur           = '';
@@ -55,7 +57,6 @@ class GestionParticipants extends Component
     public string $objectif_participation = '';
     public $id_chef_delegation = '';
 
-    // UI
     public bool   $showModal          = false;
     public bool   $isEditing          = false;
     public string $search             = '';
@@ -63,22 +64,18 @@ class GestionParticipants extends Component
     public string $filtre_preinscription = '';
     public string $entreprise_trouvee = '';
 
-    // Modal compte
     public bool   $showModalCompte   = false;
     public string $compte_email      = '';
     public string $compte_password   = '';
     public string $compte_code_acces = '';
     public bool   $compte_has_email  = false;
 
-    // Modal validation préinscription
     public bool $showModalPreinscription = false;
     public $preinscription_courante      = null;
 
-    // Modal rejet
     public bool   $showModalRejet = false;
     public string $motif_rejet    = '';
 
-    // ✅ CORRIGÉ : ajout du rôle 'participant'
     public array $roles = ['participant', 'representant', 'membre'];
 
     public array $secteurs = [
@@ -100,33 +97,15 @@ class GestionParticipants extends Component
     ];
 
     public array $zonesGeographiques = [
-        'UEMOA (Afrique de l\'Ouest)',
-        'CEMAC (Afrique Centrale)',
-        'Afrique du Nord (Maghreb)',
-        'Afrique de l\'Est (EAC)',
-        'Afrique Australe (SADC)',
-        'Afrique (toute la région)',
-
-        'Union Européenne',
-        'Europe de l\'Ouest',
-        'Europe de l\'Est',
-        'Europe (toute la région)',
-
-        'Amérique du Nord',
-        'Amérique Centrale et Caraïbes',
-        'Amérique du Sud',
-        'Amériques (toute la région)',
-
-        'Asie de l\'Est',
-        'Asie du Sud-Est',
-        'Asie du Sud',
-        'Moyen-Orient',
-        'Asie (toute la région)',
-
-        'Océanie',
-
-        'Locale (mon pays uniquement)',
-        'Internationale (toutes zones)',
+        'UEMOA (Afrique de l\'Ouest)', 'CEMAC (Afrique Centrale)',
+        'Afrique du Nord (Maghreb)', 'Afrique de l\'Est (EAC)',
+        'Afrique Australe (SADC)', 'Afrique (toute la région)',
+        'Union Européenne', 'Europe de l\'Ouest', 'Europe de l\'Est',
+        'Europe (toute la région)', 'Amérique du Nord',
+        'Amérique Centrale et Caraïbes', 'Amérique du Sud',
+        'Amériques (toute la région)', 'Asie de l\'Est', 'Asie du Sud-Est',
+        'Asie du Sud', 'Moyen-Orient', 'Asie (toute la région)',
+        'Océanie', 'Locale (mon pays uniquement)', 'Internationale (toutes zones)',
     ];
 
     public array $joursDisponibles = [
@@ -158,76 +137,13 @@ class GestionParticipants extends Component
     ];
 
     public array $villes_par_pays = [
-        'Bénin'           => ['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Djougou', 'Bohicon', 'Kandi', 'Natitingou', 'Autre'],
         'Burkina Faso'    => ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou', 'Banfora', 'Ouahigouya', 'Pouytenga', 'Kaya', 'Tenkodogo', 'Fada N\'Gourma', 'Dédougou', 'Ziniaré', 'Kongoussi', 'Autre'],
-        'Cap-Vert'        => ['Praia', 'Mindelo', 'Santa Maria', 'Espargos', 'Autre'],
         'Côte d\'Ivoire'  => ['Abidjan', 'Bouaké', 'Daloa', 'San-Pédro', 'Yamoussoukro', 'Korhogo', 'Man', 'Divo', 'Gagnoa', 'Abengourou', 'Soubré', 'Bondoukou', 'Autre'],
-        'Gambie'          => ['Banjul', 'Serekunda', 'Brikama', 'Bakau', 'Farafenni', 'Autre'],
-        'Ghana'           => ['Accra', 'Kumasi', 'Tamale', 'Sekondi-Takoradi', 'Cape Coast', 'Tema', 'Autre'],
-        'Guinée'          => ['Conakry', 'Nzérékoré', 'Kankan', 'Kindia', 'Labé', 'Siguiri', 'Mamou', 'Autre'],
-        'Guinée-Bissau'   => ['Bissau', 'Bafatá', 'Gabú', 'Bissorã', 'Autre'],
-        'Liberia'         => ['Monrovia', 'Gbarnga', 'Buchanan', 'Voinjama', 'Autre'],
         'Mali'            => ['Bamako', 'Sikasso', 'Mopti', 'Koutiala', 'Kayes', 'Ségou', 'Gao', 'Tombouctou', 'Kidal', 'Autre'],
-        'Mauritanie'      => ['Nouakchott', 'Nouadhibou', 'Rosso', 'Kaédi', 'Zouerate', 'Kiffa', 'Autre'],
-        'Niger'           => ['Niamey', 'Zinder', 'Maradi', 'Tahoua', 'Agadez', 'Dosso', 'Arlit', 'Diffa', 'Autre'],
-        'Nigeria'         => ['Lagos', 'Kano', 'Ibadan', 'Abuja', 'Port Harcourt', 'Benin City', 'Maiduguri', 'Zaria', 'Aba', 'Enugu', 'Kaduna', 'Ilorin', 'Autre'],
         'Sénégal'         => ['Dakar', 'Thiès', 'Kaolack', 'Ziguinchor', 'Saint-Louis', 'Rufisque', 'Mbour', 'Louga', 'Diourbel', 'Tambacounda', 'Autre'],
-        'Sierra Leone'    => ['Freetown', 'Bo', 'Kenema', 'Makeni', 'Koidu', 'Autre'],
         'Togo'            => ['Lomé', 'Sokodé', 'Kara', 'Atakpamé', 'Kpalimé', 'Dapaong', 'Tsévié', 'Autre'],
-        'Angola'          => ['Luanda', 'Huambo', 'Lobito', 'Benguela', 'Kuito', 'Lubango', 'Autre'],
-        'Cameroun'        => ['Yaoundé', 'Douala', 'Garoua', 'Bamenda', 'Maroua', 'Bafoussam', 'Ngaoundéré', 'Bertoua', 'Autre'],
-        'Congo'           => ['Brazzaville', 'Pointe-Noire', 'Dolisie', 'Nkayi', 'Autre'],
-        'Gabon'           => ['Libreville', 'Port-Gentil', 'Franceville', 'Oyem', 'Autre'],
-        'République démocratique du Congo' => ['Kinshasa', 'Lubumbashi', 'Mbuji-Mayi', 'Kananga', 'Kisangani', 'Bukavu', 'Goma', 'Autre'],
-        'Tchad'           => ['N\'Djamena', 'Moundou', 'Sarh', 'Abéché', 'Kélo', 'Autre'],
-        'Éthiopie'        => ['Addis-Abeba', 'Dire Dawa', 'Mekele', 'Gondar', 'Awasa', 'Bahir Dar', 'Autre'],
-        'Kenya'           => ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Autre'],
-        'Madagascar'      => ['Antananarivo', 'Toamasina', 'Antsirabe', 'Fianarantsoa', 'Mahajanga', 'Toliara', 'Autre'],
-        'Mozambique'      => ['Maputo', 'Matola', 'Nampula', 'Beira', 'Chimoio', 'Autre'],
-        'Ouganda'         => ['Kampala', 'Gulu', 'Lira', 'Mbarara', 'Jinja', 'Autre'],
-        'Rwanda'          => ['Kigali', 'Butare', 'Gisenyi', 'Ruhengeri', 'Gitarama', 'Autre'],
-        'Tanzanie'        => ['Dar es Salaam', 'Mwanza', 'Arusha', 'Dodoma', 'Mbeya', 'Zanzibar', 'Autre'],
-        'Zimbabwe'        => ['Harare', 'Bulawayo', 'Mutare', 'Gweru', 'Kwekwe', 'Autre'],
-        'Algérie'         => ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Batna', 'Sétif', 'Tlemcen', 'Autre'],
-        'Égypte'          => ['Le Caire', 'Alexandrie', 'Gizeh', 'Charm el-Cheikh', 'Louxor', 'Assouan', 'Autre'],
-        'Libye'           => ['Tripoli', 'Benghazi', 'Misrata', 'Al-Bayda', 'Sebha', 'Autre'],
-        'Maroc'           => ['Casablanca', 'Rabat', 'Fès', 'Marrakech', 'Agadir', 'Tanger', 'Meknès', 'Oujda', 'Autre'],
-        'Tunisie'         => ['Tunis', 'Sfax', 'Sousse', 'Gabès', 'Bizerte', 'Kairouan', 'Autre'],
-        'Afrique du Sud'  => ['Johannesburg', 'Le Cap', 'Durban', 'Pretoria', 'Port Elizabeth', 'Bloemfontein', 'Autre'],
-        'Botswana'        => ['Gaborone', 'Francistown', 'Molepolole', 'Serowe', 'Autre'],
-        'Namibie'         => ['Windhoek', 'Rundu', 'Walvis Bay', 'Swakopmund', 'Autre'],
-        'Allemagne'       => ['Berlin', 'Hambourg', 'Munich', 'Cologne', 'Francfort', 'Stuttgart', 'Düsseldorf', 'Leipzig', 'Autre'],
-        'Belgique'        => ['Bruxelles', 'Anvers', 'Gand', 'Liège', 'Bruges', 'Namur', 'Autre'],
-        'Espagne'         => ['Madrid', 'Barcelone', 'Valence', 'Séville', 'Bilbao', 'Málaga', 'Autre'],
         'France'          => ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Bordeaux', 'Lille', 'Montpellier', 'Autre'],
-        'Italie'          => ['Rome', 'Milan', 'Naples', 'Turin', 'Palerme', 'Gênes', 'Bologne', 'Florence', 'Autre'],
-        'Pays-Bas'        => ['Amsterdam', 'Rotterdam', 'La Haye', 'Utrecht', 'Eindhoven', 'Autre'],
-        'Portugal'        => ['Lisbonne', 'Porto', 'Braga', 'Amadora', 'Funchal', 'Autre'],
-        'Royaume-Uni'     => ['Londres', 'Birmingham', 'Manchester', 'Glasgow', 'Liverpool', 'Leeds', 'Sheffield', 'Autre'],
-        'Russie'          => ['Moscou', 'Saint-Pétersbourg', 'Novossibirsk', 'Ekaterinbourg', 'Kazan', 'Autre'],
-        'Suisse'          => ['Zurich', 'Genève', 'Bâle', 'Berne', 'Lausanne', 'Autre'],
-        'Turquie'         => ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Adana', 'Gaziantep', 'Autre'],
-        'Argentine'       => ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Autre'],
-        'Brésil'          => ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza', 'Manaus', 'Curitiba', 'Recife', 'Autre'],
-        'Canada'          => ['Toronto', 'Montréal', 'Vancouver', 'Calgary', 'Ottawa', 'Edmonton', 'Québec', 'Autre'],
-        'Colombie'        => ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Autre'],
-        'États-Unis'      => ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphie', 'San Antonio', 'San Diego', 'Dallas', 'Washington', 'Miami', 'Atlanta', 'Boston', 'Autre'],
-        'Mexique'         => ['Mexico', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'Autre'],
-        'Pérou'           => ['Lima', 'Arequipa', 'Trujillo', 'Chiclayo', 'Cusco', 'Autre'],
-        'Arabie Saoudite' => ['Riyad', 'Djeddah', 'La Mecque', 'Médine', 'Dammam', 'Autre'],
-        'Chine'           => ['Pékin', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Chengdu', 'Tianjin', 'Wuhan', 'Xian', 'Hangzhou', 'Autre'],
-        'Émirats arabes unis' => ['Dubaï', 'Abou Dabi', 'Charjah', 'Al Ain', 'Ajman', 'Autre'],
-        'Inde'            => ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad', 'Autre'],
-        'Indonésie'       => ['Jakarta', 'Surabaya', 'Bandung', 'Medan', 'Semarang', 'Makassar', 'Bali', 'Autre'],
-        'Japon'           => ['Tokyo', 'Osaka', 'Nagoya', 'Sapporo', 'Fukuoka', 'Yokohama', 'Kyoto', 'Kobe', 'Autre'],
-        'Malaisie'        => ['Kuala Lumpur', 'George Town', 'Ipoh', 'Johor Bahru', 'Kota Kinabalu', 'Autre'],
-        'Pakistan'        => ['Karachi', 'Lahore', 'Islamabad', 'Faisalabad', 'Rawalpindi', 'Autre'],
-        'Qatar'           => ['Doha', 'Al-Wakrah', 'Al-Khor', 'Al-Rayyan', 'Autre'],
-        'Singapour'       => ['Singapour', 'Autre'],
-        'Thaïlande'       => ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Khon Kaen', 'Autre'],
-        'Vietnam'         => ['Hô Chi Minh-Ville', 'Hanoï', 'Đà Nẵng', 'Haïphong', 'Cần Thơ', 'Autre'],
-        'Australie'       => ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adélaïde', 'Canberra', 'Autre'],
-        'Nouvelle-Zélande'=> ['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Autre'],
+        'États-Unis'      => ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Autre'],
         'Autre'           => ['Autre'],
     ];
 
@@ -301,10 +217,7 @@ class GestionParticipants extends Component
         $this->resetFields();
     }
 
-    public function closeModalCompte(): void
-    {
-        $this->showModalCompte = false;
-    }
+    public function closeModalCompte(): void { $this->showModalCompte = false; }
 
     public function resetFields(): void
     {
@@ -320,7 +233,6 @@ class GestionParticipants extends Component
         $this->telephone               = '';
         $this->pays                    = '';
         $this->ville                   = '';
-        // ✅ CORRIGÉ
         $this->role                    = 'participant';
         $this->statut_historique       = 'actif';
         $this->participation_rdv       = true;
@@ -367,8 +279,7 @@ class GestionParticipants extends Component
         $this->role                    = $p->role;
         $this->statut_historique       = $p->statut_historique;
         $this->participation_rdv       = $p->participation_rdv;
-        $this->date_naissance          = $p->date_naissance
-            ? $p->date_naissance->format('Y-m-d') : '';
+        $this->date_naissance          = $p->date_naissance ? $p->date_naissance->format('Y-m-d') : '';
         $this->filiere                 = $p->filiere ?? '';
         $this->universite              = $p->universite ?? '';
         $this->statut_participant      = $p->statut_participant ?? 'classique';
@@ -415,10 +326,6 @@ class GestionParticipants extends Component
         $this->showModalCompte   = true;
     }
 
-    // ════════════════════════════════════════════════════════
-    // VALIDATION DE PRÉINSCRIPTION
-    // ════════════════════════════════════════════════════════
-
     public function ouvrirValidationPreinscription(int $id): void
     {
         $this->preinscription_courante = Participant::with('entreprise', 'evenement')->findOrFail($id);
@@ -437,27 +344,31 @@ class GestionParticipants extends Component
 
         $participant = Participant::findOrFail($this->preinscription_courante->id);
 
-        $participant->update([
-            'statut_preinscription' => 'valide',
-        ]);
+        $participant->update(['statut_preinscription' => 'valide']);
 
         $password_genere = null;
-        $userExiste = $participant->email
-            ? User::where('email', $participant->email)->exists()
-            : false;
 
-        if ($participant->email && !$userExiste) {
-            $password_genere = substr(str_shuffle(
-                'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-            ), 0, 8);
+        if ($participant->email) {
+            $userExiste = User::where('email', $participant->email)->exists();
 
-            $user = User::create([
-                'name'     => $participant->nom . ' ' . $participant->prenom,
-                'email'    => $participant->email,
-                'password' => Hash::make($password_genere),
-            ]);
+            if (!$userExiste) {
+                try {
+                    $password_genere = substr(str_shuffle(
+                        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                    ), 0, 8);
 
-            $user->assignRole($participant->id_entreprise ? 'entreprise' : 'participant');
+                    $user = User::create([
+                        'name'     => $participant->nom . ' ' . $participant->prenom,
+                        'email'    => $participant->email,
+                        'password' => Hash::make($password_genere),
+                    ]);
+
+                    $user->assignRole($participant->id_entreprise ? 'entreprise' : 'participant');
+                } catch (\Exception $e) {
+                    $password_genere = null;
+                    Log::error('Création compte échouée', ['erreur' => $e->getMessage()]);
+                }
+            }
         }
 
         Notification::create([
@@ -469,6 +380,19 @@ class GestionParticipants extends Component
             'date_envoie'    => now()->toDateString(),
             'type'           => 'systeme',
         ]);
+
+        if ($participant->email) {
+            try {
+                Mail::to($participant->email)->send(
+                    new PreinscriptionValidee($participant, $password_genere)
+                );
+            } catch (\Exception $e) {
+                Log::error('Email validation échoué', [
+                    'participant_id' => $participant->id,
+                    'erreur'         => $e->getMessage(),
+                ]);
+            }
+        }
 
         $this->compte_email      = $participant->email ?? '';
         $this->compte_password   = $password_genere;
@@ -506,23 +430,28 @@ class GestionParticipants extends Component
 
         $participant = Participant::findOrFail($this->preinscription_courante->id);
 
-        $participant->update([
-            'statut_preinscription' => 'rejete',
-        ]);
+        $participant->update(['statut_preinscription' => 'rejete']);
 
         Notification::create([
             'id_participant' => $participant->id,
-            'contenu'        => '❌ Votre préinscription a été rejetée. Motif : '
-                . $this->motif_rejet,
+            'contenu'        => '❌ Votre préinscription a été rejetée. Motif : ' . $this->motif_rejet,
             'date_envoie'    => now()->toDateString(),
             'type'           => 'systeme',
         ]);
 
+        if ($participant->email) {
+            try {
+                Mail::to($participant->email)->send(
+                    new PreinscriptionRejetee($participant, 'Business Forum', $this->motif_rejet)
+                );
+            } catch (\Exception $e) {
+                Log::error('Email rejet échoué', ['erreur' => $e->getMessage()]);
+            }
+        }
+
         $this->fermerRejetPreinscription();
         session()->flash('success', 'Préinscription rejetée. Le participant a été notifié.');
     }
-
-    // ════════════════════════════════════════════════════════
 
     public function sauvegarder(): void
     {
@@ -552,7 +481,9 @@ class GestionParticipants extends Component
             ? $this->secteur_activite_autre
             : $this->secteur_activite;
 
-        $code_acces = strtoupper(substr($this->nom, 0, 3) . rand(1000, 9999));
+        // ✅ CORRECTION : supprime les accents avant d'extraire les 3 premières lettres
+        $nom_sans_accent = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $this->nom);
+        $code_acces = strtoupper(substr($nom_sans_accent, 0, 3)) . rand(1000, 9999);
 
         $data = [
             'id_entreprise'          => $this->id_entreprise ?: null,
@@ -584,12 +515,10 @@ class GestionParticipants extends Component
             'zone_geographique'      => $this->zone_geographique ?: null,
             'disponibilites'         => $this->disponibilites ?: null,
             'types_partenariat'      => $this->types_partenariat ?: null,
-            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat)
-                ? $this->type_partenariat_autre : null,
+            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat) ? $this->type_partenariat_autre : null,
             'profils_partenaire'     => $this->profils_partenaire ?: null,
             'secteurs_recherche'     => $this->secteurs_recherche ?: null,
-            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche)
-                ? $this->secteur_recherche_autre : null,
+            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche) ? $this->secteur_recherche_autre : null,
             'objectif_participation' => $this->objectif_participation ?: null,
         ];
 
@@ -615,8 +544,7 @@ class GestionParticipants extends Component
                     if ($evenement->type_paiement == 'gratuit') {
                         $montant = 0;
                         $statut  = 'paye';
-                    } elseif ($evenement->type_paiement == 'par_entreprise'
-                        && $participant->id_entreprise) {
+                    } elseif ($evenement->type_paiement == 'par_entreprise' && $participant->id_entreprise) {
                         $montant = 0;
                         $statut  = 'en_attente';
                     }
@@ -634,15 +562,20 @@ class GestionParticipants extends Component
 
             $password_genere = null;
             if ($this->email) {
-                $password_genere = substr(str_shuffle(
-                    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-                ), 0, 8);
-                $user = User::create([
-                    'name'     => $this->nom . ' ' . $this->prenom,
-                    'email'    => $this->email,
-                    'password' => Hash::make($password_genere),
-                ]);
-                $user->assignRole('participant');
+                try {
+                    $password_genere = substr(str_shuffle(
+                        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                    ), 0, 8);
+                    $user = User::create([
+                        'name'     => $this->nom . ' ' . $this->prenom,
+                        'email'    => $this->email,
+                        'password' => Hash::make($password_genere),
+                    ]);
+                    $user->assignRole('participant');
+                } catch (\Exception $e) {
+                    $password_genere = null;
+                    Log::error('Création compte échouée', ['erreur' => $e->getMessage()]);
+                }
             }
 
             $this->compte_email      = $this->email;
@@ -680,9 +613,7 @@ class GestionParticipants extends Component
                 ->get(),
             'evenements'        => Evenement::orderBy('nom')->get(),
             'villesDisponibles' => $this->villesDisponibles,
-            'chefsDelegation'   => Participant::where('role', 'chef_delegation')
-                ->orderBy('nom')
-                ->get(),
+            'chefsDelegation'   => Participant::where('role', 'chef_delegation')->orderBy('nom')->get(),
         ])->layout('layouts.admin', ['title' => 'Gestion des Participants']);
     }
 }

@@ -7,10 +7,12 @@ use App\Models\Stand;
 use App\Models\Entreprise;
 use App\Models\Evenement;
 use App\Models\Paiement;
+use App\Mail\ReservationStandRecue;
+use App\Mail\StandAssigne;
+use Illuminate\Support\Facades\Mail;
 
 class MesStands extends Component
 {
-    // Modal paiement stand
     public $showModalPaiement    = false;
     public $stand_id_paiement    = null;
     public $mode_paiement        = 'orange_money';
@@ -30,10 +32,11 @@ class MesStands extends Component
             ?? Entreprise::where('nom', auth()->user()->name)->first();
     }
 
-    /**
-     * Réservation d'un stand par le représentant.
-     * → statut_reservation = 'en_attente' (en attente de validation admin).
-     */
+    private function getEmailDestinataire(Entreprise $entreprise): ?string
+    {
+        return $entreprise->email_responsable ?? null;
+    }
+
     public function reserverStand($stand_id)
     {
         $entreprise = $this->getEntreprise();
@@ -60,12 +63,23 @@ class MesStands extends Component
             'statut_paiement_stand' => null,
         ]);
 
-        session()->flash('success', 'Stand N°' . $stand->numero_stand . ' réservé ! Votre réservation est en attente de validation par l\'administration.');
+        // ✅ EMAIL — demande de réservation reçue
+        $email = $this->getEmailDestinataire($entreprise);
+        if ($email) {
+            try {
+                Mail::to($email)->send(
+                    new ReservationStandRecue(
+                        $stand,
+                        $entreprise->nom_responsable ?? $entreprise->nom,
+                        $stand->evenement?->nom ?? 'Business Forum'
+                    )
+                );
+            } catch (\Exception $e) {}
+        }
+
+        session()->flash('success', 'Stand N°' . $stand->numero_stand . ' réservé ! Votre réservation est en attente de validation.');
     }
 
-    /**
-     * Annule une réservation, uniquement si elle n'a pas encore été payée.
-     */
     public function annulerReservation($stand_id)
     {
         $entreprise = $this->getEntreprise();
@@ -79,7 +93,7 @@ class MesStands extends Component
         }
 
         if ($stand->statut_paiement_stand == 'paye') {
-            session()->flash('error', 'Ce stand a déjà été payé, vous ne pouvez plus annuler la réservation.');
+            session()->flash('error', 'Ce stand a déjà été payé, vous ne pouvez plus annuler.');
             return;
         }
 
@@ -88,13 +102,10 @@ class MesStands extends Component
             'statut_reservation'    => null,
             'statut_paiement_stand' => null,
         ]);
+
         session()->flash('success', 'Réservation du Stand N°' . $stand->numero_stand . ' annulée.');
     }
 
-    /**
-     * Ouvre le modal de paiement — uniquement si la réservation
-     * a été validée par l'admin et qu'un paiement est requis.
-     */
     public function payerStand($stand_id)
     {
         $stand = Stand::with('evenement')->findOrFail($stand_id);
@@ -171,9 +182,28 @@ class MesStands extends Component
 
     private function enregistrerPaiementStand()
     {
-        Stand::findOrFail($this->stand_id_paiement)->update([
-            'statut_paiement_stand' => 'paye',
-        ]);
+        $stand      = Stand::with(['evenement', 'entreprise'])->findOrFail($this->stand_id_paiement);
+        $entreprise = $this->getEntreprise();
+
+        $stand->update(['statut_paiement_stand' => 'paye']);
+
+        // ✅ EMAIL — paiement confirmé
+        $email = $this->getEmailDestinataire($entreprise);
+        if ($email) {
+            try {
+                Mail::to($email)->send(
+                    new StandAssigne(
+                        $stand->entreprise?->participant ?? new \App\Models\Participant([
+                            'nom'    => $entreprise->nom_responsable ?? $entreprise->nom,
+                            'prenom' => '',
+                            'email'  => $email,
+                        ]),
+                        $stand,
+                        $stand->evenement?->nom ?? 'Business Forum'
+                    )
+                );
+            } catch (\Exception $e) {}
+        }
 
         $this->closeModalPaiement();
         session()->flash('success', 'Paiement du stand effectué avec succès !');
@@ -193,6 +223,7 @@ class MesStands extends Component
 
         $standsDisponibles = Stand::with('evenement')
             ->whereNull('id_entreprise')
+            ->whereNull('id_participant')
             ->whereHas('evenement', fn($q) =>
                 $q->where('date_fin', '>=', now()->toDateString())
             )

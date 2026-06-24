@@ -10,7 +10,11 @@ use App\Models\Evenement;
 use App\Models\Inscription;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use App\Mail\PreinscriptionValidee;
+use App\Mail\PreinscriptionRejetee;
 
 class GestionEntreprises extends Component
 {
@@ -49,11 +53,11 @@ class GestionEntreprises extends Component
     public array  $disponibilites          = [];
 
     // Modal compte représentant
-    public bool   $showModalCompte   = false;
-    public string $compte_email      = '';
-    public string $compte_password   = '';
-    public string $compte_code_acces = '';
-    public bool   $compte_has_email  = false;
+    public bool    $showModalCompte   = false;
+    public string  $compte_email      = '';
+    public ?string $compte_password   = null;
+    public string  $compte_code_acces = '';
+    public bool    $compte_has_email  = false;
 
     // UI
     public bool   $showModal     = false;
@@ -61,192 +65,78 @@ class GestionEntreprises extends Component
     public string $search        = '';
 
     public array $secteurs = [
-        'Agriculture et agro-alimentaire',
-        'Environnement',
-        'Industrie textile',
-        'Biens de consommation',
-        'Energie',
-        'Formation',
-        'Tourisme',
-        'TIC',
-        'Sous-traitance',
-        'Artisanat',
-        'Distribution',
-        'Prestation',
-        'Industrie manufacturière',
-        'Enseignement',
-        'Services aux entreprises',
-        'BTP',
-        'Activités médicales et pharmaceutiques',
-        'Autre',
+        'Agriculture et agro-alimentaire', 'Environnement', 'Industrie textile',
+        'Biens de consommation', 'Energie', 'Formation', 'Tourisme', 'TIC',
+        'Sous-traitance', 'Artisanat', 'Distribution', 'Prestation',
+        'Industrie manufacturière', 'Enseignement', 'Services aux entreprises',
+        'BTP', 'Activités médicales et pharmaceutiques', 'Autre',
     ];
 
     public array $typesPartenariatOptions = [
-        'Alliance commerciale',
-        'Alliance financière',
-        'Alliance industrielle',
-        'Autre',
+        'Alliance commerciale', 'Alliance financière', 'Alliance industrielle', 'Autre',
     ];
 
     public array $profilsPartenariatOptions = [
-        'Consultant',
-        'Distributeur',
-        'Exportateur',
-        'Fabricant / Producteur',
-        'Investisseur',
-        'Importateur',
-        'Prestataire de service',
-        'Sous-traitant',
-        'Innovation',
-        'R&D',
+        'Consultant', 'Distributeur', 'Exportateur', 'Fabricant / Producteur',
+        'Investisseur', 'Importateur', 'Prestataire de service', 'Sous-traitant',
+        'Innovation', 'R&D',
     ];
 
     public array $zonesGeographiques = [
-    // AFRIQUE — zones économiques
-    'UEMOA (Afrique de l\'Ouest)',
-    'CEMAC (Afrique Centrale)',
-    'Afrique du Nord (Maghreb)',
-    'Afrique de l\'Est (EAC)',
-    'Afrique Australe (SADC)',
-    'Afrique (toute la région)',
-
-    // EUROPE
-    'Union Européenne',
-    'Europe de l\'Ouest',
-    'Europe de l\'Est',
-    'Europe (toute la région)',
-
-    // AMÉRIQUES
-    'Amérique du Nord',
-    'Amérique Centrale et Caraïbes',
-    'Amérique du Sud',
-    'Amériques (toute la région)',
-
-    // ASIE
-    'Asie de l\'Est',
-    'Asie du Sud-Est',
-    'Asie du Sud',
-    'Moyen-Orient',
-    'Asie (toute la région)',
-
-    // OCÉANIE
-    'Océanie',
-
-    // GLOBAL
-    'Locale (mon pays uniquement)',
-    'Internationale (toutes zones)',
-];
+        'UEMOA (Afrique de l\'Ouest)', 'CEMAC (Afrique Centrale)',
+        'Afrique du Nord (Maghreb)', 'Afrique de l\'Est (EAC)',
+        'Afrique Australe (SADC)', 'Afrique (toute la région)',
+        'Union Européenne', 'Europe de l\'Ouest', 'Europe de l\'Est',
+        'Europe (toute la région)', 'Amérique du Nord',
+        'Amérique Centrale et Caraïbes', 'Amérique du Sud',
+        'Amériques (toute la région)', 'Asie de l\'Est', 'Asie du Sud-Est',
+        'Asie du Sud', 'Moyen-Orient', 'Asie (toute la région)',
+        'Océanie', 'Locale (mon pays uniquement)', 'Internationale (toutes zones)',
+    ];
 
     public array $joursDisponibles = [
         'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche',
     ];
 
     public array $pays_liste = [
-        // AFRIQUE DE L'OUEST
         'Bénin', 'Burkina Faso', 'Cap-Vert', 'Côte d\'Ivoire', 'Gambie',
         'Ghana', 'Guinée', 'Guinée-Bissau', 'Liberia', 'Mali', 'Mauritanie',
         'Niger', 'Nigeria', 'Sénégal', 'Sierra Leone', 'Togo',
-        // AFRIQUE CENTRALE
         'Angola', 'Cameroun', 'Congo', 'Gabon', 'Guinée équatoriale',
         'République centrafricaine', 'République démocratique du Congo', 'Tchad',
-        // AFRIQUE DE L'EST
         'Burundi', 'Djibouti', 'Érythrée', 'Éthiopie', 'Kenya', 'Madagascar',
         'Malawi', 'Maurice', 'Mozambique', 'Ouganda', 'Rwanda', 'Seychelles',
         'Somalie', 'Soudan', 'Soudan du Sud', 'Tanzanie', 'Zambie', 'Zimbabwe',
-        // AFRIQUE DU NORD
         'Algérie', 'Égypte', 'Libye', 'Maroc', 'Tunisie',
-        // AFRIQUE AUSTRALE
         'Afrique du Sud', 'Botswana', 'Eswatini', 'Lesotho', 'Namibie',
-        // EUROPE
         'Allemagne', 'Autriche', 'Belgique', 'Danemark', 'Espagne',
         'Finlande', 'France', 'Grèce', 'Irlande', 'Italie', 'Luxembourg',
         'Norvège', 'Pays-Bas', 'Pologne', 'Portugal', 'Royaume-Uni',
         'Russie', 'Suède', 'Suisse', 'Turquie', 'Ukraine',
-        // AMERIQUE
         'Argentine', 'Bolivie', 'Brésil', 'Canada', 'Chili', 'Colombie',
         'Cuba', 'États-Unis', 'Mexique', 'Pérou', 'Venezuela',
-        // ASIE
         'Arabie Saoudite', 'Bangladesh', 'Chine', 'Corée du Sud',
         'Émirats arabes unis', 'Inde', 'Indonésie', 'Iran', 'Irak',
         'Israël', 'Japon', 'Jordanie', 'Liban', 'Malaisie', 'Pakistan',
         'Philippines', 'Qatar', 'Singapour', 'Thaïlande', 'Vietnam',
-        // OCEANIE
-        'Australie', 'Nouvelle-Zélande',
-        // AUTRE
-        'Autre',
+        'Australie', 'Nouvelle-Zélande', 'Autre',
     ];
 
     public array $villes_par_pays = [
         'Bénin'           => ['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Djougou', 'Bohicon', 'Kandi', 'Natitingou', 'Autre'],
         'Burkina Faso'    => ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou', 'Banfora', 'Ouahigouya', 'Pouytenga', 'Kaya', 'Tenkodogo', 'Fada N\'Gourma', 'Dédougou', 'Ziniaré', 'Kongoussi', 'Autre'],
-        'Cap-Vert'        => ['Praia', 'Mindelo', 'Santa Maria', 'Espargos', 'Autre'],
         'Côte d\'Ivoire'  => ['Abidjan', 'Bouaké', 'Daloa', 'San-Pédro', 'Yamoussoukro', 'Korhogo', 'Man', 'Divo', 'Gagnoa', 'Abengourou', 'Soubré', 'Bondoukou', 'Autre'],
-        'Gambie'          => ['Banjul', 'Serekunda', 'Brikama', 'Bakau', 'Farafenni', 'Autre'],
-        'Ghana'           => ['Accra', 'Kumasi', 'Tamale', 'Sekondi-Takoradi', 'Cape Coast', 'Tema', 'Autre'],
-        'Guinée'          => ['Conakry', 'Nzérékoré', 'Kankan', 'Kindia', 'Labé', 'Siguiri', 'Mamou', 'Autre'],
-        'Guinée-Bissau'   => ['Bissau', 'Bafatá', 'Gabú', 'Bissorã', 'Autre'],
-        'Liberia'         => ['Monrovia', 'Gbarnga', 'Buchanan', 'Voinjama', 'Autre'],
         'Mali'            => ['Bamako', 'Sikasso', 'Mopti', 'Koutiala', 'Kayes', 'Ségou', 'Gao', 'Tombouctou', 'Kidal', 'Autre'],
-        'Mauritanie'      => ['Nouakchott', 'Nouadhibou', 'Rosso', 'Kaédi', 'Zouerate', 'Kiffa', 'Autre'],
         'Niger'           => ['Niamey', 'Zinder', 'Maradi', 'Tahoua', 'Agadez', 'Dosso', 'Arlit', 'Diffa', 'Autre'],
-        'Nigeria'         => ['Lagos', 'Kano', 'Ibadan', 'Abuja', 'Port Harcourt', 'Benin City', 'Maiduguri', 'Zaria', 'Aba', 'Enugu', 'Kaduna', 'Ilorin', 'Autre'],
         'Sénégal'         => ['Dakar', 'Thiès', 'Kaolack', 'Ziguinchor', 'Saint-Louis', 'Rufisque', 'Mbour', 'Louga', 'Diourbel', 'Tambacounda', 'Autre'],
-        'Sierra Leone'    => ['Freetown', 'Bo', 'Kenema', 'Makeni', 'Koidu', 'Autre'],
         'Togo'            => ['Lomé', 'Sokodé', 'Kara', 'Atakpamé', 'Kpalimé', 'Dapaong', 'Tsévié', 'Autre'],
-        'Angola'          => ['Luanda', 'Huambo', 'Lobito', 'Benguela', 'Kuito', 'Lubango', 'Autre'],
+        'Ghana'           => ['Accra', 'Kumasi', 'Tamale', 'Sekondi-Takoradi', 'Cape Coast', 'Tema', 'Autre'],
+        'Nigeria'         => ['Lagos', 'Kano', 'Ibadan', 'Abuja', 'Port Harcourt', 'Benin City', 'Maiduguri', 'Zaria', 'Aba', 'Enugu', 'Kaduna', 'Ilorin', 'Autre'],
         'Cameroun'        => ['Yaoundé', 'Douala', 'Garoua', 'Bamenda', 'Maroua', 'Bafoussam', 'Ngaoundéré', 'Bertoua', 'Autre'],
-        'Congo'           => ['Brazzaville', 'Pointe-Noire', 'Dolisie', 'Nkayi', 'Autre'],
-        'Gabon'           => ['Libreville', 'Port-Gentil', 'Franceville', 'Oyem', 'Autre'],
-        'République démocratique du Congo' => ['Kinshasa', 'Lubumbashi', 'Mbuji-Mayi', 'Kananga', 'Kisangani', 'Bukavu', 'Goma', 'Autre'],
-        'Tchad'           => ['N\'Djamena', 'Moundou', 'Sarh', 'Abéché', 'Kélo', 'Autre'],
-        'Éthiopie'        => ['Addis-Abeba', 'Dire Dawa', 'Mekele', 'Gondar', 'Awasa', 'Bahir Dar', 'Autre'],
-        'Kenya'           => ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Autre'],
-        'Madagascar'      => ['Antananarivo', 'Toamasina', 'Antsirabe', 'Fianarantsoa', 'Mahajanga', 'Toliara', 'Autre'],
-        'Mozambique'      => ['Maputo', 'Matola', 'Nampula', 'Beira', 'Chimoio', 'Autre'],
-        'Ouganda'         => ['Kampala', 'Gulu', 'Lira', 'Mbarara', 'Jinja', 'Autre'],
-        'Rwanda'          => ['Kigali', 'Butare', 'Gisenyi', 'Ruhengeri', 'Gitarama', 'Autre'],
-        'Tanzanie'        => ['Dar es Salaam', 'Mwanza', 'Arusha', 'Dodoma', 'Mbeya', 'Zanzibar', 'Autre'],
-        'Zimbabwe'        => ['Harare', 'Bulawayo', 'Mutare', 'Gweru', 'Kwekwe', 'Autre'],
-        'Algérie'         => ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Batna', 'Sétif', 'Tlemcen', 'Autre'],
-        'Égypte'          => ['Le Caire', 'Alexandrie', 'Gizeh', 'Charm el-Cheikh', 'Louxor', 'Assouan', 'Autre'],
-        'Libye'           => ['Tripoli', 'Benghazi', 'Misrata', 'Al-Bayda', 'Sebha', 'Autre'],
-        'Maroc'           => ['Casablanca', 'Rabat', 'Fès', 'Marrakech', 'Agadir', 'Tanger', 'Meknès', 'Oujda', 'Autre'],
-        'Tunisie'         => ['Tunis', 'Sfax', 'Sousse', 'Gabès', 'Bizerte', 'Kairouan', 'Autre'],
-        'Afrique du Sud'  => ['Johannesburg', 'Le Cap', 'Durban', 'Pretoria', 'Port Elizabeth', 'Bloemfontein', 'Autre'],
-        'Botswana'        => ['Gaborone', 'Francistown', 'Molepolole', 'Serowe', 'Autre'],
-        'Namibie'         => ['Windhoek', 'Rundu', 'Walvis Bay', 'Swakopmund', 'Autre'],
-        'Allemagne'       => ['Berlin', 'Hambourg', 'Munich', 'Cologne', 'Francfort', 'Stuttgart', 'Düsseldorf', 'Leipzig', 'Autre'],
-        'Belgique'        => ['Bruxelles', 'Anvers', 'Gand', 'Liège', 'Bruges', 'Namur', 'Autre'],
-        'Espagne'         => ['Madrid', 'Barcelone', 'Valence', 'Séville', 'Bilbao', 'Málaga', 'Autre'],
         'France'          => ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Bordeaux', 'Lille', 'Montpellier', 'Autre'],
-        'Italie'          => ['Rome', 'Milan', 'Naples', 'Turin', 'Palerme', 'Gênes', 'Bologne', 'Florence', 'Autre'],
-        'Pays-Bas'        => ['Amsterdam', 'Rotterdam', 'La Haye', 'Utrecht', 'Eindhoven', 'Autre'],
-        'Portugal'        => ['Lisbonne', 'Porto', 'Braga', 'Amadora', 'Funchal', 'Autre'],
-        'Royaume-Uni'     => ['Londres', 'Birmingham', 'Manchester', 'Glasgow', 'Liverpool', 'Leeds', 'Sheffield', 'Autre'],
-        'Russie'          => ['Moscou', 'Saint-Pétersbourg', 'Novossibirsk', 'Ekaterinbourg', 'Kazan', 'Autre'],
-        'Suisse'          => ['Zurich', 'Genève', 'Bâle', 'Berne', 'Lausanne', 'Autre'],
-        'Turquie'         => ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Adana', 'Gaziantep', 'Autre'],
-        'Argentine'       => ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Autre'],
-        'Brésil'          => ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza', 'Manaus', 'Curitiba', 'Recife', 'Autre'],
-        'Canada'          => ['Toronto', 'Montréal', 'Vancouver', 'Calgary', 'Ottawa', 'Edmonton', 'Québec', 'Autre'],
-        'Colombie'        => ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Autre'],
+        'Allemagne'       => ['Berlin', 'Hambourg', 'Munich', 'Cologne', 'Francfort', 'Stuttgart', 'Düsseldorf', 'Leipzig', 'Autre'],
         'États-Unis'      => ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphie', 'San Antonio', 'San Diego', 'Dallas', 'Washington', 'Miami', 'Atlanta', 'Boston', 'Autre'],
-        'Mexique'         => ['Mexico', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'Autre'],
-        'Pérou'           => ['Lima', 'Arequipa', 'Trujillo', 'Chiclayo', 'Cusco', 'Autre'],
-        'Arabie Saoudite' => ['Riyad', 'Djeddah', 'La Mecque', 'Médine', 'Dammam', 'Autre'],
         'Chine'           => ['Pékin', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Chengdu', 'Tianjin', 'Wuhan', 'Xian', 'Hangzhou', 'Autre'],
-        'Émirats arabes unis' => ['Dubaï', 'Abou Dabi', 'Charjah', 'Al Ain', 'Ajman', 'Autre'],
-        'Inde'            => ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad', 'Autre'],
-        'Indonésie'       => ['Jakarta', 'Surabaya', 'Bandung', 'Medan', 'Semarang', 'Makassar', 'Bali', 'Autre'],
-        'Japon'           => ['Tokyo', 'Osaka', 'Nagoya', 'Sapporo', 'Fukuoka', 'Yokohama', 'Kyoto', 'Kobe', 'Autre'],
-        'Malaisie'        => ['Kuala Lumpur', 'George Town', 'Ipoh', 'Johor Bahru', 'Kota Kinabalu', 'Autre'],
-        'Pakistan'        => ['Karachi', 'Lahore', 'Islamabad', 'Faisalabad', 'Rawalpindi', 'Autre'],
-        'Qatar'           => ['Doha', 'Al-Wakrah', 'Al-Khor', 'Al-Rayyan', 'Autre'],
-        'Singapour'       => ['Singapour', 'Autre'],
-        'Thaïlande'       => ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Khon Kaen', 'Autre'],
-        'Vietnam'         => ['Hô Chi Minh-Ville', 'Hanoï', 'Đà Nẵng', 'Haïphong', 'Cần Thơ', 'Autre'],
-        'Australie'       => ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adélaïde', 'Canberra', 'Autre'],
-        'Nouvelle-Zélande'=> ['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Autre'],
         'Autre'           => ['Autre'],
     ];
 
@@ -255,17 +145,13 @@ class GestionEntreprises extends Component
         return $this->villes_par_pays[$this->pays] ?? ['Autre'];
     }
 
-    public function updatedPays(): void
-    {
-        $this->ville = '';
-    }
+    public function updatedPays(): void { $this->ville = ''; }
+    public function updatedRepPays(): void { $this->rep_ville = ''; }
 
     public function toggleTypePartenariat(string $type): void
     {
         if (in_array($type, $this->types_partenariat)) {
-            $this->types_partenariat = array_values(
-                array_filter($this->types_partenariat, fn($t) => $t !== $type)
-            );
+            $this->types_partenariat = array_values(array_filter($this->types_partenariat, fn($t) => $t !== $type));
         } elseif (count($this->types_partenariat) < 3) {
             $this->types_partenariat[] = $type;
         }
@@ -274,9 +160,7 @@ class GestionEntreprises extends Component
     public function toggleProfilPartenaire(string $profil): void
     {
         if (in_array($profil, $this->profils_partenaire)) {
-            $this->profils_partenaire = array_values(
-                array_filter($this->profils_partenaire, fn($p) => $p !== $profil)
-            );
+            $this->profils_partenaire = array_values(array_filter($this->profils_partenaire, fn($p) => $p !== $profil));
         } elseif (count($this->profils_partenaire) < 3) {
             $this->profils_partenaire[] = $profil;
         }
@@ -285,9 +169,7 @@ class GestionEntreprises extends Component
     public function toggleSecteurRecherche(string $secteur): void
     {
         if (in_array($secteur, $this->secteurs_recherche)) {
-            $this->secteurs_recherche = array_values(
-                array_filter($this->secteurs_recherche, fn($s) => $s !== $secteur)
-            );
+            $this->secteurs_recherche = array_values(array_filter($this->secteurs_recherche, fn($s) => $s !== $secteur));
         } elseif (count($this->secteurs_recherche) < 3) {
             $this->secteurs_recherche[] = $secteur;
         }
@@ -296,18 +178,13 @@ class GestionEntreprises extends Component
     public function toggleDisponibilite(string $jour): void
     {
         if (in_array($jour, $this->disponibilites)) {
-            $this->disponibilites = array_values(
-                array_filter($this->disponibilites, fn($d) => $d !== $jour)
-            );
+            $this->disponibilites = array_values(array_filter($this->disponibilites, fn($d) => $d !== $jour));
         } else {
             $this->disponibilites[] = $jour;
         }
     }
 
-    public function closeModalCompte(): void
-    {
-        $this->showModalCompte = false;
-    }
+    public function closeModalCompte(): void { $this->showModalCompte = false; }
 
     public function openModal(): void
     {
@@ -405,16 +282,73 @@ class GestionEntreprises extends Component
             ->where('role', 'representant')
             ->first();
 
-        if ($representant) {
-            Notification::create([
-                'id_participant' => $representant->id,
-                'contenu'        => 'Votre entreprise ' . $entreprise->nom . ' a été validée. Vous pouvez maintenant procéder au paiement via LigdiCash.',
-                'date_envoie'    => now()->toDateString(),
-                'type'           => 'systeme',
-            ]);
+        if (!$representant) {
+            session()->flash('success', 'Entreprise validée.');
+            return;
         }
 
-        session()->flash('success', 'Entreprise validée. Le représentant a été notifié.');
+        // ✅ Valider automatiquement la préinscription du représentant
+        $representant->update(['statut_preinscription' => 'valide']);
+
+        // ✅ Créer le compte User si pas encore créé
+        $password_genere = null;
+        if ($representant->email) {
+            $userExiste = User::where('email', $representant->email)->exists();
+            if (!$userExiste) {
+                try {
+                    $password_genere = substr(str_shuffle(
+                        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                    ), 0, 8);
+
+                    $user = User::create([
+                        'name'     => $representant->nom . ' ' . $representant->prenom,
+                        'email'    => $representant->email,
+                        'password' => Hash::make($password_genere),
+                    ]);
+                    $user->assignRole('entreprise');
+                } catch (\Exception $e) {
+                    $password_genere = null;
+                    Log::error('Création compte représentant échouée', [
+                        'entreprise_id' => $entreprise->id,
+                        'erreur'        => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        // ✅ Notification interne
+        Notification::create([
+            'id_participant' => $representant->id,
+            'contenu'        => '✅ Votre entreprise ' . $entreprise->nom . ' a été validée ! '
+                . 'Vous pouvez vous connecter avec votre code d\'accès : '
+                . $representant->code_acces
+                . ($representant->email ? ' ou via votre email.' : '.'),
+            'date_envoie'    => now()->toDateString(),
+            'type'           => 'systeme',
+        ]);
+
+        // ✅ Email au représentant avec ses identifiants
+        if ($representant->email) {
+            try {
+                Mail::to($representant->email)->send(
+                    new PreinscriptionValidee($representant, $password_genere)
+                );
+            } catch (\Exception $e) {
+                Log::error('Email validation entreprise échoué', [
+                    'representant_id' => $representant->id,
+                    'erreur'          => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // ✅ Afficher le modal avec les identifiants
+        $this->compte_email      = $representant->email ?? '';
+        $this->compte_password   = $password_genere;
+        $this->compte_code_acces = $representant->code_acces;
+        $this->compte_has_email  = !empty($representant->email);
+        $this->showModalCompte   = true;
+
+        session()->flash('success', 'Entreprise validée ! Le représentant a été notifié et son compte créé.');
     }
 
     public function rejeter(int $id): void
@@ -427,12 +361,33 @@ class GestionEntreprises extends Component
             ->first();
 
         if ($representant) {
+            // ✅ Rejeter aussi la préinscription du représentant
+            $representant->update(['statut_preinscription' => 'rejete']);
+
             Notification::create([
                 'id_participant' => $representant->id,
-                'contenu'        => 'Votre entreprise ' . $entreprise->nom . ' a été rejetée. Veuillez contacter l\'équipe CCI-BF.',
+                'contenu'        => '❌ Votre entreprise ' . $entreprise->nom . ' a été rejetée. Veuillez contacter l\'équipe CCI-BF.',
                 'date_envoie'    => now()->toDateString(),
                 'type'           => 'systeme',
             ]);
+
+            // ✅ Email de rejet au représentant
+            if ($representant->email) {
+                try {
+                    Mail::to($representant->email)->send(
+                        new PreinscriptionRejetee(
+                            $representant,
+                            $entreprise->nom,
+                            'Votre dossier d\'entreprise n\'a pas été retenu.'
+                        )
+                    );
+                } catch (\Exception $e) {
+                    Log::error('Email rejet entreprise échoué', [
+                        'representant_id' => $representant->id,
+                        'erreur'          => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
         session()->flash('success', 'Entreprise rejetée. Le représentant a été notifié.');
@@ -511,8 +466,11 @@ class GestionEntreprises extends Component
 
             $entreprise = Entreprise::create($dataEntreprise);
 
-            $code_acces  = strtoupper(substr($this->rep_nom, 0, 3) . rand(1000, 9999));
-            $repData     = $this->getDataRepresentant($entreprise->id);
+            // ✅ CORRECTION : supprime les accents avant d'extraire les 3 premières lettres
+            $nom_sans_accent = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $this->rep_nom);
+            $code_acces = strtoupper(substr($nom_sans_accent, 0, 3)) . rand(1000, 9999);
+
+            $repData               = $this->getDataRepresentant($entreprise->id);
             $repData['code_acces'] = $code_acces;
             $repData['role']       = 'representant';
 
@@ -538,16 +496,20 @@ class GestionEntreprises extends Component
 
             $password_genere = null;
             if ($this->rep_email) {
-                $password_genere = substr(str_shuffle(
-                    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-                ), 0, 8);
+                try {
+                    $password_genere = substr(str_shuffle(
+                        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                    ), 0, 8);
 
-                $user = User::create([
-                    'name'     => $this->rep_nom . ' ' . $this->rep_prenom,
-                    'email'    => $this->rep_email,
-                    'password' => Hash::make($password_genere),
-                ]);
-                $user->assignRole('entreprise');
+                    $user = User::create([
+                        'name'     => $this->rep_nom . ' ' . $this->rep_prenom,
+                        'email'    => $this->rep_email,
+                        'password' => Hash::make($password_genere),
+                    ]);
+                    $user->assignRole('entreprise');
+                } catch (\Exception $e) {
+                    $password_genere = null;
+                }
             }
 
             $this->compte_email      = $this->rep_email;
@@ -577,20 +539,14 @@ class GestionEntreprises extends Component
             'participation_rdv'      => true,
             'zone_geographique'      => $this->zone_geographique ?: null,
             'types_partenariat'      => $this->types_partenariat ?: null,
-            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat)
-                ? $this->type_partenariat_autre : null,
+            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat) ? $this->type_partenariat_autre : null,
             'profils_partenaire'     => $this->profils_partenaire ?: null,
             'secteurs_recherche'     => $this->secteurs_recherche ?: null,
-            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche)
-                ? $this->secteur_recherche_autre : null,
+            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche) ? $this->secteur_recherche_autre : null,
             'objectif_participation' => $this->objectif_participation ?: null,
             'disponibilites'         => $this->disponibilites ?: null,
         ];
     }
-    public function updatedRepPays(): void
-{
-    $this->rep_ville = '';
-}
 
     public function render()
     {

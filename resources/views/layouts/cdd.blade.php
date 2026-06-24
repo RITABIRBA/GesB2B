@@ -27,15 +27,20 @@
 
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             @php
+            // ✅ Compteurs pour les badges — uniquement les participants assignés à ce CDD
+            $cddUser = auth()->user();
+            $inscriptionsEnAttente = \App\Models\Participant::where('id_cdd', $cddUser->id)
+                ->where('statut_preinscription', 'en_attente')
+                ->count();
+            $demandesAideEnAttente = \App\Models\DemandeAide::where('statut', 'en_attente')->count();
+
             $navItems = [
-    ['route' => 'cdd.dashboard',     'icon' => 'fa-gauge',           'label' => 'Dashboard'],
-    ['route' => 'cdd.inscriptions',  'icon' => 'fa-clipboard-list',  'label' => 'Mes Inscriptions'],
-    ['route' => 'cdd.demandes-aide', 'icon' => 'fa-circle-question', 'label' => "Demande d'aide"],
-];
+                ['route' => 'cdd.dashboard',     'icon' => 'fa-gauge',           'label' => 'Dashboard',       'badge' => 0],
+                ['route' => 'cdd.inscriptions',  'icon' => 'fa-clipboard-list',  'label' => 'Mes Inscriptions', 'badge' => $inscriptionsEnAttente],
+                ['route' => 'cdd.demandes-aide', 'icon' => 'fa-circle-question', 'label' => "Demande d'aide",  'badge' => $demandesAideEnAttente],
+            ];
             @endphp
 
-            {{-- ✅ CORRIGÉ : on n'affiche un lien que si la route existe réellement,
-                 sinon route() planterait sur les pages pas encore créées --}}
             @foreach($navItems as $item)
             @continue(!\Illuminate\Support\Facades\Route::has($item['route']))
             <a href="{{ route($item['route']) }}"
@@ -50,7 +55,14 @@
                     {{ request()->routeIs($item['route'])
                         ? 'text-white'
                         : 'text-green-300 group-hover:text-white' }}"></i>
-                <span class="text-sm">{{ $item['label'] }}</span>
+                <span class="text-sm flex-1">{{ $item['label'] }}</span>
+                {{-- ✅ Badge --}}
+                @if($item['badge'] > 0)
+                <span class="ml-auto min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center
+                    {{ request()->routeIs($item['route']) ? 'bg-white text-red-600' : 'bg-red-500 text-white' }}">
+                    {{ $item['badge'] > 99 ? '99+' : $item['badge'] }}
+                </span>
+                @endif
             </a>
             @endforeach
         </nav>
@@ -89,6 +101,15 @@
                 <h2 class="text-lg font-semibold text-gray-700">{{ $title ?? 'Dashboard' }}</h2>
             </div>
             <div class="flex items-center gap-4">
+                {{-- ✅ Alerte dans le header --}}
+                @if($inscriptionsEnAttente > 0)
+                <a href="{{ route('cdd.inscriptions') }}"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white transition hover:opacity-90"
+                    style="background-color: #C8102E;">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    {{ $inscriptionsEnAttente }} en attente
+                </a>
+                @endif
                 <span class="text-sm text-gray-500">
                     <i class="fa-regular fa-clock mr-1"></i>
                     {{ now()->format('d/m/Y') }}
@@ -109,7 +130,6 @@
 </div>
 
 @livewireScripts
-{{-- Module de chargement global --}}
 <div wire:loading.flex
     class="fixed inset-0 z-[9999] items-center justify-center"
     style="background: rgba(0,0,0,0.4);">

@@ -9,8 +9,10 @@ use App\Models\Evenement;
 use App\Models\User;
 use App\Models\Notification;
 use App\Mail\PreinscriptionValidee;
+use App\Mail\PreinscriptionRejetee;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class GestionInscriptions extends Component
 {
@@ -64,23 +66,36 @@ class GestionInscriptions extends Component
             'statut_preinscription' => 'valide',
         ]);
 
+        // ✅ Créer le compte User seulement si email existe et pas de compte déjà
         $password_genere = null;
-        $userExiste = $participant->email
-            ? User::where('email', $participant->email)->exists()
-            : false;
 
-        if ($participant->email && !$userExiste) {
-            $password_genere = substr(str_shuffle(
-                'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-            ), 0, 8);
+        if ($participant->email) {
+            $userExiste = User::where('email', $participant->email)->exists();
 
-            $user = User::create([
-                'name'     => $participant->nom . ' ' . $participant->prenom,
-                'email'    => $participant->email,
-                'password' => Hash::make($password_genere),
-            ]);
+            if (!$userExiste) {
+                try {
+                    $password_genere = substr(str_shuffle(
+                        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                    ), 0, 8);
 
-            $user->assignRole($participant->id_entreprise ? 'entreprise' : 'participant');
+                    $user = User::create([
+                        'name'     => $participant->nom . ' ' . $participant->prenom,
+                        'email'    => $participant->email,
+                        'password' => Hash::make($password_genere),
+                    ]);
+
+                    $user->assignRole($participant->id_entreprise ? 'entreprise' : 'participant');
+
+                } catch (\Exception $e) {
+                    // Compte déjà existant ou autre erreur — on continue quand même
+                    $password_genere = null;
+                    Log::error('Création compte User échouée', [
+                        'participant_id' => $participant->id,
+                        'email'          => $participant->email,
+                        'erreur'         => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
         Notification::create([
@@ -93,14 +108,18 @@ class GestionInscriptions extends Component
             'type'           => 'systeme',
         ]);
 
-        // ✅ ENVOI EMAIL AUTOMATIQUE
+        // ✅ ENVOI EMAIL — toujours envoyer si le participant a un email
         if ($participant->email) {
             try {
                 Mail::to($participant->email)->send(
                     new PreinscriptionValidee($participant, $password_genere)
                 );
             } catch (\Exception $e) {
-                // L'email a échoué mais on continue le process
+                Log::error('Email validation échoué', [
+                    'participant_id' => $participant->id,
+                    'email'          => $participant->email,
+                    'erreur'         => $e->getMessage(),
+                ]);
                 session()->flash('warning', 'Compte créé mais l\'email n\'a pas pu être envoyé.');
             }
         }
@@ -152,6 +171,25 @@ class GestionInscriptions extends Component
             'date_envoie'    => now()->toDateString(),
             'type'           => 'systeme',
         ]);
+
+        // ✅ ENVOI EMAIL — préinscription rejetée
+        if ($participant->email) {
+            try {
+                Mail::to($participant->email)->send(
+                    new PreinscriptionRejetee(
+                        $participant,
+                        'Business Forum',
+                        $this->motif_rejet
+                    )
+                );
+            } catch (\Exception $e) {
+                Log::error('Email rejet échoué', [
+                    'participant_id' => $participant->id,
+                    'email'          => $participant->email,
+                    'erreur'         => $e->getMessage(),
+                ]);
+            }
+        }
 
         $this->fermerRejetPreinscription();
         session()->flash('success', 'Préinscription rejetée. Le participant a été notifié.');

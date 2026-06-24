@@ -319,7 +319,7 @@
 
     </div>
 
-    {{-- ============================================================
+   {{-- ============================================================
          ÉVÉNEMENTS DISPONIBLES
     ============================================================ --}}
     <div class="bg-white rounded-xl shadow p-6 mb-6">
@@ -334,63 +334,115 @@
         </div>
 
         @forelse($evenementsDisponibles as $evenement)
+        @php
+            $estB2B    = ($evenement->type_evenement ?? 'avec_b2b') === 'avec_b2b';
+            $gratuit   = ($evenement->type_paiement ?? 'payant') === 'gratuit';
+            $dateDebut = \Carbon\Carbon::parse($evenement->date_debut);
+            $dateFin   = $evenement->date_fin ? \Carbon\Carbon::parse($evenement->date_fin) : null;
+            $joursRestants = $evenement->date_cloture_inscriptions
+                ? now()->diffInDays(\Carbon\Carbon::parse($evenement->date_cloture_inscriptions), false)
+                : null;
+        @endphp
+
         <div class="border border-gray-200 rounded-xl p-5 mb-4 hover:border-green-300 hover:shadow-md transition last:mb-0">
+
+            {{-- Bandeau coloré --}}
+            <div class="h-1 w-full rounded-full mb-4"
+                style="background: linear-gradient(90deg, {{ $estB2B ? '#007A3D' : '#2d5a8e' }}, #C8102E);"></div>
+
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
-                            style="background-color: #007A3D;">
-                            <i class="fa-solid fa-calendar text-sm"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-gray-800">{{ $evenement->nom }}</h4>
-                            <span class="text-xs px-2 py-0.5 rounded-full text-white font-medium"
-                                style="background-color: #007A3D;">
-                                {{ $evenement->typeEvenement->nom ?? '-' }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-3">
-                        <span>
-                            <i class="fa-solid fa-calendar mr-1 text-gray-400"></i>
-                            {{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }}
-                            @if($evenement->date_debut != $evenement->date_fin)
-                            → {{ \Carbon\Carbon::parse($evenement->date_fin)->format('d/m/Y') }}
-                            @endif
-                        </span>
-                        <span>
-                            <i class="fa-solid fa-clock mr-1 text-gray-400"></i>
-                            {{ $evenement->heure_debut }} - {{ $evenement->heure_fin }}
-                        </span>
-                        <span>
-                            <i class="fa-solid fa-location-dot mr-1 text-gray-400"></i>
-                            {{ $evenement->ville }}
-                        </span>
-                        <span>
-                            <i class="fa-solid fa-map-pin mr-1 text-gray-400"></i>
-                            {{ $evenement->lieu }}
-                        </span>
-                    </div>
-                    <div class="mt-2">
-                        @if($evenement->type_paiement == 'gratuit')
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                            <i class="fa-solid fa-gift mr-1"></i> Gratuit
-                        </span>
-                        @elseif($evenement->type_paiement == 'par_entreprise')
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
-                            <i class="fa-solid fa-building mr-1"></i>
-                            Paiement par l'entreprise
+
+                    {{-- Nom + badges --}}
+                    <div class="flex items-center gap-2 flex-wrap mb-3">
+                        <h4 class="font-bold text-gray-800 text-base">{{ $evenement->nom }}</h4>
+                        @if($estB2B)
+                        <span class="text-xs px-2 py-0.5 rounded-full text-white font-bold bg-blue-600">
+                            <i class="fa-solid fa-handshake mr-1"></i> B2B
                         </span>
                         @else
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                            <i class="fa-solid fa-user mr-1"></i>
-                            {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA / participant
+                        <span class="text-xs px-2 py-0.5 rounded-full text-white font-bold bg-purple-600">
+                            <i class="fa-solid fa-calendar-star mr-1"></i> Événement
+                        </span>
+                        @endif
+                        @if($gratuit)
+                        <span class="text-xs px-2 py-0.5 rounded-full text-white font-semibold bg-green-600">
+                            <i class="fa-solid fa-gift mr-1"></i> Gratuit
+                        </span>
+                        @else
+                        <span class="text-xs px-2 py-0.5 rounded-full text-white font-semibold" style="background-color: #C8102E;">
+                            <i class="fa-solid fa-ticket mr-1"></i> Payant
                         </span>
                         @endif
                     </div>
+
+                    {{-- Détails --}}
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-3">
+                        <span class="flex items-center gap-1">
+                            <i class="fa-solid fa-calendar text-gray-400 w-4"></i>
+                            {{ $dateDebut->format('d/m/Y') }}
+                            @if($dateFin && !$dateFin->isSameDay($dateDebut))
+                            → {{ $dateFin->format('d/m/Y') }}
+                            @endif
+                        </span>
+                        @if($evenement->heure_debut)
+                        <span class="flex items-center gap-1">
+                            <i class="fa-solid fa-clock text-gray-400 w-4"></i>
+                            {{ \Carbon\Carbon::parse($evenement->heure_debut)->format('H\hi') }}
+                            @if($evenement->heure_fin)
+                            → {{ \Carbon\Carbon::parse($evenement->heure_fin)->format('H\hi') }}
+                            @endif
+                        </span>
+                        @endif
+                        @if($evenement->ville)
+                        <span class="flex items-center gap-1">
+                            <i class="fa-solid fa-location-dot text-gray-400 w-4"></i>
+                            {{ $evenement->ville }}
+                        </span>
+                        @endif
+                        @if($evenement->lieu)
+                        <span class="flex items-center gap-1">
+                            <i class="fa-solid fa-map-pin text-gray-400 w-4"></i>
+                            {{ $evenement->lieu }}
+                        </span>
+                        @endif
+                    </div>
+
+                    {{-- Montant --}}
+                    @if(!$gratuit && $evenement->montant_inscription)
+                    <p class="text-sm font-bold mb-2" style="color: #C8102E;">
+                        <i class="fa-solid fa-money-bill mr-1"></i>
+                        {{ number_format($evenement->montant_inscription, 0, ',', ' ') }} FCFA
+                    </p>
+                    @endif
+
+                    {{-- Date de clôture --}}
+                    @if($evenement->date_cloture_inscriptions)
+                    <div class="flex items-center gap-2 text-xs {{ $joursRestants !== null && $joursRestants <= 7 ? 'text-red-600' : 'text-gray-500' }}">
+                        <i class="fa-solid fa-door-closed w-4"></i>
+                        Clôture des inscriptions :
+                        <strong>
+                            {{ \Carbon\Carbon::parse($evenement->date_cloture_inscriptions)->format('d/m/Y') }}
+                        </strong>
+                        @if($joursRestants !== null && $joursRestants <= 7 && $joursRestants >= 0)
+                        <span class="px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">
+                            ⚠ {{ $joursRestants }}j restant(s)
+                        </span>
+                        @endif
+                    </div>
+                    @endif
+
+                    {{-- Info B2B --}}
+                    @if($estB2B)
+                    <div class="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 text-xs text-blue-700 flex items-center gap-2">
+                        <i class="fa-solid fa-handshake"></i>
+                        Inclut des rendez-vous d'affaires B2B
+                    </div>
+                    @endif
                 </div>
 
-                <div class="flex-shrink-0 text-right">
+                {{-- Bouton inscription --}}
+                <div class="flex-shrink-0">
                     @if($evenement->deja_inscrit)
                     <span class="px-4 py-2 rounded-xl text-xs font-medium text-white flex items-center gap-1"
                         style="background-color: #007A3D;">
@@ -414,10 +466,9 @@
         </div>
         @endforelse
     </div>
-
-    {{-- ============================================================
-         PROCHAINS RENDEZ-VOUS
-    ============================================================ --}}
+    
+    {{-- 
+         PROCHAINS RENDEZ-VOUS --}}
     <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-700 flex items-center gap-2">

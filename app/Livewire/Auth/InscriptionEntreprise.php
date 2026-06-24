@@ -7,6 +7,8 @@ use App\Models\Entreprise;
 use App\Models\Participant;
 use App\Models\Evenement;
 use App\Models\Inscription;
+use App\Mail\PreinscriptionRecue;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class InscriptionEntreprise extends Component
@@ -25,13 +27,14 @@ class InscriptionEntreprise extends Component
     public string $email            = '';
 
     // Infos représentant
-    public string $rep_nom       = '';
-    public string $rep_prenom    = '';
-    public string $rep_genre     = '';
-    public string $rep_fonction  = '';
-    public string $rep_email     = '';
-    public string $rep_telephone = '';
-    public string $rep_date_naissance = '';
+    public string $rep_nom             = '';
+    public string $rep_prenom          = '';
+    public string $rep_genre           = '';
+    public string $rep_fonction        = '';
+    public string $rep_fonction_autre  = ''; // ✅ NOUVEAU
+    public string $rep_email           = '';
+    public string $rep_telephone       = '';
+    public string $rep_date_naissance  = '';
 
     // Événement
     public $id_evenement = '';
@@ -46,6 +49,13 @@ class InscriptionEntreprise extends Component
         'Distribution', 'Prestation', 'Industrie manufacturière',
         'Enseignement', 'Services aux entreprises', 'BTP',
         'Activités médicales et pharmaceutiques', 'Autre',
+    ];
+
+    // ✅ NOUVEAU : liste des fonctions
+    public array $fonctions = [
+        'Directeur Général', 'Directeur Commercial', 'PDG', 'Gérant',
+        'Responsable Export', 'Responsable Partenariats',
+        'Chargé de Développement', 'Représentant', 'Autre',
     ];
 
     public array $pays_liste = [
@@ -77,19 +87,19 @@ class InscriptionEntreprise extends Component
                 : $this->secteur_activite;
 
             $this->validate([
-                'nom'             => 'required|string|max:255',
-                'ifu'             => [
+                'nom'              => 'required|string|max:255',
+                'ifu'              => [
                     'required', 'string', 'regex:/^\d{8}[A-Za-z]$/',
                     Rule::unique('entreprises', 'ifu'),
                 ],
                 'secteur_activite' => 'required',
-                'sous_secteur'    => 'required|string|max:255',
-                'pays'            => 'required|string',
-                'ville'           => 'required|string',
-                'telephone'       => 'required|string|max:20',
+                'sous_secteur'     => 'required|string|max:255',
+                'pays'             => 'required|string',
+                'ville'            => 'required|string',
+                'telephone'        => 'required|string|max:20',
             ], [
-                'ifu.regex'   => 'Format IFU invalide. Exemple : 12345678A',
-                'ifu.unique'  => 'Ce numéro IFU est déjà enregistré.',
+                'ifu.regex'  => 'Format IFU invalide. Exemple : 12345678A',
+                'ifu.unique' => 'Ce numéro IFU est déjà enregistré.',
             ]);
 
             if ($this->secteur_activite === 'Autre') {
@@ -100,11 +110,11 @@ class InscriptionEntreprise extends Component
 
         } elseif ($this->etape === 2) {
             $this->validate([
-                'rep_nom'       => 'required|string|max:255',
-                'rep_prenom'    => 'required|string|max:255',
-                'rep_genre'     => 'required|in:homme,femme',
-                'rep_telephone' => 'required|string|max:20',
-                'rep_email'     => 'nullable|email|max:255',
+                'rep_nom'            => 'required|string|max:255',
+                'rep_prenom'         => 'required|string|max:255',
+                'rep_genre'          => 'required|in:homme,femme',
+                'rep_telephone'      => 'required|string|max:20',
+                'rep_email'          => 'nullable|email|max:255',
                 'rep_date_naissance' => 'nullable|date|before:today',
             ], [
                 'rep_nom.required'       => 'Le nom du représentant est obligatoire.',
@@ -112,6 +122,11 @@ class InscriptionEntreprise extends Component
                 'rep_genre.required'     => 'Le genre est obligatoire.',
                 'rep_telephone.required' => 'Le téléphone est obligatoire.',
             ]);
+
+            // ✅ Si fonction = Autre, on prend la valeur saisie
+            if ($this->rep_fonction === 'Autre') {
+                $this->rep_fonction = $this->rep_fonction_autre ?: 'Représentant';
+            }
 
             $this->etape = 3;
         }
@@ -141,8 +156,9 @@ class InscriptionEntreprise extends Component
             'email_responsable'  => $this->rep_email ?: null,
         ]);
 
-        // Créer le représentant
-        $code_acces = strtoupper(substr($this->rep_nom, 0, 3) . rand(1000, 9999));
+        // ✅ CORRECTION : iconv supprime les accents avant d'extraire les 3 premières lettres
+        $nom_sans_accent = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $this->rep_nom);
+        $code_acces = strtoupper(substr($nom_sans_accent, 0, 3)) . rand(1000, 9999);
 
         $representant = Participant::create([
             'id_entreprise'         => $entreprise->id,
@@ -179,6 +195,24 @@ class InscriptionEntreprise extends Component
             }
         }
 
+        // ✅ ENVOI EMAIL — préinscription reçue au représentant
+        $emailDestinataire = $this->rep_email ?: $this->email;
+
+        if ($emailDestinataire) {
+            try {
+                $nomEvenement = 'Business Forum';
+                if ($this->id_evenement) {
+                    $ev = Evenement::find($this->id_evenement);
+                    if ($ev) $nomEvenement = $ev->nom;
+                }
+                Mail::to($emailDestinataire)->send(
+                    new PreinscriptionRecue($representant, $nomEvenement)
+                );
+            } catch (\Exception $e) {
+                // L'email a échoué mais on continue
+            }
+        }
+
         $this->confirme = true;
     }
 
@@ -186,7 +220,7 @@ class InscriptionEntreprise extends Component
     {
         return view('livewire.auth.inscription-entreprise', [
             'evenements'        => Evenement::where('date_fin', '>=', now()->toDateString())
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->whereNull('date_cloture_inscriptions')
                       ->orWhere('date_cloture_inscriptions', '>=', now()->toDateString());
                 })

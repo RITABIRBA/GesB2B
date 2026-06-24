@@ -5,6 +5,8 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use App\Models\Paiement;
 use App\Models\Recu;
+use App\Mail\PaiementConfirme;
+use Illuminate\Support\Facades\Mail;
 
 class GestionPaiements extends Component
 {
@@ -12,7 +14,6 @@ class GestionPaiements extends Component
     public string $filtre_statut = '';
     public string $filtre_mode   = '';
 
-    // ✅ NOUVEAU : Modal détail chèque
     public bool $showChequeModal = false;
     public $paiement_cheque      = null;
 
@@ -32,7 +33,7 @@ class GestionPaiements extends Component
 
     public function valider(int $id): void
     {
-        $paiement = Paiement::with(['recu', 'inscription'])->findOrFail($id);
+        $paiement = Paiement::with(['recu', 'inscription', 'inscription.participant', 'inscription.evenement'])->findOrFail($id);
 
         $paiement->update(['statut' => 'valide']);
 
@@ -46,6 +47,20 @@ class GestionPaiements extends Component
 
         if ($paiement->inscription) {
             $paiement->inscription->update(['statut_paiement' => 'paye']);
+        }
+
+        // ✅ ENVOI EMAIL — paiement confirmé
+        $participant = $paiement->inscription?->participant;
+        $evenement   = $paiement->inscription?->evenement;
+
+        if ($participant?->email && $evenement) {
+            try {
+                Mail::to($participant->email)->send(
+                    new PaiementConfirme($participant, $paiement, $evenement->nom)
+                );
+            } catch (\Exception $e) {
+                // L'email a échoué mais on continue
+            }
         }
 
         $this->fermerChequeModal();

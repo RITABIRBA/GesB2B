@@ -7,6 +7,8 @@ use App\Models\Souhait;
 use App\Models\Participant;
 use App\Models\Evenement;
 use App\Models\Notification;
+use App\Mail\MatchMutuelRdv;
+use Illuminate\Support\Facades\Mail;
 
 class GestionSouhaits extends Component
 {
@@ -50,8 +52,8 @@ class GestionSouhaits extends Component
 
     public function ouvrirMatchmaking(int $id): void
     {
-        $this->alertSuccess        = '';
-        $this->alertError          = '';
+        $this->alertSuccess         = '';
+        $this->alertError           = '';
         $this->participant_match_id = $id;
         $this->search_cible         = '';
         $this->showModalMatch       = true;
@@ -64,10 +66,6 @@ class GestionSouhaits extends Component
         $this->search_cible         = '';
     }
 
-    /**
-     * ✅ Calcule la compatibilité avec les VRAIS champs JSON
-     * (mêmes que MesSouhaits.php côté participant)
-     */
     private function calculerCompatibilite(Participant $moi, Participant $cible): int
     {
         if (!$moi->profilB2BComplet()) {
@@ -106,11 +104,6 @@ class GestionSouhaits extends Component
         return $points;
     }
 
-    /**
-     * ✅ Crée un souhait depuis le matchmaking admin.
-     * Si mutuel → notifie les DEUX participants.
-     * Si unilatéral → aucune notification (silence, comme demandé).
-     */
     public function matchmaker(int $id_cible): void
     {
         $this->alertSuccess = '';
@@ -142,7 +135,7 @@ class GestionSouhaits extends Component
 
         $estMutuel = (bool) $souhaitRetour;
 
-        Souhait::create([
+        $souhait = Souhait::create([
             'id_participant'       => $participant->id,
             'id_participant_cible' => $id_cible,
             'id_evenement'         => $participant->id_evenement,
@@ -157,7 +150,7 @@ class GestionSouhaits extends Component
                 'statut' => 'accepte',
             ]);
 
-            // ✅ Notification UNIQUEMENT en cas de mutuel
+            // Notification interne aux deux participants
             Notification::create([
                 'id_participant' => $participant->id,
                 'contenu'        => "🎉 Souhait mutuel avec {$cible->nom} {$cible->prenom} ! Un rendez-vous va être planifié.",
@@ -171,8 +164,37 @@ class GestionSouhaits extends Component
                 'date_envoie'    => now()->toDateString(),
                 'type'           => 'systeme',
             ]);
+
+            // ✅ ENVOI EMAIL — match mutuel aux deux participants
+            $evenement = $participant->id_evenement
+                ? Evenement::find($participant->id_evenement)
+                : null;
+            $nomEvenement = $evenement?->nom ?? 'Business Forum';
+
+            // On crée un RendezVous fictif pour l'email
+            // (le vrai sera créé lors de la génération du planning)
+            // On envoie juste la notification de match mutuel sans détails de RDV
+            if ($participant->email) {
+                try {
+                    Mail::to($participant->email)->send(
+                        new \App\Mail\MatchMutuelNotification($participant, $cible, $nomEvenement)
+                    );
+                } catch (\Exception $e) {
+                    // L'email a échoué mais on continue
+                }
+            }
+
+            if ($cible->email) {
+                try {
+                    Mail::to($cible->email)->send(
+                        new \App\Mail\MatchMutuelNotification($cible, $participant, $nomEvenement)
+                    );
+                } catch (\Exception $e) {
+                    // L'email a échoué mais on continue
+                }
+            }
         }
-        // ✅ Si unilatéral : aucune notification envoyée (silence)
+        // Si unilatéral : aucune notification, aucun email
 
         $this->alertSuccess = 'Souhait créé : '
             . $participant->nom . ' → ' . $cible->nom
@@ -313,9 +335,8 @@ class GestionSouhaits extends Component
                 ->orderBy('nom')
                 ->get()
                 ->map(function ($p) {
-                    $p->nb_souhaits = Souhait::where('id_participant', $p->id)->count();
-                    $p->nb_mutuels  = Souhait::where('id_participant', $p->id)
-                        ->where('type', 'mutuel')->count();
+                    $p->nb_souhaits    = Souhait::where('id_participant', $p->id)->count();
+                    $p->nb_mutuels     = Souhait::where('id_participant', $p->id)->where('type', 'mutuel')->count();
                     $p->profil_complet = $p->profilB2BComplet();
                     return $p;
                 }),

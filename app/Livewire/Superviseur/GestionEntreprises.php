@@ -55,9 +55,8 @@ class GestionEntreprises extends Component
     public bool   $isEditing   = false;
     public string $search      = '';
 
-    // Ajout de la propriété publique pour corriger l'erreur d'absence dans le Blade
     public array $joursDisponibles = [
-        'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
+        'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche',
     ];
 
     public array $secteurs = [
@@ -78,41 +77,17 @@ class GestionEntreprises extends Component
         'Innovation', 'R&D',
     ];
 
-   public array $zonesGeographiques = [
-    // AFRIQUE — zones économiques
-    'UEMOA (Afrique de l\'Ouest)',
-    'CEMAC (Afrique Centrale)',
-    'Afrique du Nord (Maghreb)',
-    'Afrique de l\'Est (EAC)',
-    'Afrique Australe (SADC)',
-    'Afrique (toute la région)',
-
-    // EUROPE
-    'Union Européenne',
-    'Europe de l\'Ouest',
-    'Europe de l\'Est',
-    'Europe (toute la région)',
-
-    // AMÉRIQUES
-    'Amérique du Nord',
-    'Amérique Centrale et Caraïbes',
-    'Amérique du Sud',
-    'Amériques (toute la région)',
-
-    // ASIE
-    'Asie de l\'Est',
-    'Asie du Sud-Est',
-    'Asie du Sud',
-    'Moyen-Orient',
-    'Asie (toute la région)',
-
-    // OCÉANIE
-    'Océanie',
-
-    // GLOBAL
-    'Locale (mon pays uniquement)',
-    'Internationale (toutes zones)',
-];
+    public array $zonesGeographiques = [
+        'UEMOA (Afrique de l\'Ouest)', 'CEMAC (Afrique Centrale)',
+        'Afrique du Nord (Maghreb)', 'Afrique de l\'Est (EAC)',
+        'Afrique Australe (SADC)', 'Afrique (toute la région)',
+        'Union Européenne', 'Europe de l\'Ouest', 'Europe de l\'Est',
+        'Europe (toute la région)', 'Amérique du Nord',
+        'Amérique Centrale et Caraïbes', 'Amérique du Sud',
+        'Amériques (toute la région)', 'Asie de l\'Est', 'Asie du Sud-Est',
+        'Asie du Sud', 'Moyen-Orient', 'Asie (toute la région)',
+        'Océanie', 'Locale (mon pays uniquement)', 'Internationale (toutes zones)',
+    ];
 
     public array $pays_liste = [
         'Bénin', 'Burkina Faso', 'Cap-Vert', 'Côte d\'Ivoire', 'Gambie',
@@ -243,14 +218,14 @@ class GestionEntreprises extends Component
     public function modifier(int $id): void
     {
         $e = Entreprise::findOrFail($id);
-        $this->entreprise_id    = $e->id;
-        $this->nom              = $e->nom;
-        $this->ifu              = $e->ifu ?? '';
-        $this->secteur_activite = $e->secteur_activite;
-        $this->sous_secteur     = $e->sous_secteur ?? '';
-        $this->pays             = $e->pays;
-        $this->ville            = $e->ville;
-        $this->telephone        = $e->contact;
+        $this->entreprise_id     = $e->id;
+        $this->nom               = $e->nom;
+        $this->ifu               = $e->ifu ?? '';
+        $this->secteur_activite  = $e->secteur_activite;
+        $this->sous_secteur      = $e->sous_secteur ?? '';
+        $this->pays              = $e->pays;
+        $this->ville             = $e->ville;
+        $this->telephone         = $e->contact;
         $this->statut_validation = $e->statut_validation;
 
         $rep = Participant::where('id_entreprise', $e->id)
@@ -393,7 +368,10 @@ class GestionEntreprises extends Component
 
             $entreprise = Entreprise::create($dataEntreprise);
 
-            $code_acces  = strtoupper(substr($this->rep_nom, 0, 3) . rand(1000, 9999));
+            // ✅ CORRECTION : supprime les accents avant d'extraire les 3 premières lettres
+            $nom_sans_accent = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $this->rep_nom);
+            $code_acces = strtoupper(substr($nom_sans_accent, 0, 3)) . rand(1000, 9999);
+
             $repData     = $this->getDataRepresentant($entreprise->id);
             $repData['code_acces'] = $code_acces;
             $repData['role']       = 'representant';
@@ -419,16 +397,20 @@ class GestionEntreprises extends Component
 
             $password_genere = null;
             if ($this->rep_email) {
-                $password_genere = substr(str_shuffle(
-                    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-                ), 0, 8);
+                try {
+                    $password_genere = substr(str_shuffle(
+                        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                    ), 0, 8);
 
-                $user = User::create([
-                    'name'     => $this->rep_nom . ' ' . $this->rep_prenom,
-                    'email'    => $this->rep_email,
-                    'password' => Hash::make($password_genere),
-                ]);
-                $user->assignRole('entreprise');
+                    $user = User::create([
+                        'name'     => $this->rep_nom . ' ' . $this->rep_prenom,
+                        'email'    => $this->rep_email,
+                        'password' => Hash::make($password_genere),
+                    ]);
+                    $user->assignRole('entreprise');
+                } catch (\Exception $e) {
+                    $password_genere = null;
+                }
             }
 
             $this->compte_email      = $this->rep_email;
