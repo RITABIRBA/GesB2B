@@ -28,32 +28,27 @@
             <button wire:click="exportExcel"
                 class="px-4 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow"
                 style="background-color: #217346;">
-                <i class="fa-solid fa-file-excel"></i>
-                Excel
+                <i class="fa-solid fa-file-excel"></i> Excel
             </button>
             <button wire:click="exportPdf"
                 class="px-4 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow"
                 style="background-color: #b30b00;">
-                <i class="fa-solid fa-file-pdf"></i>
-                PDF
+                <i class="fa-solid fa-file-pdf"></i> PDF
             </button>
             <button onclick="window.print()"
                 class="px-4 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow"
                 style="background-color: #2d5a8e;">
-                <i class="fa-solid fa-print"></i>
-                Imprimer
+                <i class="fa-solid fa-print"></i> Imprimer
             </button>
             <button wire:click="ouvrirMatchManuel"
                 class="px-4 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow"
                 style="background-color: #8b5cf6;">
-                <i class="fa-solid fa-handshake-angle"></i>
-                Match manuel
+                <i class="fa-solid fa-handshake-angle"></i> Match manuel
             </button>
             <button wire:click="openGenerateModal"
                 class="px-4 py-2.5 rounded-xl text-white font-medium flex items-center gap-2 transition hover:opacity-90 shadow"
                 style="background-color: #C8102E;">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                Générer le planning
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Générer le planning
             </button>
         </div>
     </div>
@@ -173,9 +168,7 @@
                     <i class="fa-solid fa-calendar-star text-white"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-lg">
-                        {{ $evenement->nom ?? 'Événement inconnu' }}
-                    </h4>
+                    <h4 class="font-bold text-lg">{{ $evenement->nom ?? 'Événement inconnu' }}</h4>
                     @if($evenement)
                     <p class="text-green-200 text-xs">
                         <i class="fa-solid fa-location-dot mr-1"></i>{{ $evenement->ville }}
@@ -201,56 +194,35 @@
             </div>
         </div>
 
-        {{-- Tableau des RDV (page courante de ce groupe) --}}
+        {{-- Tableau --}}
         <div class="bg-white rounded-xl shadow overflow-x-auto">
-            <table class="w-full text-left" style="min-width: 900px;">
+            <table class="w-full text-left" style="min-width: 1000px;">
                 <thead style="background-color: #f8f9fa;">
                     <tr class="border-b">
-                        <th class="px-4 py-4 text-gray-500 font-semibold text-sm cursor-pointer select-none"
-                            wire:click="sortBy('nom1')">
+                        <th class="px-4 py-4 text-gray-500 font-semibold text-sm cursor-pointer select-none" wire:click="sortBy('nom1')">
                             Participant 1
-                            @if($sort_field === 'nom1')
-                                <i class="fa-solid fa-sort-{{ $sort_direction === 'asc' ? 'up' : 'down' }} ml-1"></i>
-                            @else
-                                <i class="fa-solid fa-sort ml-1 text-gray-300"></i>
-                            @endif
+                            @if($sort_field === 'nom1')<i class="fa-solid fa-sort-{{ $sort_direction === 'asc' ? 'up' : 'down' }} ml-1"></i>@else<i class="fa-solid fa-sort ml-1 text-gray-300"></i>@endif
                         </th>
-                        <th class="px-4 py-4 text-gray-500 font-semibold text-sm cursor-pointer select-none"
-                            wire:click="sortBy('nom2')">
+                        <th class="px-4 py-4 text-gray-500 font-semibold text-sm cursor-pointer select-none" wire:click="sortBy('nom2')">
                             Participant 2
-                            @if($sort_field === 'nom2')
-                                <i class="fa-solid fa-sort-{{ $sort_direction === 'asc' ? 'up' : 'down' }} ml-1"></i>
-                            @else
-                                <i class="fa-solid fa-sort ml-1 text-gray-300"></i>
-                            @endif
+                            @if($sort_field === 'nom2')<i class="fa-solid fa-sort-{{ $sort_direction === 'asc' ? 'up' : 'down' }} ml-1"></i>@else<i class="fa-solid fa-sort ml-1 text-gray-300"></i>@endif
                         </th>
-                        <th class="px-4 py-4 text-gray-500 font-semibold text-sm cursor-pointer select-none"
-                            wire:click="sortBy('date')">
+                        <th class="px-4 py-4 text-gray-500 font-semibold text-sm cursor-pointer select-none" wire:click="sortBy('date')">
                             Date & Horaire
-                            @if($sort_field === 'date')
-                                <i class="fa-solid fa-sort-{{ $sort_direction === 'asc' ? 'up' : 'down' }} ml-1"></i>
-                            @else
-                                <i class="fa-solid fa-sort ml-1 text-gray-300"></i>
-                            @endif
+                            @if($sort_field === 'date')<i class="fa-solid fa-sort-{{ $sort_direction === 'asc' ? 'up' : 'down' }} ml-1"></i>@else<i class="fa-solid fa-sort ml-1 text-gray-300"></i>@endif
                         </th>
                         <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Salle & Table</th>
                         <th class="px-4 py-4 text-gray-500 font-semibold text-sm">Traducteur</th>
-                        <th class="px-4 py-4 text-gray-500 font-semibold text-sm cursor-pointer select-none"
-                            wire:click="sortBy('statut')">
+                        <th class="px-4 py-4 text-gray-500 font-semibold text-sm cursor-pointer select-none" wire:click="sortBy('statut')">
                             Statut
-                            @if($sort_field === 'statut')
-                                <i class="fa-solid fa-sort-{{ $sort_direction === 'asc' ? 'up' : 'down' }} ml-1"></i>
-                            @else
-                                <i class="fa-solid fa-sort ml-1 text-gray-300"></i>
-                            @endif
+                            @if($sort_field === 'statut')<i class="fa-solid fa-sort-{{ $sort_direction === 'asc' ? 'up' : 'down' }} ml-1"></i>@else<i class="fa-solid fa-sort ml-1 text-gray-300"></i>@endif
                         </th>
                         <th class="px-4 py-4 text-gray-500 font-semibold text-sm no-print">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($rdvsPage as $rdv)
-                    <tr class="border-b hover:bg-gray-50 transition
-                        {{ $rdv->statut == 'annule' ? 'bg-red-50' : '' }}">
+                    <tr class="border-b hover:bg-gray-50 transition {{ $rdv->statut == 'annule' ? 'bg-red-50' : '' }}">
 
                         {{-- Participant 1 --}}
                         <td class="px-4 py-4">
@@ -265,9 +237,7 @@
                                     </p>
                                     <p class="text-xs text-gray-400">{{ $rdv->participant1->entreprise->nom ?? 'Indépendant' }}</p>
                                     @if($rdv->absent_participant_id == $rdv->id_participant1)
-                                    <span class="text-xs text-red-500 font-medium">
-                                        <i class="fa-solid fa-user-slash mr-0.5"></i> Absent
-                                    </span>
+                                    <span class="text-xs text-red-500 font-medium"><i class="fa-solid fa-user-slash mr-0.5"></i> Absent</span>
                                     @endif
                                 </div>
                             </div>
@@ -286,9 +256,7 @@
                                     </p>
                                     <p class="text-xs text-gray-400">{{ $rdv->participant2->entreprise->nom ?? 'Indépendant' }}</p>
                                     @if($rdv->absent_participant_id == $rdv->id_participant2)
-                                    <span class="text-xs text-red-500 font-medium">
-                                        <i class="fa-solid fa-user-slash mr-0.5"></i> Absent
-                                    </span>
+                                    <span class="text-xs text-red-500 font-medium"><i class="fa-solid fa-user-slash mr-0.5"></i> Absent</span>
                                     @endif
                                 </div>
                             </div>
@@ -297,14 +265,10 @@
                         {{-- Date & Horaire --}}
                         <td class="px-4 py-4 text-xs">
                             @if($rdv->date)
-                            <p class="text-gray-600">
-                                <i class="fa-solid fa-calendar text-gray-400 mr-1"></i>{{ $rdv->date }}
-                            </p>
+                            <p class="text-gray-600"><i class="fa-solid fa-calendar text-gray-400 mr-1"></i>{{ $rdv->date }}</p>
                             @endif
                             @if($rdv->heure_debut)
-                            <p class="text-gray-600 mt-0.5">
-                                <i class="fa-solid fa-clock text-gray-400 mr-1"></i>{{ $rdv->heure_debut }} - {{ $rdv->heure_fin }}
-                            </p>
+                            <p class="text-gray-600 mt-0.5"><i class="fa-solid fa-clock text-gray-400 mr-1"></i>{{ $rdv->heure_debut }} - {{ $rdv->heure_fin }}</p>
                             @endif
                             @if(!$rdv->date && !$rdv->heure_debut)
                             <span class="text-gray-400 italic">Non planifié</span>
@@ -314,12 +278,8 @@
                         {{-- Salle & Table --}}
                         <td class="px-4 py-4 text-xs">
                             @if($rdv->salle)
-                            <p class="text-gray-700 font-medium">
-                                <i class="fa-solid fa-door-open text-blue-500 mr-1"></i>{{ $rdv->salle }}
-                            </p>
-                            <p class="text-gray-500 mt-0.5">
-                                <i class="fa-solid fa-hashtag text-gray-400 mr-0.5"></i>Table {{ $rdv->numero_table }}
-                            </p>
+                            <p class="text-gray-700 font-medium"><i class="fa-solid fa-door-open text-blue-500 mr-1"></i>{{ $rdv->salle }}</p>
+                            <p class="text-gray-500 mt-0.5"><i class="fa-solid fa-hashtag text-gray-400 mr-0.5"></i>Table {{ $rdv->numero_table }}</p>
                             @else
                             <span class="text-gray-400 italic">Non assigné</span>
                             @endif
@@ -328,92 +288,108 @@
                         {{-- Traducteur --}}
                         <td class="px-4 py-4 text-sm">
                             @if($rdv->traducteur)
-                                <span class="text-xs px-2 py-1 rounded-lg bg-purple-100 text-purple-700 font-medium">
-                                    <i class="fa-solid fa-language mr-1"></i>{{ $rdv->traducteur->nom }}
-                                </span>
+                            <span class="text-xs px-2 py-1 rounded-lg bg-purple-100 text-purple-700 font-medium">
+                                <i class="fa-solid fa-language mr-1"></i>{{ $rdv->traducteur->nom }}
+                            </span>
                             @else
-                                <span class="text-xs text-gray-400 italic">Aucun</span>
+                            <span class="text-xs text-gray-400 italic">Aucun</span>
                             @endif
                         </td>
 
                         {{-- Statut --}}
                         <td class="px-4 py-4">
                             @if($rdv->statut == 'planifie')
-                                <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">
-                                    <i class="fa-solid fa-calendar-check mr-1"></i> Planifié
-                                </span>
+                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">
+                                <i class="fa-solid fa-calendar-check mr-1"></i> Planifié
+                            </span>
                             @elseif($rdv->statut == 'confirme')
-                                <span class="px-3 py-1 rounded-full text-xs text-white font-medium" style="background-color: #007A3D;">
-                                    <i class="fa-solid fa-circle-check mr-1"></i> Confirmé
-                                </span>
+                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium" style="background-color: #007A3D;">
+                                <i class="fa-solid fa-circle-check mr-1"></i> Confirmé
+                            </span>
                             @elseif($rdv->statut == 'annule')
-                                <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
-                                    <i class="fa-solid fa-circle-xmark mr-1"></i> Annulé
-                                </span>
-                                @if($rdv->participantAbsent)
-                                <p class="text-xs text-red-500 mt-1">
-                                    <i class="fa-solid fa-user-slash mr-1"></i>
-                                    {{ $rdv->participantAbsent->nom }} {{ $rdv->participantAbsent->prenom }} absent(e)
-                                </p>
-                                @endif
+                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-red-600">
+                                <i class="fa-solid fa-circle-xmark mr-1"></i> Annulé
+                            </span>
+                            @if($rdv->participantAbsent)
+                            <p class="text-xs text-red-500 mt-1">
+                                <i class="fa-solid fa-user-slash mr-1"></i>
+                                {{ $rdv->participantAbsent->nom }} {{ $rdv->participantAbsent->prenom }} absent(e)
+                            </p>
+                            @endif
                             @elseif($rdv->statut == 'termine')
-                                <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-gray-500">
-                                    <i class="fa-solid fa-flag-checkered mr-1"></i> Terminé
-                                </span>
+                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-gray-500">
+                                <i class="fa-solid fa-flag-checkered mr-1"></i> Terminé
+                            </span>
                             @else
-                                <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-gray-400">
-                                    <i class="fa-solid fa-hourglass-half mr-1"></i> {{ $rdv->statut }}
-                                </span>
+                            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-gray-400">
+                                <i class="fa-solid fa-hourglass-half mr-1"></i> {{ $rdv->statut }}
+                            </span>
                             @endif
                         </td>
 
-                        {{-- Actions --}}
+                        {{-- ✅ ACTIONS avec labels visibles --}}
                         <td class="px-4 py-4 no-print">
                             <div class="flex gap-1.5 flex-wrap">
+
+                                {{-- Assigner traducteur --}}
                                 <button wire:click="ouvrirModalTraducteur({{ $rdv->id }})"
-                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-purple-600 transition hover:bg-purple-700"
-                                    title="Traducteur">
+                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-purple-600 transition hover:bg-purple-700 flex items-center gap-1"
+                                    title="Assigner un traducteur">
                                     <i class="fa-solid fa-language"></i>
+                                    <span>Traducteur</span>
                                 </button>
 
+                                {{-- Re-match si annulé --}}
                                 @if($rdv->statut == 'annule')
                                 <button wire:click="ouvrirRematch({{ $rdv->id }})"
-                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-orange-500 transition hover:bg-orange-600"
+                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-orange-500 transition hover:bg-orange-600 flex items-center gap-1"
                                     title="Re-match">
                                     <i class="fa-solid fa-rotate"></i>
+                                    <span>Re-match</span>
                                 </button>
                                 @endif
 
+                                {{-- Confirmer / Annuler si planifié --}}
                                 @if($rdv->statut == 'planifie')
                                 <button wire:click="confirmer({{ $rdv->id }})"
-                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90"
+                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium transition hover:opacity-90 flex items-center gap-1"
                                     style="background-color: #007A3D;" title="Confirmer">
                                     <i class="fa-solid fa-check"></i>
+                                    <span>Confirmer</span>
                                 </button>
                                 <button wire:click="ouvrirModalAnnuler({{ $rdv->id }})"
-                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-orange-500 transition hover:bg-orange-600"
+                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-red-500 transition hover:bg-red-600 flex items-center gap-1"
                                     title="Annuler">
                                     <i class="fa-solid fa-ban"></i>
-                                </button>
-                                @elseif($rdv->statut == 'confirme')
-                                <button wire:click="terminer({{ $rdv->id }})"
-                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-gray-500 transition hover:bg-gray-600"
-                                    title="Terminer">
-                                    <i class="fa-solid fa-flag-checkered"></i>
-                                </button>
-                                <button wire:click="ouvrirModalAnnuler({{ $rdv->id }})"
-                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-orange-500 transition hover:bg-orange-600"
-                                    title="Annuler">
-                                    <i class="fa-solid fa-ban"></i>
+                                    <span>Annuler</span>
                                 </button>
                                 @endif
 
+                                {{-- Terminer / Annuler si confirmé --}}
+                                @if($rdv->statut == 'confirme')
+                                <button wire:click="terminer({{ $rdv->id }})"
+                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-gray-500 transition hover:bg-gray-600 flex items-center gap-1"
+                                    title="Terminer">
+                                    <i class="fa-solid fa-flag-checkered"></i>
+                                    <span>Terminer</span>
+                                </button>
+                                <button wire:click="ouvrirModalAnnuler({{ $rdv->id }})"
+                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-red-500 transition hover:bg-red-600 flex items-center gap-1"
+                                    title="Annuler">
+                                    <i class="fa-solid fa-ban"></i>
+                                    <span>Annuler</span>
+                                </button>
+                                @endif
+
+                                {{-- Supprimer --}}
                                 <button wire:click="supprimer({{ $rdv->id }})"
                                     wire:confirm="Supprimer ce rendez-vous ?"
-                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700"
+                                    class="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium bg-red-600 transition hover:bg-red-700 flex items-center gap-1"
                                     title="Supprimer">
                                     <i class="fa-solid fa-trash"></i>
+                                    <span>Supprimer</span>
                                 </button>
+
                             </div>
                         </td>
                     </tr>
@@ -422,11 +398,9 @@
             </table>
         </div>
 
-        {{-- Pagination de ce groupe --}}
+        {{-- Pagination --}}
         @if($rdvsPage->hasPages())
-        <div class="mt-3 no-print">
-            {{ $rdvsPage->links() }}
-        </div>
+        <div class="mt-3 no-print">{{ $rdvsPage->links() }}</div>
         @endif
     </div>
     @endforeach
@@ -439,16 +413,14 @@
             <div class="flex justify-between items-center px-8 py-5 border-b sticky top-0 z-10"
                 style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-handshake-angle"></i>
-                    Organiser un match manuel
+                    <i class="fa-solid fa-handshake-angle"></i> Organiser un match manuel
                 </h3>
                 <button wire:click="fermerMatchManuel" class="text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
             <div class="p-8">
                 <div class="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 mb-5 text-sm text-purple-700 flex items-start gap-2">
                     <i class="fa-solid fa-circle-info mt-0.5"></i>
-                    Sélectionnez 2 participants. Le système cherchera automatiquement un créneau libre
-                    et notifiera les deux participants.
+                    Sélectionnez 2 participants. Le système cherchera automatiquement un créneau libre et notifiera les deux participants.
                 </div>
                 <div class="space-y-4">
                     <div>
@@ -460,11 +432,8 @@
                             <option value="{{ $evenement->id }}">{{ $evenement->nom }}</option>
                             @endforeach
                         </select>
-                        @error('match_id_evenement')
-                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                        @enderror
+                        @error('match_id_evenement')<span class="text-red-500 text-xs mt-1">{{ $message }}</span>@enderror
                     </div>
-
                     @if($match_id_evenement)
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Participant 1 *</label>
@@ -472,17 +441,11 @@
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm">
                             <option value="">-- Choisir --</option>
                             @foreach($participantsMatchManuel as $p)
-                            <option value="{{ $p->id }}">
-                                {{ $p->nom }} {{ $p->prenom }}
-                                {{ $p->entreprise ? '('.$p->entreprise->nom.')' : '(Indépendant)' }}
-                            </option>
+                            <option value="{{ $p->id }}">{{ $p->nom }} {{ $p->prenom }} {{ $p->entreprise ? '('.$p->entreprise->nom.')' : '(Indépendant)' }}</option>
                             @endforeach
                         </select>
-                        @error('match_participant1')
-                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                        @enderror
+                        @error('match_participant1')<span class="text-red-500 text-xs mt-1">{{ $message }}</span>@enderror
                     </div>
-
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-1.5">Participant 2 *</label>
                         <select wire:model.live="match_participant2"
@@ -490,47 +453,29 @@
                             <option value="">-- Choisir --</option>
                             @foreach($participantsMatchManuel as $p)
                             @if($p->id != $match_participant1)
-                            <option value="{{ $p->id }}">
-                                {{ $p->nom }} {{ $p->prenom }}
-                                {{ $p->entreprise ? '('.$p->entreprise->nom.')' : '(Indépendant)' }}
-                            </option>
+                            <option value="{{ $p->id }}">{{ $p->nom }} {{ $p->prenom }} {{ $p->entreprise ? '('.$p->entreprise->nom.')' : '(Indépendant)' }}</option>
                             @endif
                             @endforeach
                         </select>
-                        @error('match_participant2')
-                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                        @enderror
+                        @error('match_participant2')<span class="text-red-500 text-xs mt-1">{{ $message }}</span>@enderror
                     </div>
-
                     @if(!is_null($match_compatibilite))
                     <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
                         <p class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <i class="fa-solid fa-gauge-high" style="color: #8b5cf6;"></i>
-                            Compatibilité des profils
+                            <i class="fa-solid fa-gauge-high" style="color: #8b5cf6;"></i> Compatibilité des profils
                         </p>
                         <div class="flex items-center gap-2 mb-2">
                             @for($i = 1; $i <= 3; $i++)
-                                <i class="fa-solid fa-star text-xl {{ $i <= $match_compatibilite ? 'text-yellow-400' : 'text-gray-200' }}"></i>
+                            <i class="fa-solid fa-star text-xl {{ $i <= $match_compatibilite ? 'text-yellow-400' : 'text-gray-200' }}"></i>
                             @endfor
-                            <span class="text-sm font-medium text-gray-600 ml-2">
-                                {{ $match_compatibilite }} / 3
-                            </span>
+                            <span class="text-sm font-medium text-gray-600 ml-2">{{ $match_compatibilite }} / 3</span>
                         </div>
                         @if($match_compatibilite == 0)
-                        <p class="text-xs text-red-500">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                            Aucun critère de compatibilité ne correspond.
-                        </p>
+                        <p class="text-xs text-red-500"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Aucun critère de compatibilité ne correspond.</p>
                         @elseif($match_compatibilite == 3)
-                        <p class="text-xs text-green-600">
-                            <i class="fa-solid fa-circle-check mr-1"></i>
-                            Profils très compatibles !
-                        </p>
+                        <p class="text-xs text-green-600"><i class="fa-solid fa-circle-check mr-1"></i>Profils très compatibles !</p>
                         @else
-                        <p class="text-xs text-blue-600">
-                            <i class="fa-solid fa-circle-info mr-1"></i>
-                            Compatibilité partielle.
-                        </p>
+                        <p class="text-xs text-blue-600"><i class="fa-solid fa-circle-info mr-1"></i>Compatibilité partielle.</p>
                         @endif
                         @if(!$match_disponibilite_ok)
                         <div class="bg-orange-50 border border-orange-200 rounded-xl p-2 mt-3 text-xs text-orange-700 flex items-start gap-2">
@@ -539,31 +484,24 @@
                         </div>
                         @else
                         <div class="bg-green-50 border border-green-200 rounded-xl p-2 mt-3 text-xs text-green-700 flex items-center gap-2">
-                            <i class="fa-solid fa-circle-check"></i>
-                            Disponibilités compatibles.
+                            <i class="fa-solid fa-circle-check"></i> Disponibilités compatibles.
                         </div>
                         @endif
                     </div>
                     @endif
                     @endif
                 </div>
-
                 <div class="flex justify-end gap-3 mt-7">
                     <button wire:click="fermerMatchManuel"
                         class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="creerMatchManuel"
-                        wire:loading.attr="disabled"
-                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        wire:loading.attr="disabled" wire:loading.class="opacity-70 cursor-not-allowed"
                         class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
                         style="background-color: #8b5cf6;">
-                        <span wire:loading.remove>
-                            <i class="fa-solid fa-handshake-angle mr-1"></i> Créer le match
-                        </span>
-                        <span wire:loading>
-                            <i class="fa-solid fa-spinner fa-spin mr-1"></i> Création...
-                        </span>
+                        <span wire:loading.remove><i class="fa-solid fa-handshake-angle mr-1"></i> Créer le match</span>
+                        <span wire:loading><i class="fa-solid fa-spinner fa-spin mr-1"></i> Création...</span>
                     </button>
                 </div>
             </div>
@@ -578,106 +516,63 @@
             <div class="flex justify-between items-center px-8 py-5 border-b"
                 style="background: linear-gradient(135deg, #C8102E, #a00d25);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-ban"></i>
-                    Annuler le rendez-vous
+                    <i class="fa-solid fa-ban"></i> Annuler le rendez-vous
                 </h3>
-                <button wire:click="fermerModalAnnuler"
-                    class="text-white/70 hover:text-white text-2xl">&times;</button>
+                <button wire:click="fermerModalAnnuler" class="text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
             <div class="p-8">
                 <div class="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-200 text-xs text-gray-600">
                     <p class="font-semibold text-gray-700 mb-2">
                         <i class="fa-solid fa-calendar mr-1"></i>
-                        {{ $annuler_rdv->date }} —
-                        {{ $annuler_rdv->heure_debut }} à {{ $annuler_rdv->heure_fin }}
-                        @if($annuler_rdv->salle)
-                        — {{ $annuler_rdv->salle }}, Table {{ $annuler_rdv->numero_table }}
-                        @endif
+                        {{ $annuler_rdv->date }} — {{ $annuler_rdv->heure_debut }} à {{ $annuler_rdv->heure_fin }}
+                        @if($annuler_rdv->salle) — {{ $annuler_rdv->salle }}, Table {{ $annuler_rdv->numero_table }} @endif
                     </p>
                     <div class="flex items-center gap-3">
-                        <span class="font-medium text-gray-800">
-                            {{ $annuler_rdv->participant1->nom ?? '-' }}
-                            {{ $annuler_rdv->participant1->prenom ?? '' }}
-                        </span>
+                        <span class="font-medium text-gray-800">{{ $annuler_rdv->participant1->nom ?? '-' }} {{ $annuler_rdv->participant1->prenom ?? '' }}</span>
                         <i class="fa-solid fa-arrows-left-right text-gray-400"></i>
-                        <span class="font-medium text-gray-800">
-                            {{ $annuler_rdv->participant2->nom ?? '-' }}
-                            {{ $annuler_rdv->participant2->prenom ?? '' }}
-                        </span>
+                        <span class="font-medium text-gray-800">{{ $annuler_rdv->participant2->nom ?? '-' }} {{ $annuler_rdv->participant2->prenom ?? '' }}</span>
                     </div>
                 </div>
-
                 <div class="mb-5">
                     <p class="text-sm font-semibold text-gray-700 mb-3">
-                        <i class="fa-solid fa-user-slash text-red-500 mr-1"></i>
-                        Qui est absent ? *
+                        <i class="fa-solid fa-user-slash text-red-500 mr-1"></i> Qui est absent ? *
                     </p>
                     <div class="space-y-2">
                         <label class="cursor-pointer">
-                            <input type="radio" wire:model="absent_id"
-                                value="{{ $annuler_rdv->id_participant1 }}"
-                                class="hidden peer">
-                            <div class="flex items-center gap-3 p-4 border-2 rounded-xl transition
-                                peer-checked:border-red-400 peer-checked:bg-red-50
-                                hover:bg-gray-50 border-gray-200">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                                    style="background-color: #C8102E;">
+                            <input type="radio" wire:model="absent_id" value="{{ $annuler_rdv->id_participant1 }}" class="hidden peer">
+                            <div class="flex items-center gap-3 p-4 border-2 rounded-xl transition peer-checked:border-red-400 peer-checked:bg-red-50 hover:bg-gray-50 border-gray-200">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background-color: #C8102E;">
                                     {{ strtoupper(substr($annuler_rdv->participant1->prenom ?? 'X', 0, 1)) }}
                                 </div>
                                 <div class="flex-1">
-                                    <p class="font-semibold text-gray-800">
-                                        {{ $annuler_rdv->participant1->nom ?? '-' }}
-                                        {{ $annuler_rdv->participant1->prenom ?? '' }}
-                                    </p>
-                                    <p class="text-xs text-gray-400">
-                                        {{ $annuler_rdv->participant1->entreprise->nom ?? 'Indépendant' }}
-                                    </p>
+                                    <p class="font-semibold text-gray-800">{{ $annuler_rdv->participant1->nom ?? '-' }} {{ $annuler_rdv->participant1->prenom ?? '' }}</p>
+                                    <p class="text-xs text-gray-400">{{ $annuler_rdv->participant1->entreprise->nom ?? 'Indépendant' }}</p>
                                 </div>
-                                @if($absent_id == $annuler_rdv->id_participant1)
-                                <i class="fa-solid fa-circle-check text-red-500 text-xl"></i>
-                                @endif
+                                @if($absent_id == $annuler_rdv->id_participant1)<i class="fa-solid fa-circle-check text-red-500 text-xl"></i>@endif
                             </div>
                         </label>
                         <label class="cursor-pointer">
-                            <input type="radio" wire:model="absent_id"
-                                value="{{ $annuler_rdv->id_participant2 }}"
-                                class="hidden peer">
-                            <div class="flex items-center gap-3 p-4 border-2 rounded-xl transition
-                                peer-checked:border-red-400 peer-checked:bg-red-50
-                                hover:bg-gray-50 border-gray-200">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                                    style="background-color: #007A3D;">
+                            <input type="radio" wire:model="absent_id" value="{{ $annuler_rdv->id_participant2 }}" class="hidden peer">
+                            <div class="flex items-center gap-3 p-4 border-2 rounded-xl transition peer-checked:border-red-400 peer-checked:bg-red-50 hover:bg-gray-50 border-gray-200">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background-color: #007A3D;">
                                     {{ strtoupper(substr($annuler_rdv->participant2->prenom ?? 'X', 0, 1)) }}
                                 </div>
                                 <div class="flex-1">
-                                    <p class="font-semibold text-gray-800">
-                                        {{ $annuler_rdv->participant2->nom ?? '-' }}
-                                        {{ $annuler_rdv->participant2->prenom ?? '' }}
-                                    </p>
-                                    <p class="text-xs text-gray-400">
-                                        {{ $annuler_rdv->participant2->entreprise->nom ?? 'Indépendant' }}
-                                    </p>
+                                    <p class="font-semibold text-gray-800">{{ $annuler_rdv->participant2->nom ?? '-' }} {{ $annuler_rdv->participant2->prenom ?? '' }}</p>
+                                    <p class="text-xs text-gray-400">{{ $annuler_rdv->participant2->entreprise->nom ?? 'Indépendant' }}</p>
                                 </div>
-                                @if($absent_id == $annuler_rdv->id_participant2)
-                                <i class="fa-solid fa-circle-check text-red-500 text-xl"></i>
-                                @endif
+                                @if($absent_id == $annuler_rdv->id_participant2)<i class="fa-solid fa-circle-check text-red-500 text-xl"></i>@endif
                             </div>
                         </label>
                     </div>
                     @error('absent_id')
-                    <p class="text-red-500 text-xs mt-2">
-                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                        {{ $message }}
-                    </p>
+                    <p class="text-red-500 text-xs mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i>{{ $message }}</p>
                     @enderror
                 </div>
-
                 <div class="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-5 text-xs text-orange-700 flex items-start gap-2">
                     <i class="fa-solid fa-circle-info mt-0.5"></i>
-                    Après annulation, vous pourrez effectuer un <strong>re-match</strong>
-                    pour remplacer le participant absent.
+                    Après annulation, vous pourrez effectuer un <strong>re-match</strong> pour remplacer le participant absent.
                 </div>
-
                 <div class="flex justify-end gap-3">
                     <button wire:click="fermerModalAnnuler"
                         class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
@@ -701,11 +596,9 @@
             <div class="flex justify-between items-center px-8 py-5 border-b sticky top-0 z-10"
                 style="background: linear-gradient(135deg, #007A3D, #005a2d);">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    Générer le planning
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Générer le planning
                 </h3>
-                <button wire:click="closeGenerateModal"
-                    class="text-white/70 hover:text-white text-2xl">&times;</button>
+                <button wire:click="closeGenerateModal" class="text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
             <div class="p-8">
                 <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-5 text-sm text-blue-700 flex items-start gap-2">
@@ -722,57 +615,33 @@
                             <option value="{{ $evenement->id }}">{{ $evenement->nom }}</option>
                             @endforeach
                         </select>
-                        @error('id_evenement')
-                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                        @enderror
+                        @error('id_evenement')<span class="text-red-500 text-xs mt-1">{{ $message }}</span>@enderror
                     </div>
-
                     @if($evenement_selectionne)
                     <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
                         <p class="text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fa-solid fa-calendar mr-1" style="color: #007A3D;"></i>
-                            {{ $evenement_selectionne->nom }}
+                            <i class="fa-solid fa-calendar mr-1" style="color: #007A3D;"></i> {{ $evenement_selectionne->nom }}
                         </p>
                         <div class="grid grid-cols-2 gap-3 text-xs text-gray-600">
-                            <span>
-                                <i class="fa-solid fa-clock text-gray-400 mr-1"></i>
-                                {{ $evenement_selectionne->heure_debut }} → {{ $evenement_selectionne->heure_fin }}
-                            </span>
-                            <span>
-                                <i class="fa-solid fa-location-dot text-gray-400 mr-1"></i>
-                                {{ $evenement_selectionne->ville }}
-                            </span>
+                            <span><i class="fa-solid fa-clock text-gray-400 mr-1"></i>{{ $evenement_selectionne->heure_debut }} → {{ $evenement_selectionne->heure_fin }}</span>
+                            <span><i class="fa-solid fa-location-dot text-gray-400 mr-1"></i>{{ $evenement_selectionne->ville }}</span>
                             @if($evenement_selectionne->nom_salle)
-                            <span class="text-blue-600">
-                                <i class="fa-solid fa-door-open mr-1"></i>
-                                {{ $evenement_selectionne->nom_salle }}
-                            </span>
-                            <span class="text-blue-600">
-                                <i class="fa-solid fa-hashtag mr-0.5"></i>
-                                {{ $evenement_selectionne->nombre_tables }} tables
-                            </span>
+                            <span class="text-blue-600"><i class="fa-solid fa-door-open mr-1"></i>{{ $evenement_selectionne->nom_salle }}</span>
+                            <span class="text-blue-600"><i class="fa-solid fa-hashtag mr-0.5"></i>{{ $evenement_selectionne->nombre_tables }} tables</span>
                             @else
-                            <span class="text-red-500 col-span-2">
-                                <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                                Aucune salle définie ! Modifiez l'événement d'abord.
-                            </span>
+                            <span class="text-red-500 col-span-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Aucune salle définie ! Modifiez l'événement d'abord.</span>
                             @endif
                         </div>
                     </div>
                     @endif
-
                     <div>
                         <label class="block text-gray-600 text-sm font-medium mb-3">
-                            <i class="fa-solid fa-coffee mr-1 text-orange-400"></i>
-                            Pauses (optionnel)
+                            <i class="fa-solid fa-coffee mr-1 text-orange-400"></i> Pauses (optionnel)
                         </label>
                         <div class="space-y-2">
-                            <div class="flex items-center gap-3 p-3 border rounded-xl transition
-                                {{ $pause_cafe_matin ? 'border-orange-300 bg-orange-50' : 'border-gray-200' }}">
+                            <div class="flex items-center gap-3 p-3 border rounded-xl transition {{ $pause_cafe_matin ? 'border-orange-300 bg-orange-50' : 'border-gray-200' }}">
                                 <input type="checkbox" wire:model.live="pause_cafe_matin" class="rounded border-gray-300 w-4 h-4">
-                                <span class="text-sm font-medium text-gray-700 flex-1">
-                                    <i class="fa-solid fa-mug-hot text-orange-400 mr-1"></i> Pause café matin
-                                </span>
+                                <span class="text-sm font-medium text-gray-700 flex-1"><i class="fa-solid fa-mug-hot text-orange-400 mr-1"></i> Pause café matin</span>
                                 @if($pause_cafe_matin)
                                 <div class="flex items-center gap-2">
                                     <input wire:model.live="pause_cafe_matin_debut" type="time" class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
@@ -783,13 +652,9 @@
                                 <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">10:00 → 10:15</span>
                                 @endif
                             </div>
-
-                            <div class="flex items-center gap-3 p-3 border rounded-xl transition
-                                {{ $pause_dejeuner ? 'border-green-300 bg-green-50' : 'border-gray-200' }}">
+                            <div class="flex items-center gap-3 p-3 border rounded-xl transition {{ $pause_dejeuner ? 'border-green-300 bg-green-50' : 'border-gray-200' }}">
                                 <input type="checkbox" wire:model.live="pause_dejeuner" class="rounded border-gray-300 w-4 h-4">
-                                <span class="text-sm font-medium text-gray-700 flex-1">
-                                    <i class="fa-solid fa-utensils text-green-400 mr-1"></i> Pause déjeuner
-                                </span>
+                                <span class="text-sm font-medium text-gray-700 flex-1"><i class="fa-solid fa-utensils text-green-400 mr-1"></i> Pause déjeuner</span>
                                 @if($pause_dejeuner)
                                 <div class="flex items-center gap-2">
                                     <input wire:model.live="pause_dejeuner_debut" type="time" class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
@@ -800,13 +665,9 @@
                                 <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">12:00 → 14:00</span>
                                 @endif
                             </div>
-
-                            <div class="flex items-center gap-3 p-3 border rounded-xl transition
-                                {{ $pause_cafe_aprem ? 'border-orange-300 bg-orange-50' : 'border-gray-200' }}">
+                            <div class="flex items-center gap-3 p-3 border rounded-xl transition {{ $pause_cafe_aprem ? 'border-orange-300 bg-orange-50' : 'border-gray-200' }}">
                                 <input type="checkbox" wire:model.live="pause_cafe_aprem" class="rounded border-gray-300 w-4 h-4">
-                                <span class="text-sm font-medium text-gray-700 flex-1">
-                                    <i class="fa-solid fa-mug-hot text-orange-400 mr-1"></i> Pause café après-midi
-                                </span>
+                                <span class="text-sm font-medium text-gray-700 flex-1"><i class="fa-solid fa-mug-hot text-orange-400 mr-1"></i> Pause café après-midi</span>
                                 @if($pause_cafe_aprem)
                                 <div class="flex items-center gap-2">
                                     <input wire:model.live="pause_cafe_aprem_debut" type="time" class="border rounded-lg px-2 py-1 text-xs focus:outline-none">
@@ -819,7 +680,6 @@
                             </div>
                         </div>
                     </div>
-
                     @if($evenement_selectionne && $nb_creneaux > 0)
                     <div class="bg-green-50 border border-green-200 rounded-xl p-4">
                         <p class="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2">
@@ -842,23 +702,17 @@
                     </div>
                     @endif
                 </div>
-
                 <div class="flex justify-end gap-3 mt-7">
                     <button wire:click="closeGenerateModal"
                         class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm font-medium">
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler
                     </button>
                     <button wire:click="genererPlanning"
-                        wire:loading.attr="disabled"
-                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        wire:loading.attr="disabled" wire:loading.class="opacity-70 cursor-not-allowed"
                         class="px-6 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm shadow flex items-center gap-2"
                         style="background-color: #C8102E;">
-                        <span wire:loading.remove>
-                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Générer
-                        </span>
-                        <span wire:loading>
-                            <i class="fa-solid fa-spinner fa-spin mr-1"></i> Génération...
-                        </span>
+                        <span wire:loading.remove><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Générer</span>
+                        <span wire:loading><i class="fa-solid fa-spinner fa-spin mr-1"></i> Génération...</span>
                     </button>
                 </div>
             </div>
@@ -892,12 +746,8 @@
                         </div>
                         <div class="flex flex-col items-center gap-1">
                             <i class="fa-solid fa-arrows-left-right text-gray-400"></i>
-                            <span class="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
-                                {{ $rdv_courant->heure_debut }} - {{ $rdv_courant->heure_fin }}
-                            </span>
-                            @if($rdv_courant->salle)
-                            <span class="text-xs text-blue-500">{{ $rdv_courant->salle }} — Table {{ $rdv_courant->numero_table }}</span>
-                            @endif
+                            <span class="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{{ $rdv_courant->heure_debut }} - {{ $rdv_courant->heure_fin }}</span>
+                            @if($rdv_courant->salle)<span class="text-xs text-blue-500">{{ $rdv_courant->salle }} — Table {{ $rdv_courant->numero_table }}</span>@endif
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background-color: #007A3D;">
@@ -975,9 +825,7 @@
                 <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5">
                     <div class="grid grid-cols-2 gap-3 mb-3">
                         <div class="bg-red-100 rounded-xl p-3 text-center">
-                            <p class="text-xs text-red-500 font-medium mb-1">
-                                <i class="fa-solid fa-user-slash mr-1"></i> Absent
-                            </p>
+                            <p class="text-xs text-red-500 font-medium mb-1"><i class="fa-solid fa-user-slash mr-1"></i> Absent</p>
                             <p class="font-bold text-red-700 text-sm">
                                 @if($rematch_rdv->absent_participant_id == $rematch_rdv->id_participant1)
                                     {{ $rematch_rdv->participant1->nom ?? '-' }} {{ $rematch_rdv->participant1->prenom ?? '' }}
@@ -987,9 +835,7 @@
                             </p>
                         </div>
                         <div class="bg-green-100 rounded-xl p-3 text-center">
-                            <p class="text-xs text-green-600 font-medium mb-1">
-                                <i class="fa-solid fa-user-check mr-1"></i> Présent
-                            </p>
+                            <p class="text-xs text-green-600 font-medium mb-1"><i class="fa-solid fa-user-check mr-1"></i> Présent</p>
                             <p class="font-bold text-green-700 text-sm">
                                 @if($rematch_rdv->absent_participant_id == $rematch_rdv->id_participant1)
                                     {{ $rematch_rdv->participant2->nom ?? '-' }} {{ $rematch_rdv->participant2->prenom ?? '' }}
@@ -1002,73 +848,47 @@
                     <div class="flex items-center gap-4 text-xs text-gray-500">
                         <span><i class="fa-solid fa-calendar mr-1"></i>{{ $rematch_rdv->date }}</span>
                         <span><i class="fa-solid fa-clock mr-1"></i>{{ $rematch_rdv->heure_debut }} - {{ $rematch_rdv->heure_fin }}</span>
-                        @if($rematch_rdv->salle)
-                        <span><i class="fa-solid fa-door-open mr-1"></i>{{ $rematch_rdv->salle }} — Table {{ $rematch_rdv->numero_table }}</span>
-                        @endif
+                        @if($rematch_rdv->salle)<span><i class="fa-solid fa-door-open mr-1"></i>{{ $rematch_rdv->salle }} — Table {{ $rematch_rdv->numero_table }}</span>@endif
                     </div>
                 </div>
-
                 <div>
-                    <label class="block text-gray-600 text-sm font-medium mb-2">
-                        Choisir le remplaçant *
-                    </label>
+                    <label class="block text-gray-600 text-sm font-medium mb-2">Choisir le remplaçant *</label>
                     @if($participantsDisponibles->isEmpty())
                     <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        Aucun participant disponible sur ce créneau !
+                        <i class="fa-solid fa-triangle-exclamation"></i> Aucun participant disponible sur ce créneau !
                     </div>
                     @else
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-2 mb-3 text-xs text-blue-600">
-                        <i class="fa-solid fa-circle-info mr-1"></i>
-                        Seuls les participants libres sur ce créneau sont affichés.
+                        <i class="fa-solid fa-circle-info mr-1"></i> Seuls les participants libres sur ce créneau sont affichés.
                     </div>
                     <div class="space-y-2 max-h-64 overflow-y-auto">
                         @foreach($participantsDisponibles as $participant)
                         <label class="cursor-pointer">
-                            <input type="radio" wire:model.live="nouveau_participant"
-                                value="{{ $participant->id }}" class="hidden peer">
-                            <div class="flex items-center justify-between p-3 border-2 rounded-xl transition
-                                peer-checked:border-purple-400 peer-checked:bg-purple-50
-                                hover:bg-gray-50 border-gray-200">
+                            <input type="radio" wire:model.live="nouveau_participant" value="{{ $participant->id }}" class="hidden peer">
+                            <div class="flex items-center justify-between p-3 border-2 rounded-xl transition peer-checked:border-purple-400 peer-checked:bg-purple-50 hover:bg-gray-50 border-gray-200">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                                        style="background-color: #8b5cf6;">
+                                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style="background-color: #8b5cf6;">
                                         {{ strtoupper(substr($participant->prenom ?? 'X', 0, 1)) }}
                                     </div>
                                     <div>
-                                        <p class="text-sm font-semibold text-gray-800">
-                                            {{ $participant->nom }} {{ $participant->prenom }}
-                                        </p>
-                                        <p class="text-xs text-gray-400">
-                                            {{ $participant->fonction ?: 'Fonction non renseignée' }}
-                                            <span class="mx-1">•</span>
-                                            {{ $participant->entreprise->nom ?? 'Indépendant' }}
-                                        </p>
-                                        <p class="text-xs text-gray-400">
-                                            <i class="fa-solid fa-phone mr-1"></i>
-                                            {{ $participant->telephone ?: 'Non renseigné' }}
-                                        </p>
+                                        <p class="text-sm font-semibold text-gray-800">{{ $participant->nom }} {{ $participant->prenom }}</p>
+                                        <p class="text-xs text-gray-400">{{ $participant->fonction ?: 'Fonction non renseignée' }} • {{ $participant->entreprise->nom ?? 'Indépendant' }}</p>
+                                        <p class="text-xs text-gray-400"><i class="fa-solid fa-phone mr-1"></i>{{ $participant->telephone ?: 'Non renseigné' }}</p>
                                     </div>
                                 </div>
-                                @if($nouveau_participant == $participant->id)
-                                <i class="fa-solid fa-circle-check text-purple-500 text-xl"></i>
-                                @endif
+                                @if($nouveau_participant == $participant->id)<i class="fa-solid fa-circle-check text-purple-500 text-xl"></i>@endif
                             </div>
                         </label>
                         @endforeach
                     </div>
-                    @error('nouveau_participant')
-                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                    @enderror
+                    @error('nouveau_participant')<span class="text-red-500 text-xs mt-1">{{ $message }}</span>@enderror
                     @if($erreur_rematch)
                     <div class="bg-red-50 border border-red-200 rounded-xl p-3 mt-3 text-xs text-red-600 flex items-start gap-2">
-                        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
-                        {{ $erreur_rematch }}
+                        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i> {{ $erreur_rematch }}
                     </div>
                     @endif
                     @endif
                 </div>
-
                 <div class="flex justify-end gap-3 mt-6">
                     <button wire:click="fermerRematch" class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
                         <i class="fa-solid fa-xmark mr-1"></i> Annuler

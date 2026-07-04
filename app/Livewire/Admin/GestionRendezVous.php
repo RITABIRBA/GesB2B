@@ -282,7 +282,7 @@ class GestionRendezVous extends Component
             Notification::create(['id_participant' => $absent->id, 'contenu' => "Votre rendez-vous avec " . ($autre->nom ?? '') . ' ' . ($autre->prenom ?? '') . " a été annulé par l'administration (absence).", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
         }
         if ($autre) {
-            Notification::create(['id_participant' => $autre->id, 'contenu' => "⚠️ Votre rendez-vous avec " . ($absent->nom ?? '') . ' ' . ($absent->prenom ?? '') . " a été annulé (absence signalée).", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
+            Notification::create(['id_participant' => $autre->id, 'contenu' => " Votre rendez-vous avec " . ($absent->nom ?? '') . ' ' . ($absent->prenom ?? '') . " a été annulé (absence signalée).", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
         }
 
         $this->fermerModalAnnuler();
@@ -573,8 +573,8 @@ class GestionRendezVous extends Component
         RendezVous::create(['id_participant1' => $this->match_participant1, 'id_participant2' => $this->match_participant2, 'date' => $creneau['date'], 'heure_debut' => $creneau['heure_debut'], 'heure_fin' => $creneau['heure_fin'], 'salle' => $creneau['salle'], 'numero_table' => $creneau['numero_table'], 'statut' => 'planifie']);
 
         $infoCreneau = "le {$creneau['date']} de {$creneau['heure_debut']} à {$creneau['heure_fin']} (Table {$creneau['numero_table']})";
-        Notification::create(['id_participant' => $p1->id, 'contenu' => "📅 Un rendez-vous a été organisé par l'administration avec " . ($p2->nom ?? '') . ' ' . ($p2->prenom ?? '') . " {$infoCreneau}.", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
-        Notification::create(['id_participant' => $p2->id, 'contenu' => "📅 Un rendez-vous a été organisé par l'administration avec " . ($p1->nom ?? '') . ' ' . ($p1->prenom ?? '') . " {$infoCreneau}.", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
+        Notification::create(['id_participant' => $p1->id, 'contenu' => " Un rendez-vous a été organisé par l'administration avec " . ($p2->nom ?? '') . ' ' . ($p2->prenom ?? '') . " {$infoCreneau}.", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
+        Notification::create(['id_participant' => $p2->id, 'contenu' => " Un rendez-vous a été organisé par l'administration avec " . ($p1->nom ?? '') . ' ' . ($p1->prenom ?? '') . " {$infoCreneau}.", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
 
         session()->flash('success', 'Match manuel créé avec succès ! Les deux participants ont été notifiés.');
         $this->fermerMatchManuel();

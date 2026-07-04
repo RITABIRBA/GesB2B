@@ -25,40 +25,71 @@ class Dashboard extends Component
     public float  $montant_paiement   = 0;
     public int    $inscription_id     = 0;
     public string $numero_cheque      = '';
+    public float  $montant_brut       = 0;
+    public float  $pourcentage_remise = 0;
+    public float  $montant_remise     = 0;
+    public string $alertSuccess       = '';
+    public string $alertError         = '';
 
-    // ✅ NOUVEAU : infos remise pour le modal
-    public float $montant_brut       = 0;
-    public float $pourcentage_remise = 0;
-    public float $montant_remise     = 0;
+    // ── Helper : retrouve l'entreprise de l'utilisateur connecté ──
+    private function getEntreprise(): ?Entreprise
+    {
+        $user = auth()->user();
 
-    public string $alertSuccess = '';
-    public string $alertError   = '';
+        // 1. Par email_responsable
+        $entreprise = Entreprise::where('email_responsable', $user->email)->first();
+        if ($entreprise) return $entreprise;
+
+        // 2. Par participant lié (email du participant = email du user)
+        $participant = Participant::where('email', $user->email)->first();
+        if ($participant && $participant->id_entreprise) {
+            return Entreprise::find($participant->id_entreprise);
+        }
+
+        return null;
+    }
+
+    // ── Helper : retrouve le représentant de l'entreprise ──
+    private function getRepresentant(?Entreprise $entreprise): ?Participant
+    {
+        if (!$entreprise) return null;
+
+        // 1. Par rôle representant
+        $rep = Participant::where('id_entreprise', $entreprise->id)
+            ->where('role', 'representant')
+            ->first();
+        if ($rep) return $rep;
+
+        // 2. Par email du user connecté
+        $rep = Participant::where('id_entreprise', $entreprise->id)
+            ->where('email', auth()->user()->email)
+            ->first();
+        if ($rep) return $rep;
+
+        // 3. Premier participant de l'entreprise
+        return Participant::where('id_entreprise', $entreprise->id)->first();
+    }
 
     public function openModalPaiement(): void
     {
         $this->alertSuccess = '';
         $this->alertError   = '';
 
-        $entreprise = Entreprise::where('email_responsable', auth()->user()->email)->first();
-
-        $representant = $entreprise
-            ? Participant::where('id_entreprise', $entreprise->id)
-                ->where('role', 'representant')
-                ->first()
-            : null;
+        $entreprise   = $this->getEntreprise();
+        $representant = $this->getRepresentant($entreprise);
 
         if ($representant) {
+            // ✅ CORRECTION : statut_presence = 'present' obligatoire
             $inscription = Inscription::where('id_participant', $representant->id)
+                ->where('statut_presence', 'present')
                 ->where('statut_paiement', 'en_attente')
                 ->with('evenement')
                 ->first();
 
             if ($inscription) {
-                $this->inscription_id = $inscription->id;
-                $montantBrut = $inscription->evenement->montant_inscription ?? 0;
-
-                $details = $representant->montantApresRemise($montantBrut);
-
+                $this->inscription_id     = $inscription->id;
+                $montantBrut              = $inscription->evenement->montant_inscription ?? 0;
+                $details                  = $representant->montantApresRemise($montantBrut);
                 $this->montant_brut       = $details['montant_brut'];
                 $this->pourcentage_remise = $details['pourcentage'];
                 $this->montant_remise     = $details['montant_remise'];
@@ -107,9 +138,7 @@ class Dashboard extends Component
 
     public function confirmerOtp(): void
     {
-        $this->validate([
-            'otp_saisi' => 'required|string',
-        ]);
+        $this->validate(['otp_saisi' => 'required|string']);
 
         if (trim($this->otp_saisi) !== trim($this->otp_code)) {
             $this->addError('otp_saisi', 'Code OTP incorrect. Essayez encore.');
@@ -199,16 +228,8 @@ class Dashboard extends Component
 
     public function render()
     {
-        $entreprise = Entreprise::where('email_responsable', auth()->user()->email)->first();
-
-        $representant = $entreprise
-            ? Participant::where('id_entreprise', $entreprise->id)
-                ->where(function ($q) {
-                    $q->where('email', auth()->user()->email)
-                      ->orWhere('role', 'representant');
-                })
-                ->first()
-            : null;
+        $entreprise   = $this->getEntreprise();
+        $representant = $this->getRepresentant($entreprise);
 
         $totalMembres = $entreprise
             ? Participant::where('id_entreprise', $entreprise->id)->count()
@@ -250,25 +271,23 @@ class Dashboard extends Component
                 ->get()
             : collect();
 
-        $paiementEnAttente = false;
+        $paiementEnAttente  = false;
         $montantPaiement    = 0;
         $recuPaiement       = null;
         $statutPaiement     = null;
-
-        // ✅ NOUVEAU : aperçu remise pour le bandeau
         $remiseApplicable   = 0;
         $montantBrutAffiche = 0;
 
         if ($entreprise && $entreprise->statut_validation == 'valide' && $representant) {
-
+            // ✅ CORRECTION : statut_presence doit être 'present' pour afficher le bouton payer
             $inscription = Inscription::where('id_participant', $representant->id)
+                ->where('statut_presence', 'present')
                 ->whereIn('statut_paiement', ['en_attente', 'paye'])
                 ->with('evenement')
                 ->latest()
                 ->first();
 
             if ($inscription && $inscription->evenement?->type_paiement != 'gratuit') {
-
                 $dernierPaiement = Paiement::where('id_inscription', $inscription->id)
                     ->with('recu')
                     ->latest()
@@ -302,6 +321,7 @@ class Dashboard extends Component
             ->orderBy('date_debut')
             ->get()
             ->map(function ($evenement) use ($representant) {
+                // ✅ Vérifie si déjà inscrit — fonctionne même si representant est null
                 $evenement->deja_inscrit = $representant
                     ? Inscription::where('id_participant', $representant->id)
                         ->where('id_evenement', $evenement->id)

@@ -62,13 +62,13 @@
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-800 text-sm">
-                                    {{ $participant->nom }} {{ $participant->prenom }}
-                                    @if($participant->genre == 'femme')
-                                    <span class="text-xs text-pink-500">(Mme)</span>
-                                    @elseif($participant->genre == 'homme')
-                                    <span class="text-xs text-blue-500">(M.)</span>
-                                    @endif
-                                </p>
+    @if($participant->genre == 'femme')
+    <span class="text-xs text-pink-500">Mme</span>
+    @elseif($participant->genre == 'homme')
+    <span class="text-xs text-blue-500">M.</span>
+    @endif
+    {{ $participant->nom }} {{ $participant->prenom }}
+</p>
                                 <span class="font-mono text-xs font-bold px-2 py-0.5 rounded-lg inline-block"
                                     style="background-color: #fde8ec; color: #C8102E;">
                                     <i class="fa-solid fa-key mr-0.5"></i>{{ $participant->code_acces }}

@@ -16,6 +16,28 @@
                 <h2 class="text-2xl font-bold">
                     {{ $badge->typeBadge->libelle ?? 'Participant' }}
                 </h2>
+
+                {{-- ✅ Nom et dates de l'événement --}}
+                @if($evenement)
+                <div class="mt-3 bg-white/10 rounded-xl px-4 py-2">
+                    <p class="text-white font-bold text-sm">{{ $evenement->nom }}</p>
+                    <p class="text-green-200 text-xs mt-0.5">
+                        <i class="fa-solid fa-calendar mr-1"></i>
+                        @if($evenement->date_debut)
+                            {{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }}
+                        @endif
+                        @if($evenement->date_fin && $evenement->date_fin != $evenement->date_debut)
+                            → {{ \Carbon\Carbon::parse($evenement->date_fin)->format('d/m/Y') }}
+                        @endif
+                    </p>
+                    @if($evenement->lieu ?? $evenement->ville)
+                    <p class="text-green-200 text-xs mt-0.5">
+                        <i class="fa-solid fa-location-dot mr-1"></i>
+                        {{ $evenement->lieu ?? $evenement->ville }}
+                    </p>
+                    @endif
+                </div>
+                @endif
             </div>
 
             {{-- Corps badge --}}
@@ -25,18 +47,25 @@
                     {{ strtoupper(substr($participant->prenom ?? 'X', 0, 1)) }}
                 </div>
 
+                {{-- ✅ Nom + Prénom sans civilité devant --}}
                 <h3 class="text-2xl font-bold text-gray-800">
                     {{ $participant->nom ?? '-' }} {{ $participant->prenom ?? '' }}
                 </h3>
+
+                {{-- ✅ Fonction --}}
                 @if($participant->fonction)
                 <p class="text-gray-500 mt-1 text-sm">
                     <i class="fa-solid fa-briefcase mr-1"></i>
                     {{ $participant->fonction }}
                 </p>
                 @endif
-                <p class="text-gray-500 mt-1">
+
+                {{-- ✅ Entreprise --}}
+                <p class="text-gray-600 font-medium mt-1">
+                    <i class="fa-solid fa-building mr-1 text-gray-400"></i>
                     {{ $participant->entreprise->nom ?? 'Indépendant' }}
                 </p>
+
                 <p class="text-gray-400 text-sm mt-1">
                     {{ ucfirst($participant->role ?? '') }}
                 </p>
@@ -80,9 +109,22 @@
                 </div>
             </div>
 
-            {{-- Footer badge --}}
-            <div class="px-8 py-4 bg-gray-50 border-t text-center">
-                <p class="text-xs text-gray-400">
+            {{-- ✅ Footer badge avec nom événement --}}
+            <div class="px-8 py-4 border-t text-center"
+                style="background: linear-gradient(135deg, #1e3a5f, #2d5a8e);">
+                @if($evenement)
+                <p class="text-xs text-blue-200 font-medium mb-1">
+                    <i class="fa-solid fa-calendar-check mr-1"></i>
+                    {{ $evenement->nom }}
+                    @if($evenement->date_debut)
+                        — {{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }}
+                    @endif
+                    @if($evenement->date_fin && $evenement->date_fin != $evenement->date_debut)
+                        → {{ \Carbon\Carbon::parse($evenement->date_fin)->format('d/m/Y') }}
+                    @endif
+                </p>
+                @endif
+                <p class="text-xs text-blue-300">
                     <i class="fa-solid fa-shield-halved mr-1"></i>
                     Badge officiel CCI-BF — GesB2B Platform
                 </p>

@@ -30,7 +30,7 @@ class AbsenceSignalee extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Absence signalee — ' . $this->nomEvenement,
+            subject: 'Absence signalée — ' . $this->nomEvenement,
         );
     }
 
@@ -38,6 +38,18 @@ class AbsenceSignalee extends Mailable
     {
         return new Content(
             view: 'emails.absence-signalee',
+            // ✅ Passer explicitement les variables à la vue
+            with: [
+                'destinataire' => $this->destinataire,
+                'absent'       => $this->absent->load('entreprise'),
+                'dateRdv'      => $this->dateRdv,
+                'heureDebut'   => $this->heureDebut,
+                'heureFin'     => $this->heureFin,
+                'salle'        => $this->salle,
+                'table'        => $this->table,
+                'nomEvenement' => $this->nomEvenement,
+                'remplacants'  => $this->remplacants,
+            ],
         );
     }
 }

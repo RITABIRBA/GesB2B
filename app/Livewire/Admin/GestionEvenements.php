@@ -15,16 +15,12 @@ class GestionEvenements extends Component
     public $utiliser_nouveau_type       = '';
     public $nom                         = '';
     public $annee                       = '';
-
     public $type_evenement              = 'avec_b2b';
-
     public $date_debut                  = '';
     public $date_fin                    = '';
     public $date_ouverture_inscriptions = '';
     public $date_cloture_inscriptions   = '';
-
     public $date_limite_rdv             = '';
-
     public $heure_debut                 = '';
     public $heure_fin                   = '';
     public $ville                       = '';
@@ -45,14 +41,12 @@ class GestionEvenements extends Component
     public $isEditing                   = false;
     public $search                      = '';
 
-    public array $types_stands          = [];
-    public bool  $showTypesStands       = false;
+    public array $types_stands    = [];
+    public bool  $showTypesStands = false;
 
-    // ─── Modal Types de stands ─────────────────────────────
     public bool   $showTypeStandModal = false;
     public int    $typeStandIndex     = -1;
     public string $ts_standing        = '';
-    // ✅ NOUVEAU : quantité par standing
     public int    $ts_quantite        = 1;
     public string $ts_superficie      = '';
     public bool   $ts_est_gratuit     = false;
@@ -60,8 +54,6 @@ class GestionEvenements extends Component
     public array  $ts_composants      = [];
     public string $ts_composant_nom   = '';
     public int    $ts_composant_qte   = 1;
-
-    // ─── Watchers ─────────────────────────────────────────
 
     public function updatedTypeEvenement(): void
     {
@@ -77,34 +69,32 @@ class GestionEvenements extends Component
         }
     }
 
-    // ─── Types de stands ──────────────────────────────────
-
     public function ouvrirAjoutTypeStand(): void
     {
-        $this->typeStandIndex   = -1;
-        $this->ts_standing      = '';
-        $this->ts_quantite      = 1;
-        $this->ts_superficie    = '';
-        $this->ts_est_gratuit   = false;
-        $this->ts_montant       = 0;
-        $this->ts_composants    = [];
-        $this->ts_composant_nom = '';
-        $this->ts_composant_qte = 1;
+        $this->typeStandIndex     = -1;
+        $this->ts_standing        = '';
+        $this->ts_quantite        = 1;
+        $this->ts_superficie      = '';
+        $this->ts_est_gratuit     = false;
+        $this->ts_montant         = 0;
+        $this->ts_composants      = [];
+        $this->ts_composant_nom   = '';
+        $this->ts_composant_qte   = 1;
         $this->showTypeStandModal = true;
     }
 
     public function ouvrirModifierTypeStand(int $index): void
     {
         $ts = $this->types_stands[$index];
-        $this->typeStandIndex   = $index;
-        $this->ts_standing      = $ts['standing'];
-        $this->ts_quantite      = $ts['quantite'] ?? 1;
-        $this->ts_superficie    = $ts['superficie'] ?? '';
-        $this->ts_est_gratuit   = $ts['est_gratuit'] ?? false;
-        $this->ts_montant       = $ts['montant'] ?? 0;
-        $this->ts_composants    = $ts['composants'] ?? [];
-        $this->ts_composant_nom = '';
-        $this->ts_composant_qte = 1;
+        $this->typeStandIndex     = $index;
+        $this->ts_standing        = $ts['standing'];
+        $this->ts_quantite        = $ts['quantite'] ?? 1;
+        $this->ts_superficie      = $ts['superficie'] ?? '';
+        $this->ts_est_gratuit     = $ts['est_gratuit'] ?? false;
+        $this->ts_montant         = $ts['montant'] ?? 0;
+        $this->ts_composants      = $ts['composants'] ?? [];
+        $this->ts_composant_nom   = '';
+        $this->ts_composant_qte   = 1;
         $this->showTypeStandModal = true;
     }
 
@@ -128,12 +118,10 @@ class GestionEvenements extends Component
     public function sauvegarderTypeStand(): void
     {
         $this->validate([
-            'ts_standing'   => 'required|string|max:255',
-            'ts_quantite'   => 'required|integer|min:1|max:200',
-            'ts_superficie' => 'nullable|string|max:100',
-            'ts_montant'    => 'nullable|numeric|min:0',
+            'ts_standing' => 'required|string|max:255',
+            'ts_quantite' => 'required|integer|min:1|max:200',
         ], [
-            'ts_standing.required' => 'Le nom du standing est obligatoire.',
+            'ts_standing.required' => 'Le standing est obligatoire.',
             'ts_quantite.required' => 'Le nombre de stands est obligatoire.',
             'ts_quantite.min'      => 'Le nombre de stands doit être au moins 1.',
         ]);
@@ -154,7 +142,6 @@ class GestionEvenements extends Component
         }
 
         $this->recalculerNombreStandsTotal();
-
         $this->showTypeStandModal = false;
     }
 
@@ -164,17 +151,11 @@ class GestionEvenements extends Component
         $this->recalculerNombreStandsTotal();
     }
 
-    /**
-     * ✅ Recalcule automatiquement le nombre total de stands
-     * en additionnant la quantité de chaque standing.
-     */
     private function recalculerNombreStandsTotal(): void
     {
         $this->nombre_stands = collect($this->types_stands)
             ->sum(fn($ts) => (int) ($ts['quantite'] ?? 0));
     }
-
-    // ─── CRUD Événement ───────────────────────────────────
 
     public function openModal(): void
     {
@@ -272,38 +253,40 @@ class GestionEvenements extends Component
 
     public function sauvegarder(): void
     {
+        // ✅ Règles de base — sans contrainte entre dates optionnelles
         $regles = [
-            'nom'           => 'required|string|max:255',
-            'annee'         => 'required|integer|min:2000|max:2100',
+            'nom'            => 'required|string|max:255',
+            'annee'          => 'required|integer|min:2000|max:2100',
             'type_evenement' => 'required|in:avec_b2b,sans_b2b',
-            'date_debut'    => 'required|date',
-            'date_fin'      => 'required|date|after_or_equal:date_debut',
-            'heure_debut'   => 'required',
-            'heure_fin'     => 'required',
-            'ville'         => 'required|string|max:255',
-            'lieu'          => 'required|string|max:255',
-            'type_paiement' => 'required|in:gratuit,par_entreprise,payant',
+            'date_debut'     => 'required|date',
+            'date_fin'       => 'required|date|after_or_equal:date_debut',
+            'heure_debut'    => 'required',
+            'heure_fin'      => 'required',
+            'ville'          => 'required|string|max:255',
+            'lieu'           => 'required|string|max:255',
+            'type_paiement'  => 'required|in:gratuit,par_entreprise,payant',
+            // ✅ CORRECTION : dates optionnelles sans contrainte entre elles
             'date_ouverture_inscriptions' => 'nullable|date',
-            'date_cloture_inscriptions'   => 'nullable|date|after_or_equal:date_ouverture_inscriptions',
-            'date_limite_rdv'             => 'nullable|date|before_or_equal:date_fin',
+            'date_cloture_inscriptions'   => 'nullable|date',
+            'date_limite_rdv'             => 'nullable|date',
             'nom_salle'                   => 'nullable|string|max:255',
             'nombre_tables'               => 'nullable|integer|min:1|max:500',
             'nombre_stands'               => 'nullable|integer|min:0|max:500',
-            'prix_stand_standard'         => 'nullable|numeric|min:0',
-            'prix_stand_premium'          => 'nullable|numeric|min:0',
-            'prix_stand_vip'              => 'nullable|numeric|min:0',
         ];
 
+        // ✅ Règles B2B uniquement si avec_b2b
         if ($this->type_evenement === 'avec_b2b') {
             $regles['min_souhaits'] = 'required|integer|min:1|max:50';
             $regles['max_souhaits'] = 'required|integer|min:1|max:100';
             $regles['duree_rdv']    = 'required|integer|min:5|max:120';
         }
 
+        // ✅ Montant requis seulement si payant
         if ($this->type_paiement !== 'gratuit') {
             $regles['montant_inscription'] = 'required|numeric|min:1';
         }
 
+        // ✅ Type événement requis
         if ($this->utiliser_nouveau_type === '1') {
             $regles['nouveau_type'] = 'required|string|max:255';
             $this->validate($regles);
@@ -332,35 +315,25 @@ class GestionEvenements extends Component
             'nom_salle'                   => $this->nom_salle ?: null,
             'nombre_tables'               => (int) ($this->nombre_tables ?: 10),
             'type_paiement'               => $this->type_paiement,
-            'montant_inscription'         => $this->type_paiement === 'gratuit'
-                ? 0 : $this->montant_inscription,
-            // ✅ Calculé automatiquement à partir des types de stands
-            'nombre_stands'               => collect($this->types_stands)
-                ->sum(fn($ts) => (int) ($ts['quantite'] ?? 0)),
+            'montant_inscription'         => $this->type_paiement === 'gratuit' ? 0 : $this->montant_inscription,
+            'nombre_stands'               => collect($this->types_stands)->sum(fn($ts) => (int) ($ts['quantite'] ?? 0)),
             'prix_stand_standard'         => $this->prix_stand_standard ?: 0,
             'prix_stand_premium'          => $this->prix_stand_premium ?: 0,
             'prix_stand_vip'              => $this->prix_stand_vip ?: 0,
-            'min_souhaits'                => $this->type_evenement === 'avec_b2b'
-                ? (int) $this->min_souhaits : 0,
-            'max_souhaits'                => $this->type_evenement === 'avec_b2b'
-                ? (int) $this->max_souhaits : 0,
-            'duree_rdv'                   => $this->type_evenement === 'avec_b2b'
-                ? (int) $this->duree_rdv : 0,
+            'min_souhaits'                => $this->type_evenement === 'avec_b2b' ? (int) $this->min_souhaits : 0,
+            'max_souhaits'                => $this->type_evenement === 'avec_b2b' ? (int) $this->max_souhaits : 0,
+            'duree_rdv'                   => $this->type_evenement === 'avec_b2b' ? (int) $this->duree_rdv : 0,
             'duree_pause'                 => 0,
         ];
 
         if ($this->isEditing) {
             $evenement = Evenement::findOrFail($this->evenement_id);
             $evenement->update($data);
-
             $this->sauvegarderTypesStands($evenement->id);
-
             session()->flash('success', 'Événement modifié avec succès.');
         } else {
             $evenement = Evenement::create($data);
-
             $this->sauvegarderTypesStands($evenement->id);
-
             session()->flash('success', 'Événement créé avec succès.');
         }
 
@@ -371,11 +344,7 @@ class GestionEvenements extends Component
     {
         if (empty($this->types_stands)) return;
 
-        // Supprime les types de stands qui ne sont plus dans la liste (édition)
-        $idsConserves = collect($this->types_stands)
-            ->pluck('id')
-            ->filter()
-            ->toArray();
+        $idsConserves = collect($this->types_stands)->pluck('id')->filter()->toArray();
 
         TypeStand::where('id_evenement', $id_evenement)
             ->when(!empty($idsConserves), fn($q) => $q->whereNotIn('id', $idsConserves))
@@ -384,15 +353,14 @@ class GestionEvenements extends Component
 
         foreach ($this->types_stands as $ts) {
             if (!empty($ts['id'])) {
-                TypeStand::where('id', $ts['id'])
-                    ->update([
-                        'standing'    => $ts['standing'],
-                        'quantite'    => $ts['quantite'] ?? 1,
-                        'superficie'  => $ts['superficie'],
-                        'est_gratuit' => $ts['est_gratuit'],
-                        'montant'     => $ts['est_gratuit'] ? 0 : $ts['montant'],
-                        'composants'  => $ts['composants'],
-                    ]);
+                TypeStand::where('id', $ts['id'])->update([
+                    'standing'    => $ts['standing'],
+                    'quantite'    => $ts['quantite'] ?? 1,
+                    'superficie'  => $ts['superficie'],
+                    'est_gratuit' => $ts['est_gratuit'],
+                    'montant'     => $ts['est_gratuit'] ? 0 : $ts['montant'],
+                    'composants'  => $ts['composants'],
+                ]);
             } else {
                 TypeStand::create([
                     'id_evenement' => $id_evenement,

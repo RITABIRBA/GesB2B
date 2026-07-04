@@ -121,12 +121,8 @@
             text-transform: uppercase;
             margin-bottom: 16px;
         }
-        .value-card {
-            transition: all 0.3s ease;
-        }
-        .value-card:hover {
-            transform: translateY(-4px);
-        }
+        .value-card { transition: all 0.3s ease; }
+        .value-card:hover { transform: translateY(-4px); }
         .event-card {
             transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid #e5e7eb;
@@ -136,11 +132,86 @@
             box-shadow: 0 20px 40px rgba(0,122,61,0.12);
             border-color: #007A3D;
         }
+
+        /* Modal S'inscrire */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body class="antialiased bg-white">
 
-    {{-- NAVBAR --}}
+    {{-- ══════════════════════════════════════════════
+         MODAL S'INSCRIRE
+    ══════════════════════════════════════════════ --}}
+    <div id="modalInscription" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <div class="text-center mb-8">
+                <img src="{{ asset('images/logo-ccibf.png') }}"
+                    alt="CCI-BF" class="w-14 h-14 object-contain mx-auto mb-4">
+                <h2 class="text-2xl font-bold text-gray-900">Vous souhaitez vous inscrire ?</h2>
+                <p class="text-gray-400 text-sm mt-2">Choisissez votre type de compte</p>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                {{-- Participant --}}
+                <a href="{{ route('inscription.participant') }}"
+                    class="flex items-center gap-5 p-5 rounded-2xl border-2 border-gray-100 hover:border-green-400 hover:bg-green-50 transition group">
+                    <div class="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style="background-color: #e6f4ed;">
+                        <i class="fa-solid fa-user text-xl" style="color: #007A3D;"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-gray-800 group-hover:text-green-700">Participant individuel</p>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                           Vous participez à titre personnel en tant que professionnel ou représentant
+                        </p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-green-500"></i>
+                </a>
+
+                {{-- Entreprise --}}
+                <a href="{{ route('inscription.entreprise') }}"
+                    class="flex items-center gap-5 p-5 rounded-2xl border-2 border-gray-100 hover:border-red-400 hover:bg-red-50 transition group">
+                    <div class="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style="background-color: #fde8ec;">
+                        <i class="fa-solid fa-building text-xl" style="color: #C8102E;"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-gray-800 group-hover:text-red-700">Entreprise</p>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Vous représentez une entreprise et souhaitez inscrire votre délégation
+                        </p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-red-500"></i>
+                </a>
+            </div>
+
+            <button onclick="document.getElementById('modalInscription').style.display='none'"
+                class="w-full py-3 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition">
+                <i class="fa-solid fa-xmark mr-2"></i> Annuler
+            </button>
+        </div>
+    </div>
+
+    {{-- ══════════════════════════════════════════════
+         NAVBAR
+    ══════════════════════════════════════════════ --}}
     <nav class="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 shadow-sm"
         style="background: rgba(255,255,255,0.98); backdrop-filter: blur(20px);">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
@@ -161,16 +232,12 @@
                     <i class="fa-solid fa-gauge text-xs"></i> Mon espace
                 </a>
                 @else
-                <a href="{{ route('inscription.participant') }}"
+                {{-- ✅ Un seul bouton S'inscrire qui ouvre le modal --}}
+                <button onclick="document.getElementById('modalInscription').style.display='flex'"
                     class="hidden md:flex px-5 py-2.5 rounded-xl font-semibold text-sm transition items-center gap-2 border-2"
                     style="color: #007A3D; border-color: #007A3D;">
                     <i class="fa-solid fa-user-plus text-xs"></i> S'inscrire
-                </a>
-                <a href="{{ route('inscription.entreprise') }}"
-                    class="hidden md:flex px-5 py-2.5 rounded-xl font-semibold text-sm transition items-center gap-2 border-2"
-                    style="color: #C8102E; border-color: #C8102E;">
-                    <i class="fa-solid fa-building text-xs"></i> Mon entreprise
-                </a>
+                </button>
                 <a href="{{ route('login') }}"
                     class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 flex items-center gap-2"
                     style="background-color: #C8102E;">
@@ -182,12 +249,12 @@
         </div>
     </nav>
 
-    {{-- HERO --}}
+    {{-- ══════════════════════════════════════════════
+         HERO
+    ══════════════════════════════════════════════ --}}
     <section class="hero flex items-center pt-20">
         <div class="max-w-7xl mx-auto px-6 w-full py-24 relative z-10">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-
-                {{-- Contenu gauche --}}
                 <div class="text-white fade-up">
                     <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold mb-8 uppercase tracking-wider"
                         style="background: rgba(200,16,46,0.25); border: 1px solid rgba(200,16,46,0.4);">
@@ -220,7 +287,6 @@
                     </div>
                 </div>
 
-                {{-- 4 cartes valeurs --}}
                 <div class="grid grid-cols-2 gap-5 fade-up delay-1">
                     <div class="glass rounded-2xl p-7 value-card float">
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
@@ -228,9 +294,7 @@
                             <i class="fa-solid fa-shield-halved text-white text-xl"></i>
                         </div>
                         <p class="text-white font-bold text-lg mb-1">Sécurisé</p>
-                        <p class="text-white/50 text-sm leading-relaxed">
-                            Accès sécurisé avec gestion des rôles et permissions
-                        </p>
+                        <p class="text-white/50 text-sm leading-relaxed">Accès sécurisé avec gestion des rôles et permissions</p>
                     </div>
                     <div class="glass rounded-2xl p-7 value-card"
                         style="animation: float 4s ease-in-out 1s infinite;">
@@ -239,9 +303,7 @@
                             <i class="fa-solid fa-wand-magic-sparkles text-white text-xl"></i>
                         </div>
                         <p class="text-white font-bold text-lg mb-1">Intelligent</p>
-                        <p class="text-white/50 text-sm leading-relaxed">
-                            Match-making automatique et optimisé des rendez-vous
-                        </p>
+                        <p class="text-white/50 text-sm leading-relaxed">Match-making automatique et optimisé des rendez-vous</p>
                     </div>
                     <div class="glass rounded-2xl p-7 value-card"
                         style="animation: float 4s ease-in-out 0.5s infinite;">
@@ -250,9 +312,7 @@
                             <i class="fa-solid fa-mobile-screen text-white text-xl"></i>
                         </div>
                         <p class="text-white font-bold text-lg mb-1">Accessible</p>
-                        <p class="text-white/50 text-sm leading-relaxed">
-                            Disponible sur tous les appareils, partout et à tout moment
-                        </p>
+                        <p class="text-white/50 text-sm leading-relaxed">Disponible sur tous les appareils, partout et à tout moment</p>
                     </div>
                     <div class="glass rounded-2xl p-7 value-card"
                         style="animation: float 4s ease-in-out 1.5s infinite;">
@@ -261,9 +321,7 @@
                             <i class="fa-solid fa-bolt text-white text-xl"></i>
                         </div>
                         <p class="text-white font-bold text-lg mb-1">Efficace</p>
-                        <p class="text-white/50 text-sm leading-relaxed">
-                            Gestion complète des forums de A à Z en temps réel
-                        </p>
+                        <p class="text-white/50 text-sm leading-relaxed">Gestion complète des forums de A à Z en temps réel</p>
                     </div>
                 </div>
             </div>
@@ -274,10 +332,11 @@
         </div>
     </section>
 
-    {{-- SECTION ÉVÉNEMENTS À VENIR --}}
+    {{-- ══════════════════════════════════════════════
+         ÉVÉNEMENTS À VENIR
+    ══════════════════════════════════════════════ --}}
     @php
         $today = now()->toDateString();
-
         $evenementsAVenir = \App\Models\Evenement::where('date_fin', '>=', $today)
             ->where(function ($q) use ($today) {
                 $q->whereNull('date_ouverture_inscriptions')
@@ -295,94 +354,63 @@
     <section id="evenements" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
-                <div class="section-tag text-white" style="background-color: #007A3D;">
-                    Événements
-                </div>
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">
-                    Vos prochaines opportunités
-                </h2>
+                <div class="section-tag text-white" style="background-color: #007A3D;">Événements</div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Vos prochaines opportunités</h2>
                 <div class="divider mx-auto mb-4"></div>
                 <p class="text-gray-500 text-lg max-w-xl mx-auto">
                     Découvrez les événements à venir et inscrivez-vous dès aujourd'hui
                     pour développer votre réseau professionnel.
                 </p>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 @foreach($evenementsAVenir as $evt)
                 @php
                     $gratuit   = ($evt->type_paiement ?? 'payant') === 'gratuit';
                     $estB2B    = ($evt->type_evenement ?? 'avec_b2b') === 'avec_b2b';
-                    $nbJours   = (int) \Carbon\Carbon::now()->diffInDays(
-                        \Carbon\Carbon::parse($evt->date_debut), false
-                    );
-                    $dateDebut = \Carbon\Carbon::parse($evt->date_debut)
-                        ->locale('fr')->translatedFormat('d M Y');
+                    $nbJours   = (int) \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($evt->date_debut), false);
+                    $dateDebut = \Carbon\Carbon::parse($evt->date_debut)->locale('fr')->translatedFormat('d M Y');
                     $dateFin   = $evt->date_fin && $evt->date_fin !== $evt->date_debut
-                        ? \Carbon\Carbon::parse($evt->date_fin)
-                            ->locale('fr')->translatedFormat('d M Y')
+                        ? \Carbon\Carbon::parse($evt->date_fin)->locale('fr')->translatedFormat('d M Y')
                         : null;
                 @endphp
                 <div class="event-card bg-white rounded-2xl overflow-hidden flex flex-col h-full">
-                    {{-- Bandeau coloré en haut --}}
                     <div class="h-2 w-full"
-                        style="background: linear-gradient(90deg,
-                            {{ $estB2B ? '#007A3D' : '#2d5a8e' }},
-                            #C8102E);"></div>
-
+                        style="background: linear-gradient(90deg, {{ $estB2B ? '#007A3D' : '#2d5a8e' }}, #C8102E);"></div>
                     <div class="p-6 flex flex-col flex-1">
-                        {{-- Badge type événement + délai --}}
                         <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
                             <div class="flex items-center gap-2">
                                 @if($estB2B)
-                                <span class="text-xs px-2.5 py-1 rounded-full font-bold text-white"
-                                    style="background-color: #007A3D;">
+                                <span class="text-xs px-2.5 py-1 rounded-full font-bold text-white" style="background-color: #007A3D;">
                                     <i class="fa-solid fa-handshake mr-1"></i> B2B
                                 </span>
                                 @else
-                                <span class="text-xs px-2.5 py-1 rounded-full font-bold text-white"
-                                    style="background-color: #2d5a8e;">
+                                <span class="text-xs px-2.5 py-1 rounded-full font-bold text-white" style="background-color: #2d5a8e;">
                                     <i class="fa-solid fa-calendar-star mr-1"></i> Événement
                                 </span>
                                 @endif
-
                                 <span class="text-xs px-2.5 py-1 rounded-full font-semibold text-white"
                                     style="background-color: {{ $gratuit ? '#059669' : '#C8102E' }}">
                                     <i class="fa-solid {{ $gratuit ? 'fa-gift' : 'fa-ticket' }} mr-1"></i>
                                     {{ $gratuit ? 'Gratuit' : 'Payant' }}
                                 </span>
                             </div>
-
                             @if($nbJours >= 0)
                             <span class="text-xs font-semibold text-gray-400">
-                                <i class="fa-solid fa-clock mr-1"></i>
-                                dans {{ $nbJours }} jour(s)
+                                <i class="fa-solid fa-clock mr-1"></i> dans {{ $nbJours }} jour(s)
                             </span>
                             @endif
                         </div>
-
-                        {{-- Nom --}}
-                        <h3 class="font-bold text-gray-900 text-lg mb-3 leading-snug">
-                            {{ $evt->nom }}
-                        </h3>
-
-                        {{-- Infos --}}
+                        <h3 class="font-bold text-gray-900 text-lg mb-3 leading-snug">{{ $evt->nom }}</h3>
                         <div class="space-y-2 text-sm text-gray-500">
                             <div class="flex items-center gap-2">
                                 <i class="fa-solid fa-calendar w-4" style="color: #007A3D;"></i>
-                                <span>
-                                    {{ $dateDebut }}
-                                    @if($dateFin) → {{ $dateFin }} @endif
-                                </span>
+                                <span>{{ $dateDebut }} @if($dateFin) → {{ $dateFin }} @endif</span>
                             </div>
                             @if($evt->heure_debut)
                             <div class="flex items-center gap-2">
                                 <i class="fa-solid fa-clock w-4" style="color: #007A3D;"></i>
-                                <span>
-                                    {{ \Carbon\Carbon::parse($evt->heure_debut)->format('H\hi') }}
-                                    @if($evt->heure_fin)
-                                    → {{ \Carbon\Carbon::parse($evt->heure_fin)->format('H\hi') }}
-                                    @endif
+                                <span>{{ \Carbon\Carbon::parse($evt->heure_debut)->format('H\hi') }}
+                                    @if($evt->heure_fin) → {{ \Carbon\Carbon::parse($evt->heure_fin)->format('H\hi') }} @endif
                                 </span>
                             </div>
                             @endif
@@ -392,56 +420,32 @@
                                 <span>{{ $evt->ville }}</span>
                             </div>
                             @endif
-                            @if($evt->nom_salle)
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-door-open w-4 text-gray-400"></i>
-                                <span>{{ $evt->nom_salle }}</span>
-                            </div>
-                            @endif
                         </div>
-
-                        {{-- Dates d'ouverture et de clôture des inscriptions --}}
                         @if($evt->date_ouverture_inscriptions || $evt->date_cloture_inscriptions)
                         <div class="mt-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 space-y-1">
                             @if($evt->date_ouverture_inscriptions)
                             <div class="flex items-center gap-2 text-xs text-gray-500">
                                 <i class="fa-solid fa-door-open w-3.5 text-green-500"></i>
-                                <span>
-                                    Ouverture inscriptions :
-                                    <strong class="text-gray-700">
-                                        {{ \Carbon\Carbon::parse($evt->date_ouverture_inscriptions)->locale('fr')->translatedFormat('d M Y') }}
-                                    </strong>
-                                </span>
+                                Ouverture : <strong class="text-gray-700">{{ \Carbon\Carbon::parse($evt->date_ouverture_inscriptions)->locale('fr')->translatedFormat('d M Y') }}</strong>
                             </div>
                             @endif
                             @if($evt->date_cloture_inscriptions)
                             <div class="flex items-center gap-2 text-xs text-gray-500">
                                 <i class="fa-solid fa-door-closed w-3.5 text-red-500"></i>
-                                <span>
-                                    Clôture inscriptions :
-                                    <strong class="text-gray-700">
-                                        {{ \Carbon\Carbon::parse($evt->date_cloture_inscriptions)->locale('fr')->translatedFormat('d M Y') }}
-                                    </strong>
-                                </span>
+                                Clôture : <strong class="text-gray-700">{{ \Carbon\Carbon::parse($evt->date_cloture_inscriptions)->locale('fr')->translatedFormat('d M Y') }}</strong>
                             </div>
                             @endif
                         </div>
                         @endif
-
-                        {{-- Info B2B ou non --}}
                         @if($estB2B)
                         <div class="mt-3 bg-green-50 border border-green-200 rounded-xl px-3 py-2 text-xs text-green-700 flex items-center gap-2">
-                            <i class="fa-solid fa-circle-check"></i>
-                            Inclut des rendez-vous d'affaires B2B
+                            <i class="fa-solid fa-circle-check"></i> Inclut des rendez-vous d'affaires B2B
                         </div>
                         @else
                         <div class="mt-3 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-xs text-blue-700 flex items-center gap-2">
-                            <i class="fa-solid fa-circle-info"></i>
-                            Événement sans rendez-vous B2B
+                            <i class="fa-solid fa-circle-info"></i> Événement sans rendez-vous B2B
                         </div>
                         @endif
-
-                        {{-- Pied de carte --}}
                         <div class="border-t border-gray-100 mt-auto pt-4">
                             @if($evt->type_paiement === 'par_entreprise')
                             <p class="text-xs text-gray-400 flex items-center gap-1">
@@ -455,8 +459,7 @@
                             </p>
                             @else
                             <p class="text-xs text-green-600 font-semibold">
-                                <i class="fa-solid fa-circle-check mr-1"></i>
-                                Inscription gratuite
+                                <i class="fa-solid fa-circle-check mr-1"></i> Inscription gratuite
                             </p>
                             @endif
                         </div>
@@ -468,7 +471,9 @@
     </section>
     @endif
 
-    {{-- PROCESSUS --}}
+    {{-- ══════════════════════════════════════════════
+         PROCESSUS
+    ══════════════════════════════════════════════ --}}
     <section class="py-24" style="background-color: #f8faf9;">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
@@ -485,11 +490,11 @@
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
                     @php
                     $etapes = [
-                        ['num' => '01', 'icon' => 'fa-building',       'color' => '#007A3D', 'label' => 'Inscription',       'desc' => "Participants et entreprises s'inscrivent et renseignent leur profil complet"],
-                        ['num' => '02', 'icon' => 'fa-user-check',     'color' => '#2d5a8e', 'label' => 'Validation',        'desc' => "L'administration valide les dossiers d'inscription"],
-                        ['num' => '03', 'icon' => 'fa-credit-card',    'color' => '#C8102E', 'label' => 'Paiement',          'desc' => 'Paiement sécurisé via Mobile Money, carte bancaire ou chèque'],
-                        ['num' => '04', 'icon' => 'fa-heart',          'color' => '#8b5cf6', 'label' => 'Souhaits RDV',      'desc' => 'Les participants émettent leurs souhaits de rencontre par priorité (événements B2B)'],
-                        ['num' => '05', 'icon' => 'fa-calendar-check', 'color' => '#007A3D', 'label' => 'Planning généré',   'desc' => 'Le système génère automatiquement le planning optimisé des RDV'],
+                        ['num' => '01', 'icon' => 'fa-building',       'color' => '#007A3D', 'label' => 'Inscription',     'desc' => "Participants et entreprises s'inscrivent et renseignent leur profil complet"],
+                        ['num' => '02', 'icon' => 'fa-user-check',     'color' => '#2d5a8e', 'label' => 'Validation',      'desc' => "L'administration valide les dossiers d'inscription"],
+                        ['num' => '03', 'icon' => 'fa-credit-card',    'color' => '#C8102E', 'label' => 'Paiement',        'desc' => 'Paiement sécurisé via Mobile Money, carte bancaire ou chèque'],
+                        ['num' => '04', 'icon' => 'fa-heart',          'color' => '#8b5cf6', 'label' => 'Souhaits',        'desc' => 'Les participants émettent leurs souhaits de rencontre par priorité (événements B2B)'],
+                        ['num' => '05', 'icon' => 'fa-calendar-check', 'color' => '#007A3D', 'label' => 'Planning généré', 'desc' => 'Le système génère automatiquement le planning optimisé des rendez-vous'],
                     ];
                     @endphp
                     @foreach($etapes as $etape)
@@ -498,9 +503,7 @@
                             style="background-color: {{ $etape['color'] }}">
                             <i class="fa-solid {{ $etape['icon'] }}"></i>
                         </div>
-                        <span class="text-xs font-bold text-gray-300 tracking-widest">
-                            {{ $etape['num'] }}
-                        </span>
+                        <span class="text-xs font-bold text-gray-300 tracking-widest">{{ $etape['num'] }}</span>
                         <h4 class="font-bold text-gray-900 mt-1 mb-2">{{ $etape['label'] }}</h4>
                         <p class="text-gray-400 text-xs leading-relaxed">{{ $etape['desc'] }}</p>
                     </div>
@@ -510,16 +513,14 @@
         </div>
     </section>
 
-    {{-- FONCTIONNALITÉS --}}
+    {{-- ══════════════════════════════════════════════
+         FONCTIONNALITÉS
+    ══════════════════════════════════════════════ --}}
     <section id="fonctionnalites" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
-                <div class="section-tag text-white" style="background-color: #007A3D;">
-                    Fonctionnalités
-                </div>
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">
-                    Une solution complète et digitalisée
-                </h2>
+                <div class="section-tag text-white" style="background-color: #007A3D;">Fonctionnalités</div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Une solution complète et digitalisée</h2>
                 <div class="divider mx-auto mb-4"></div>
                 <p class="text-gray-500 text-lg max-w-xl mx-auto">
                     Une solution complète pour gérer vos forums économiques de bout en bout
@@ -551,7 +552,9 @@
         </div>
     </section>
 
-    {{-- CTA FINAL --}}
+    {{-- ══════════════════════════════════════════════
+         CTA FINAL — un seul bouton S'inscrire
+    ══════════════════════════════════════════════ --}}
     <section class="py-24 relative overflow-hidden"
         style="background: linear-gradient(135deg, #007A3D 0%, #004d27 50%, #007A3D 100%);">
         <div class="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10"
@@ -561,9 +564,7 @@
         <div class="max-w-3xl mx-auto px-6 text-center relative z-10">
             <img src="{{ asset('images/logo-ccibf.png') }}"
                 alt="CCI-BF" class="w-16 h-16 object-contain mx-auto mb-8 opacity-90">
-            <h2 class="text-5xl font-extrabold text-white mb-6 leading-tight">
-                Business Forum
-            </h2>
+            <h2 class="text-5xl font-extrabold text-white mb-6 leading-tight">Business Forum</h2>
             <p class="text-white/60 text-xl mb-10 leading-relaxed">
                 Gérez vos événements et rencontres de manière professionnelle,
                 efficace et entièrement digitalisée.
@@ -576,16 +577,12 @@
                     <i class="fa-solid fa-gauge"></i> Mon espace
                 </a>
                 @else
-                <a href="{{ route('inscription.participant') }}"
+                {{-- ✅ Un seul bouton S'inscrire --}}
+                <button onclick="document.getElementById('modalInscription').style.display='flex'"
                     class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
                     style="color: #C8102E;">
                     <i class="fa-solid fa-user-plus"></i> S'inscrire
-                </a>
-                <a href="{{ route('inscription.entreprise') }}"
-                    class="px-10 py-4 rounded-xl bg-white font-bold text-base transition hover:bg-gray-50 flex items-center gap-3 shadow-xl"
-                    style="color: #007A3D;">
-                    <i class="fa-solid fa-building"></i> Mon entreprise
-                </a>
+                </button>
                 <a href="{{ route('login') }}" class="btn-primary shadow-2xl">
                     <i class="fa-solid fa-right-to-bracket"></i> Se connecter
                 </a>
@@ -594,7 +591,9 @@
         </div>
     </section>
 
-    {{-- FOOTER --}}
+    {{-- ══════════════════════════════════════════════
+         FOOTER — propre sans boutons
+    ══════════════════════════════════════════════ --}}
     <footer style="background-color: #0d1f16;" class="py-10 text-white/40">
         <div class="max-w-7xl mx-auto px-6">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -614,6 +613,13 @@
             </div>
         </div>
     </footer>
+
+    {{-- Fermer modal en cliquant en dehors --}}
+    <script>
+        document.getElementById('modalInscription').addEventListener('click', function(e) {
+            if (e.target === this) this.style.display = 'none';
+        });
+    </script>
 
 </body>
 </html>

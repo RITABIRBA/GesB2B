@@ -31,6 +31,12 @@ class PaiementConfirme extends Mailable
     {
         return new Content(
             view: 'emails.paiement-confirme',
+            //  Passer explicitement les variables à la vue
+            with: [
+                'participant'  => $this->participant,
+                'paiement'     => $this->paiement,
+                'nomEvenement' => $this->nomEvenement,
+            ],
         );
     }
 }

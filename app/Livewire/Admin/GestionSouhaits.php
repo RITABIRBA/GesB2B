@@ -160,7 +160,7 @@ class GestionSouhaits extends Component
 
             Notification::create([
                 'id_participant' => $cible->id,
-                'contenu'        => "🎉 Souhait mutuel avec {$participant->nom} {$participant->prenom} ! Un rendez-vous va être planifié.",
+                'contenu'        => " Souhait mutuel avec {$participant->nom} {$participant->prenom} ! Un rendez-vous va être planifié.",
                 'date_envoie'    => now()->toDateString(),
                 'type'           => 'systeme',
             ]);

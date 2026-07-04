@@ -148,6 +148,20 @@ class GestionInscriptions extends Component
 
         session()->flash('success', 'Paiement rejeté.');
     }
+    public bool $showModalDossier = false;
+public $dossier_courant       = null;
+
+public function ouvrirDossier(int $id): void
+{
+    $this->dossier_courant  = Inscription::with(['participant.entreprise', 'evenement', 'paiement'])->findOrFail($id);
+    $this->showModalDossier = true;
+}
+
+public function fermerDossier(): void
+{
+    $this->showModalDossier = false;
+    $this->dossier_courant  = null;
+}
 
     public function render()
     {

@@ -8,9 +8,7 @@ use App\Models\Participant;
 
 class MonProfil extends Component
 {
-    
     // INFOS ENTREPRISE
-    
     public $entreprise_id;
     public $nom                   = '';
     public $nom_responsable       = '';
@@ -25,107 +23,50 @@ class MonProfil extends Component
     public $ville                 = '';
     public $contact               = '';
     public $email_responsable     = '';
+    public $annee_creation        = '';
+    public $nombre_salaries       = '';
+    public $chiffre_affaires      = '';
 
-    // ← Infos entreprise supplémentaires
-    public $annee_creation    = '';
-    public $nombre_salaries   = '';
-    public $chiffre_affaires  = '';
-
-    
-    // PROFIL PARTENAIRE RECHERCHÉ (max 3 chacun)
-    
-
-    public string $zone_geographique = '';
-
+    // PROFIL PARTENAIRE
+    public string $zone_geographique       = '';
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
-
     public array  $types_partenariat       = [];
     public string $type_partenariat_autre  = '';
-
     public array  $profils_partenaire      = [];
+    public bool   $isEditing               = false;
 
-    public bool $isEditing = false;
-
-    
-    // LISTES DE RÉFÉRENCE
-    
-
+    // LISTES
     public array $secteurs = [
-        'Agriculture et agro-alimentaire',
-        'Environnement',
-        'Industrie textile',
-        'Biens de consommation',
-        'Energie',
-        'Formation',
-        'Tourisme',
-        'TIC',
-        'Sous-traitance',
-        'Artisanat',
-        'Distribution',
-        'Prestation',
-        'Industrie manufacturière',
-        'Enseignement',
-        'Services aux entreprises',
-        'BTP',
-        'Activités médicales et pharmaceutiques',
-        'Autre',
+        'Agriculture et agro-alimentaire', 'Environnement', 'Industrie textile',
+        'Biens de consommation', 'Energie', 'Formation', 'Tourisme', 'TIC',
+        'Sous-traitance', 'Artisanat', 'Distribution', 'Prestation',
+        'Industrie manufacturière', 'Enseignement', 'Services aux entreprises',
+        'BTP', 'Activités médicales et pharmaceutiques', 'Autre',
     ];
 
     public array $zonesGeographiques = [
-    // AFRIQUE — zones économiques
-    'UEMOA (Afrique de l\'Ouest)',
-    'CEMAC (Afrique Centrale)',
-    'Afrique du Nord (Maghreb)',
-    'Afrique de l\'Est (EAC)',
-    'Afrique Australe (SADC)',
-    'Afrique (toute la région)',
-
-    // EUROPE
-    'Union Européenne',
-    'Europe de l\'Ouest',
-    'Europe de l\'Est',
-    'Europe (toute la région)',
-
-    // AMÉRIQUES
-    'Amérique du Nord',
-    'Amérique Centrale et Caraïbes',
-    'Amérique du Sud',
-    'Amériques (toute la région)',
-
-    // ASIE
-    'Asie de l\'Est',
-    'Asie du Sud-Est',
-    'Asie du Sud',
-    'Moyen-Orient',
-    'Asie (toute la région)',
-
-    // OCÉANIE
-    'Océanie',
-
-    // GLOBAL
-    'Locale (mon pays uniquement)',
-    'Internationale (toutes zones)',
-];
+        'UEMOA (Afrique de l\'Ouest)', 'CEMAC (Afrique Centrale)',
+        'Afrique du Nord (Maghreb)', 'Afrique de l\'Est (EAC)',
+        'Afrique Australe (SADC)', 'Afrique (toute la région)',
+        'Union Européenne', 'Europe de l\'Ouest', 'Europe de l\'Est',
+        'Europe (toute la région)', 'Amérique du Nord',
+        'Amérique Centrale et Caraïbes', 'Amérique du Sud',
+        'Amériques (toute la région)', 'Asie de l\'Est',
+        'Asie du Sud-Est', 'Asie du Sud', 'Moyen-Orient',
+        'Asie (toute la région)', 'Océanie',
+        'Locale (mon pays uniquement)', 'Internationale (toutes zones)',
+    ];
 
     public array $typesPartenariatOptions = [
-        'Alliance commerciale',
-        'Alliance financière',
-        'Alliance industrielle',
-        'Autre',
+        'Alliance commerciale', 'Alliance financière',
+        'Alliance industrielle', 'Autre',
     ];
 
     public array $profilsPartenariatOptions = [
-        'Consultant',
-        'Distributeur',
-        'Exportateur',
-        'Fabricant / Producteur',
-        'Investisseur',
-        'Importateur',
-        'Prestataire de service',
-        'Sous-traitant',
-        'Innovation',
-        'R&D',
+        'Consultant', 'Distributeur', 'Exportateur',
+        'Fabricant / Producteur', 'Investisseur', 'Importateur',
+        'Prestataire de service', 'Sous-traitant', 'Innovation', 'R&D',
     ];
 
     public array $pays_liste = [
@@ -153,12 +94,43 @@ class MonProfil extends Component
         'Autre'          => ['Autre'],
     ];
 
-    // HELPERS
-    
-
+    // ── Helper : retrouve l'entreprise ──
     private function getEntreprise(): ?Entreprise
     {
-        return Entreprise::where('email_responsable', auth()->user()->email)->first();
+        $user = auth()->user();
+
+        // 1. Par email_responsable
+        $entreprise = Entreprise::where('email_responsable', $user->email)->first();
+        if ($entreprise) return $entreprise;
+
+        // 2. Par participant lié
+        $participant = Participant::where('email', $user->email)->first();
+        if ($participant && $participant->id_entreprise) {
+            return Entreprise::find($participant->id_entreprise);
+        }
+
+        return null;
+    }
+
+    // ── Helper : retrouve le représentant ──
+    private function getRepresentant(?Entreprise $entreprise): ?Participant
+    {
+        if (!$entreprise) return null;
+
+        // 1. Par rôle representant
+        $rep = Participant::where('id_entreprise', $entreprise->id)
+            ->where('role', 'representant')
+            ->first();
+        if ($rep) return $rep;
+
+        // 2. Par email du user connecté
+        $rep = Participant::where('id_entreprise', $entreprise->id)
+            ->where('email', auth()->user()->email)
+            ->first();
+        if ($rep) return $rep;
+
+        // 3. Premier participant de l'entreprise
+        return Participant::where('id_entreprise', $entreprise->id)->first();
     }
 
     public function getVillesDisponibles(): array
@@ -171,10 +143,6 @@ class MonProfil extends Component
         $this->ville = '';
     }
 
-    /**
-     * Décode une liste JSON et remplace toute valeur hors-liste
-     * par "Autre" + remplit la propriété "_autre" correspondante.
-     */
     private function chargerListeAvecAutre($valeurBrute, array $listeOfficielle, string $proprieteAutre): array
     {
         $valeurs = is_array($valeurBrute)
@@ -191,43 +159,32 @@ class MonProfil extends Component
         return $valeurs;
     }
 
-
-    // MOUNT
-    
-
     public function mount(): void
     {
-        $entreprise  = $this->getEntreprise();
-        $representant = $entreprise
-            ? Participant::where('id_entreprise', $entreprise->id)
-                ->where('role', 'representant')
-                ->first()
-            : null;
+        $entreprise   = $this->getEntreprise();
+        $representant = $this->getRepresentant($entreprise);
 
         if ($entreprise) {
-            $this->entreprise_id          = $entreprise->id;
-            $this->nom                    = $entreprise->nom;
-            $this->nom_responsable        = $entreprise->nom_responsable ?? '';
-            $this->prenom_responsable     = $entreprise->prenom_responsable ?? '';
-            $this->fonction_responsable   = $entreprise->fonction_responsable ?? '';
-            $this->ifu                    = $entreprise->ifu ?? '';
-            $this->secteur_activite       = $entreprise->secteur_activite ?? '';
-            $this->sous_secteur           = $entreprise->sous_secteur ?? '';
-            $this->description_activites  = $entreprise->description_activites ?? '';
-            $this->principaux_produits    = $entreprise->principaux_produits ?? '';
-            $this->pays                   = $entreprise->pays ?? '';
-            $this->ville                  = $entreprise->ville ?? '';
-            $this->contact                = $entreprise->contact ?? '';
-            $this->email_responsable      = $entreprise->email_responsable ?? '';
+            $this->entreprise_id         = $entreprise->id;
+            $this->nom                   = $entreprise->nom;
+            $this->nom_responsable       = $entreprise->nom_responsable ?? '';
+            $this->prenom_responsable    = $entreprise->prenom_responsable ?? '';
+            $this->fonction_responsable  = $entreprise->fonction_responsable ?? '';
+            $this->ifu                   = $entreprise->ifu ?? '';
+            $this->secteur_activite      = $entreprise->secteur_activite ?? '';
+            $this->sous_secteur          = $entreprise->sous_secteur ?? '';
+            $this->description_activites = $entreprise->description_activites ?? '';
+            $this->principaux_produits   = $entreprise->principaux_produits ?? '';
+            $this->pays                  = $entreprise->pays ?? '';
+            $this->ville                 = $entreprise->ville ?? '';
+            $this->contact               = $entreprise->contact ?? '';
+            $this->email_responsable     = $entreprise->email_responsable ?? '';
         }
 
-        // ← Récupère les infos du représentant
         if ($representant) {
             $this->annee_creation   = $representant->annee_creation ?? '';
             $this->nombre_salaries  = $representant->nombre_salaries ?? '';
             $this->chiffre_affaires = $representant->chiffre_affaires ?? '';
-
-            // ← Profil partenaire recherché
             $this->zone_geographique = $representant->zone_geographique ?? '';
 
             $this->secteurs_recherche = $this->chargerListeAvecAutre(
@@ -248,10 +205,7 @@ class MonProfil extends Component
         }
     }
 
-    public function activer(): void
-    {
-        $this->isEditing = true;
-    }
+    public function activer(): void  { $this->isEditing = true; }
 
     public function annuler(): void
     {
@@ -260,10 +214,6 @@ class MonProfil extends Component
         $this->resetErrorBag();
     }
 
-    
-    // TOGGLES — PROFIL PARTENAIRE (max 3 chacun)
-    
-
     public function toggleSecteurRecherche(string $option): void
     {
         if (in_array($option, $this->secteurs_recherche)) {
@@ -271,10 +221,7 @@ class MonProfil extends Component
         } elseif (count($this->secteurs_recherche) < 3) {
             $this->secteurs_recherche[] = $option;
         }
-
-        if (!in_array('Autre', $this->secteurs_recherche)) {
-            $this->secteur_recherche_autre = '';
-        }
+        if (!in_array('Autre', $this->secteurs_recherche)) $this->secteur_recherche_autre = '';
     }
 
     public function toggleTypePartenariat(string $option): void
@@ -284,10 +231,7 @@ class MonProfil extends Component
         } elseif (count($this->types_partenariat) < 3) {
             $this->types_partenariat[] = $option;
         }
-
-        if (!in_array('Autre', $this->types_partenariat)) {
-            $this->type_partenariat_autre = '';
-        }
+        if (!in_array('Autre', $this->types_partenariat)) $this->type_partenariat_autre = '';
     }
 
     public function toggleProfilPartenaire(string $option): void
@@ -298,10 +242,6 @@ class MonProfil extends Component
             $this->profils_partenaire[] = $option;
         }
     }
-
-    
-    // SAUVEGARDER
-
 
     public function sauvegarder(): void
     {
@@ -338,7 +278,6 @@ class MonProfil extends Component
             return;
         }
 
-        // ← Met à jour l'entreprise
         Entreprise::findOrFail($this->entreprise_id)->update([
             'nom'                   => $this->nom,
             'nom_responsable'       => $this->nom_responsable,
@@ -354,7 +293,6 @@ class MonProfil extends Component
             'contact'               => $this->contact,
         ]);
 
-        // ← Remplace "Autre" par la saisie libre dans les sélections
         $secteursRecherche = $this->secteurs_recherche;
         if (($idx = array_search('Autre', $secteursRecherche)) !== false && $this->secteur_recherche_autre) {
             $secteursRecherche[$idx] = $this->secteur_recherche_autre;
@@ -365,10 +303,7 @@ class MonProfil extends Component
             $typesPartenariat[$idx] = $this->type_partenariat_autre;
         }
 
-        // ← Met à jour le représentant
-        $representant = Participant::where('id_entreprise', $this->entreprise_id)
-            ->where('role', 'representant')
-            ->first();
+        $representant = $this->getRepresentant($this->getEntreprise());
 
         if ($representant) {
             $representant->update([
@@ -392,14 +327,23 @@ class MonProfil extends Component
         session()->flash('success', 'Profil mis à jour avec succès.');
     }
 
-    
-    // RENDER
-    
-
     public function render()
     {
+        $entreprise = $this->getEntreprise();
+
+        if (!$entreprise) {
+            // ✅ Affiche un message clair si l'entreprise n'est pas trouvée
+            return view('livewire.entreprise.mon-profil', [
+                'entreprise'                => null,
+                'villesDisponibles'         => [],
+                'zonesGeographiques'        => $this->zonesGeographiques,
+                'typesPartenariatOptions'   => $this->typesPartenariatOptions,
+                'profilsPartenariatOptions' => $this->profilsPartenariatOptions,
+            ])->layout('layouts.entreprise', ['title' => 'Mon Profil']);
+        }
+
         return view('livewire.entreprise.mon-profil', [
-            'entreprise'                => $this->getEntreprise(),
+            'entreprise'                => $entreprise,
             'villesDisponibles'         => $this->getVillesDisponibles(),
             'zonesGeographiques'        => $this->zonesGeographiques,
             'typesPartenariatOptions'   => $this->typesPartenariatOptions,

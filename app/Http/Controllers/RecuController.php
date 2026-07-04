@@ -31,7 +31,7 @@ class RecuController extends Controller
             abort(403, 'Accès non autorisé à ce reçu.');
         }
 
-        $pdf = Pdf::loadView('pdf.recu', [
+       $pdf = Pdf::loadView('pdf.recu-paiement', [ 
             'recu'        => $recu,
             'paiement'    => $recu->paiement,
             'inscription' => $recu->paiement->inscription,

@@ -139,8 +139,8 @@ class GestionSouhaits extends Component
         if ($estMutuel) {
             $souhaitRetour->update(['type' => 'mutuel', 'statut' => 'accepte']);
 
-            Notification::create(['id_participant' => $participant->id, 'contenu' => "🎉 Souhait mutuel avec {$cible->nom} {$cible->prenom} ! Un rendez-vous va être planifié.", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
-            Notification::create(['id_participant' => $cible->id,        'contenu' => "🎉 Souhait mutuel avec {$participant->nom} {$participant->prenom} ! Un rendez-vous va être planifié.", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
+            Notification::create(['id_participant' => $participant->id, 'contenu' => " Souhait mutuel avec {$cible->nom} {$cible->prenom} ! Un rendez-vous va être planifié.", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
+            Notification::create(['id_participant' => $cible->id,        'contenu' => " Souhait mutuel avec {$participant->nom} {$participant->prenom} ! Un rendez-vous va être planifié.", 'date_envoie' => now()->toDateString(), 'type' => 'systeme']);
 
             $nomEvenement = Evenement::find($participant->id_evenement)?->nom ?? 'Business Forum';
 
@@ -153,7 +153,7 @@ class GestionSouhaits extends Component
         }
 
         $this->alertSuccess = 'Souhait créé : ' . $participant->nom . ' → ' . $cible->nom
-            . ($estMutuel ? ' 🎉 Mutuel ! Notifications envoyées.' : ' (en attente, pas de notification envoyée)');
+            . ($estMutuel ? '  Mutuel ! Notifications envoyées.' : ' (en attente, pas de notification envoyée)');
     }
 
     public function openModal(): void  { $this->resetFields(); $this->showModal = true; $this->isEditing = false; }

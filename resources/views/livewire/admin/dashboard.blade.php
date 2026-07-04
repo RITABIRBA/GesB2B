@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold mb-1">
-                    Bonjour, {{ auth()->user()->name }} 👋
+                    Bonjour, {{ auth()->user()->name }} 
                 </h2>
                 <p class="text-green-200 text-sm">
                     Tableau de bord — GesB2B CCI-BF

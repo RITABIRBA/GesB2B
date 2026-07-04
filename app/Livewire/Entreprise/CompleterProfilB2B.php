@@ -17,13 +17,14 @@ class CompleterProfilB2B extends Component
     public array  $profils_partenaire      = [];
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
-    public array  $disponibilites          = [];
-    public string $secteur_activite        = ''; // ✅ NOUVEAU
-    public string $sous_secteur            = ''; // ✅ NOUVEAU
+    public string $secteur_activite        = '';
+    public string $sous_secteur            = '';
 
-    // Secteur toujours auto pour l'entreprise
-    public bool   $secteurAutoEntreprise = true;
-    public string $secteurNomEntreprise  = '';
+    // ✅ NOUVEAU : jours d'absence (au lieu de disponibilités)
+    public array  $jours_absence           = [];
+
+    public bool   $secteurAutoEntreprise   = true;
+    public string $secteurNomEntreprise    = '';
 
     public array $zonesGeographiques = [
         'UEMOA (Afrique de l\'Ouest)', 'CEMAC (Afrique Centrale)',
@@ -57,10 +58,28 @@ class CompleterProfilB2B extends Component
 
     private function getEntrepriseEtRepresentant(): array
     {
-        $entreprise   = Entreprise::where('email_responsable', auth()->user()->email)->first();
+        $user = auth()->user();
+
+        // 1. Par email_responsable
+        $entreprise = Entreprise::where('email_responsable', $user->email)->first();
+
+        // 2. Par participant lié
+        if (!$entreprise) {
+            $participant = Participant::where('email', $user->email)->first();
+            if ($participant && $participant->id_entreprise) {
+                $entreprise = Entreprise::find($participant->id_entreprise);
+            }
+        }
+
         $representant = $entreprise
-            ? Participant::where('id_entreprise', $entreprise->id)->where('role', 'representant')->first()
+            ? Participant::where('id_entreprise', $entreprise->id)
+                ->where('role', 'representant')
+                ->first()
+                ?? Participant::where('id_entreprise', $entreprise->id)
+                    ->where('email', $user->email)
+                    ->first()
             : null;
+
         return [$entreprise, $representant];
     }
 
@@ -81,23 +100,25 @@ class CompleterProfilB2B extends Component
             $this->profils_partenaire      = $participant->profils_partenaire ?? [];
             $this->secteurs_recherche      = $participant->secteurs_recherche ?? [];
             $this->secteur_recherche_autre = $participant->secteur_recherche_autre ?? '';
-            $this->disponibilites          = $participant->disponibilites ?? [];
+
+            // ✅ Charger les jours d'absence
+            $this->jours_absence = $participant->disponibilites ?? [];
         }
 
-        // ✅ Secteur toujours récupéré depuis l'entreprise pour le représentant
         if ($entreprise) {
-            $this->secteur_activite     = $entreprise->secteur_activite ?? '';
-            $this->sous_secteur         = $entreprise->sous_secteur ?? '';
-            $this->secteurNomEntreprise = $entreprise->nom;
+            $this->secteur_activite      = $entreprise->secteur_activite ?? '';
+            $this->sous_secteur          = $entreprise->sous_secteur ?? '';
+            $this->secteurNomEntreprise  = $entreprise->nom;
+            $this->secteurAutoEntreprise = true;
         }
     }
 
     public function getJoursEvenementProperty(): array
     {
-        $participant = $this->getRepresentant();
-        if (!$participant || !$participant->id_evenement) return [];
+        $representant = $this->getRepresentant();
+        if (!$representant || !$representant->id_evenement) return [];
 
-        $evenement = Evenement::find($participant->id_evenement);
+        $evenement = Evenement::find($representant->id_evenement);
         if (!$evenement || !$evenement->date_debut) return [];
 
         $debut = Carbon::parse($evenement->date_debut);
@@ -155,16 +176,17 @@ class CompleterProfilB2B extends Component
 
         $participant = $this->getRepresentant();
 
+        // ✅ On sauvegarde les jours ABSENTS dans disponibilites
         $participant->update([
-            'secteur_activite'       => $this->secteur_activite,
-            'sous_secteur'           => $this->sous_secteur ?: null,
-            'zone_geographique'      => $this->zone_geographique,
-            'types_partenariat'      => $this->types_partenariat,
-            'type_partenariat_autre' => in_array('Autre', $this->types_partenariat) ? $this->type_partenariat_autre : null,
-            'profils_partenaire'     => $this->profils_partenaire,
-            'secteurs_recherche'     => $this->secteurs_recherche,
-            'secteur_recherche_autre'=> in_array('Autre', $this->secteurs_recherche) ? $this->secteur_recherche_autre : null,
-            'disponibilites'         => $this->disponibilites,
+            'secteur_activite'        => $this->secteur_activite,
+            'sous_secteur'            => $this->sous_secteur ?: null,
+            'zone_geographique'       => $this->zone_geographique,
+            'types_partenariat'       => $this->types_partenariat,
+            'type_partenariat_autre'  => in_array('Autre', $this->types_partenariat) ? $this->type_partenariat_autre : null,
+            'profils_partenaire'      => $this->profils_partenaire,
+            'secteurs_recherche'      => $this->secteurs_recherche,
+            'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche) ? $this->secteur_recherche_autre : null,
+            'disponibilites'          => $this->jours_absence, // ✅ stocke les jours ABSENTS
         ]);
 
         session()->flash('success', 'Votre profil B2B a été complété ! Vous pouvez maintenant émettre des souhaits.');

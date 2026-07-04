@@ -18,7 +18,7 @@
     @if(!$participant || !$participant->participation_rdv)
     <div class="bg-orange-50 border border-orange-200 rounded-xl p-8 text-center">
         <i class="fa-solid fa-ban text-3xl text-orange-500 mb-3 block"></i>
-        <h3 class="text-lg font-bold text-gray-800 mb-2">Participation aux RDV désactivée</h3>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">Participation aux Rendez vous désactivée</h3>
         <a href="{{ route('entreprise.profil') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium" style="background-color: #007A3D;">
             <i class="fa-solid fa-user-gear"></i> Aller à mon profil
         </a>
@@ -83,7 +83,7 @@
     <div class="bg-white rounded-xl shadow p-5 mb-6">
         <div class="flex items-center justify-between mb-3">
             <div>
-                <h3 class="text-xl font-bold text-gray-700">Souhaits de RDV</h3>
+                <h3 class="text-xl font-bold text-gray-700">Souhaits de Rendez-Vous</h3>
                 @if($evenement)
                 <p class="text-sm text-gray-400 mt-0.5">
                     <i class="fa-solid fa-calendar mr-1"></i>{{ $evenement->nom }}
@@ -92,7 +92,6 @@
                 @endif
             </div>
             <div class="flex items-center gap-3">
-                {{-- ✅ BOUTON MES CHOIX --}}
                 @if($nbSouhaits > 0)
                 <a href="#mes-choix"
                     class="px-4 py-2 rounded-xl text-white text-sm font-bold flex items-center gap-2 transition hover:opacity-90"
@@ -140,7 +139,7 @@
             class="px-5 py-2.5 rounded-lg text-sm font-semibold transition flex items-center gap-2
                 {{ $onglet === 'compatibles' ? 'text-white shadow' : 'text-gray-500 hover:bg-gray-50' }}"
             style="{{ $onglet === 'compatibles' ? 'background-color: #007A3D;' : '' }}">
-            <i class="fa-solid fa-star"></i> Compatibles
+            <i class="fa-solid fa-thumbs-up"></i> Recommandations
             <span class="px-2 py-0.5 rounded-full text-xs font-bold {{ $onglet === 'compatibles' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700' }}">
                 {{ $nbCompatibles }}
             </span>
@@ -167,10 +166,18 @@
 
     @php $listeAffichee = $onglet === 'compatibles' ? $candidatsCompatibles : $candidatsTous; @endphp
 
+    {{-- Info recommandations --}}
+    @if($onglet === 'compatibles')
+    <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4 text-sm text-green-700 flex items-center gap-2">
+        <i class="fa-solid fa-circle-info flex-shrink-0"></i>
+        Ces participants ont été sélectionnés par le système en fonction de votre profil B2B — secteur d'activité, zone géographique et type de partenariat.
+    </div>
+    @endif
+
     <div class="mb-8">
         <h4 class="text-base font-bold text-gray-700 mb-4 flex items-center gap-2">
             @if($onglet === 'compatibles')
-            <i class="fa-solid fa-star" style="color: #007A3D;"></i> Participants compatibles
+            <i class="fa-solid fa-thumbs-up" style="color: #007A3D;"></i> Recommandations
             @else
             <i class="fa-solid fa-users" style="color: #C8102E;"></i> Tous les participants
             @endif
@@ -211,16 +218,13 @@
             </div>
 
             <div class="p-5">
-                {{-- Identité --}}
                 <div class="flex items-start gap-4 mb-4">
                     <div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
                         style="background-color: {{ $p->genre == 'femme' ? '#C8102E' : '#007A3D' }}">
                         {{ strtoupper(substr($p->prenom ?? 'X', 0, 1)) }}
                     </div>
                     <div class="flex-1">
-                        <h4 class="font-bold text-gray-800 text-lg">
-                            {{ $p->nom }} {{ $p->prenom }}
-                        </h4>
+                        <h4 class="font-bold text-gray-800 text-lg">{{ $p->nom }} {{ $p->prenom }}</h4>
                         @if($p->fonction)
                         <p class="text-sm text-gray-500"><i class="fa-solid fa-briefcase mr-1 text-gray-400"></i>{{ $p->fonction }}</p>
                         @endif
@@ -240,7 +244,6 @@
                     </div>
                 </div>
 
-                {{-- Données professionnelles --}}
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                     @if($p->secteur_activite)
                     <div class="bg-gray-50 rounded-xl p-3">
@@ -285,7 +288,6 @@
                     @endif
                 </div>
 
-                {{-- Indicateurs compatibilité — SEULEMENT dans l'onglet "compatibles" --}}
                 @if($onglet === 'compatibles')
                 @php
                     $monSecteur          = $participant->secteur_activite;
@@ -312,10 +314,8 @@
                 </div>
                 @endif
 
-                {{-- Bouton action --}}
                 <div class="flex items-center justify-between pt-3 border-t border-gray-100">
                     <p class="text-xs text-gray-400">{{ $nbSouhaits }} / {{ $maxSouhaits }} souhaits émis</p>
-
                     @if($p->souhait_emis)
                     <span class="px-5 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-400 flex items-center gap-2 cursor-not-allowed">
                         <i class="fa-solid fa-circle-check text-green-500"></i> Souhait émis
@@ -325,7 +325,6 @@
                         <i class="fa-solid fa-lock"></i> Maximum atteint
                     </span>
                     @else
-                    {{-- ✅ CONFIRMATION avec nom + fonction + entreprise --}}
                     <button
                         wire:click="emettresouhait({{ $p->id }})"
                         wire:confirm="Êtes-vous sûr de vouloir contacter {{ $p->prenom }} {{ $p->nom }}{{ $p->fonction ? ' (' . $p->fonction . ')' : '' }}{{ $p->entreprise ? ' — ' . $p->entreprise->nom : '' }} ?"
@@ -351,7 +350,7 @@
             <i class="fa-solid fa-users text-5xl mb-3 block text-gray-300"></i>
             <p class="text-lg font-medium">Aucun participant disponible</p>
             <p class="text-sm mt-1">
-                @if($onglet === 'compatibles') Aucun participant compatible. Consultez l'onglet "Tous les participants".
+                @if($onglet === 'compatibles') Aucune recommandation disponible. Consultez l'onglet "Tous les participants".
                 @else Aucun autre participant disponible. @endif
             </p>
         </div>
@@ -363,7 +362,6 @@
     </div>
     @endif
 
-    {{-- ✅ MES CHOIX — section avec ancre #mes-choix --}}
     @if($souhaits->count() > 0)
     <div id="mes-choix" class="bg-white rounded-xl shadow overflow-hidden scroll-mt-8">
         <div class="px-6 py-4 border-b flex items-center justify-between" style="background-color: #f8f9fa;">
@@ -440,7 +438,7 @@
                     <td class="px-6 py-3">
                         @if($souhait->type == 'mutuel')
                         <span class="px-2 py-1 rounded-full text-xs text-white font-medium" style="background-color: #C8102E;">
-                            <i class="fa-solid fa-arrows-left-right mr-1"></i> Mutuel 🎉
+                            <i class="fa-solid fa-arrows-left-right mr-1"></i> Mutuel
                         </span>
                         @else
                         <span class="px-2 py-1 rounded-full text-xs text-white font-medium bg-blue-600">

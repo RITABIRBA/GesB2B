@@ -404,28 +404,30 @@
                     </p>
                 </div>
 
-                {{-- Salle RDV --}}
-                <div class="bg-blue-50 rounded-xl p-5 border border-blue-200">
-                    <h4 class="font-bold text-blue-700 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-door-open"></i>
-                        Salle des rendez-vous
-                        <span class="text-blue-500 font-normal text-xs">(optionnel)</span>
-                    </h4>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-gray-600 text-xs font-medium mb-1">Nom de la salle</label>
-                            <input wire:model="nom_salle" type="text"
-                                class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm bg-white"
-                                placeholder="Ex: Salle B2B">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 text-xs font-medium mb-1">Nombre de tables</label>
-                            <input wire:model="nombre_tables" type="number" min="1" max="500"
-                                class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm bg-white"
-                                placeholder="Ex: 20">
-                        </div>
-                    </div>
-                </div>
+                {{-- Salle RDV — uniquement pour les événements avec B2B --}}
+@if($type_evenement === 'avec_b2b')
+<div class="bg-blue-50 rounded-xl p-5 border border-blue-200">
+    <h4 class="font-bold text-blue-700 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-door-open"></i>
+        Salle des rendez-vous
+        <span class="text-blue-500 font-normal text-xs">(optionnel)</span>
+    </h4>
+    <div class="grid grid-cols-2 gap-3">
+        <div>
+            <label class="block text-gray-600 text-xs font-medium mb-1">Nom de la salle</label>
+            <input wire:model="nom_salle" type="text"
+                class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm bg-white"
+                placeholder="Ex: Salle B2B">
+        </div>
+        <div>
+            <label class="block text-gray-600 text-xs font-medium mb-1">Nombre de tables</label>
+            <input wire:model="nombre_tables" type="number" min="1" max="500"
+                class="w-full border rounded-xl px-3 py-2 focus:outline-none text-sm bg-white"
+                placeholder="Ex: 20">
+        </div>
+    </div>
+</div>
+@endif
 
                 {{-- Config B2B --}}
                 @if($type_evenement === 'avec_b2b')

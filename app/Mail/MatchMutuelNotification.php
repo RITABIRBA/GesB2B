@@ -22,7 +22,7 @@ class MatchMutuelNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: ' Match mutuel ! — ' . $this->nomEvenement,
+            subject: 'Match mutuel ! — ' . $this->nomEvenement,
         );
     }
 
@@ -30,6 +30,12 @@ class MatchMutuelNotification extends Mailable
     {
         return new Content(
             view: 'emails.match-mutuel',
+            //  Passer explicitement les variables à la vue
+            with: [
+                'destinataire' => $this->destinataire,
+                'partenaire'   => $this->partenaire->load('entreprise'),
+                'nomEvenement' => $this->nomEvenement,
+            ],
         );
     }
 }

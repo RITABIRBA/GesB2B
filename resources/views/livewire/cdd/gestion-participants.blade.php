@@ -57,13 +57,13 @@
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-800 text-sm">
-                                    {{ $participant->nom }} {{ $participant->prenom }}
-                                    @if($participant->genre == 'femme')
-                                    <span class="text-xs text-pink-500">(Mme)</span>
-                                    @elseif($participant->genre == 'homme')
-                                    <span class="text-xs text-blue-500">(M.)</span>
-                                    @endif
-                                </p>
+    @if($participant->genre == 'femme')
+    <span class="text-xs text-pink-500">Mme</span>
+    @elseif($participant->genre == 'homme')
+    <span class="text-xs text-blue-500">M.</span>
+    @endif
+    {{ $participant->nom }} {{ $participant->prenom }}
+</p>
                                 @if($participant->secteur_activite)
                                 <p class="text-xs text-gray-400">{{ $participant->secteur_activite }}</p>
                                 @endif

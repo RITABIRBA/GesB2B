@@ -83,6 +83,9 @@ class Participant extends Model
         return $this->date_naissance->age;
     }
 
+    /**
+     * ✅ Trouve le participant lié à un user (participant individuel)
+     */
     public static function findForUser($user): ?self
     {
         if (!$user) return null;
@@ -94,6 +97,70 @@ class Participant extends Model
             $id = str_replace(['participant_', '@gesb2b.local'], '', $user->email);
             $participant = self::find($id);
             if ($participant) return $participant;
+        }
+
+        return null;
+    }
+
+    /**
+     * ✅ NOUVEAU — Trouve le représentant d'une entreprise pour un user connecté
+     * Cherche en 3 niveaux pour ne jamais rater :
+     * 1. Par email_responsable de l'entreprise
+     * 2. Par email du participant dans une entreprise
+     * 3. Par rôle representant dans l'entreprise trouvée
+     */
+    public static function findRepresentantForUser($user): ?self
+    {
+        if (!$user) return null;
+
+        // Niveau 1 : l'email du user est email_responsable d'une entreprise
+        $entreprise = Entreprise::where('email_responsable', $user->email)->first();
+
+        // Niveau 2 : le user est un participant lié à une entreprise
+        if (!$entreprise) {
+            $participant = self::where('email', $user->email)->first();
+            if ($participant && $participant->id_entreprise) {
+                $entreprise = Entreprise::find($participant->id_entreprise);
+            }
+        }
+
+        if (!$entreprise) return null;
+
+        // Niveau 3a : cherche le représentant par rôle
+        $rep = self::where('id_entreprise', $entreprise->id)
+            ->where('role', 'representant')
+            ->first();
+
+        // Niveau 3b : cherche par email du user dans l'entreprise
+        if (!$rep) {
+            $rep = self::where('id_entreprise', $entreprise->id)
+                ->where('email', $user->email)
+                ->first();
+        }
+
+        // Niveau 3c : premier participant de l'entreprise
+        if (!$rep) {
+            $rep = self::where('id_entreprise', $entreprise->id)->first();
+        }
+
+        return $rep;
+    }
+
+    /**
+     * ✅ NOUVEAU — Trouve l'entreprise liée à un user connecté
+     */
+    public static function findEntrepriseForUser($user): ?Entreprise
+    {
+        if (!$user) return null;
+
+        // Niveau 1 : par email_responsable
+        $entreprise = Entreprise::where('email_responsable', $user->email)->first();
+        if ($entreprise) return $entreprise;
+
+        // Niveau 2 : par participant lié
+        $participant = self::where('email', $user->email)->first();
+        if ($participant && $participant->id_entreprise) {
+            return Entreprise::find($participant->id_entreprise);
         }
 
         return null;
@@ -138,7 +205,6 @@ class Participant extends Model
         return $this->belongsTo(Evenement::class, 'id_evenement');
     }
 
-    // ✅ NOUVEAU — relation CDD
     public function cdd()
     {
         return $this->belongsTo(User::class, 'id_cdd');

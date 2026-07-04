@@ -17,15 +17,13 @@
 
         <div class="p-8 space-y-6">
 
-            {{-- ✅ SECTEUR D'ACTIVITÉ --}}
+            {{-- SECTEUR D'ACTIVITÉ --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">
                     Votre secteur d'activité *
                     <span class="text-gray-400 font-normal text-xs">(ce que vous faites / proposez)</span>
                 </label>
-
                 @if($secteurAutoEntreprise)
-                {{-- Membre d'entreprise : secteur auto --}}
                 <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                     <i class="fa-solid fa-building text-green-600 text-xl"></i>
                     <div>
@@ -40,7 +38,6 @@
                     </div>
                 </div>
                 @else
-                {{-- Particulier : sélection manuelle --}}
                 <select wire:model="secteur_activite"
                     class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
                     <option value="">-- Choisir votre secteur --</option>
@@ -49,7 +46,6 @@
                     @endforeach
                 </select>
                 @error('secteur_activite') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-
                 <div class="mt-2">
                     <input wire:model="sous_secteur" type="text"
                         class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm bg-white"
@@ -135,34 +131,82 @@
                 @error('secteurs_recherche') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
             </div>
 
-            {{-- Disponibilités --}}
+            {{-- ✅ DISPONIBILITÉS — logique ABSENCE --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-2">
-                    Jours de disponibilité
+                    Jours d'absence
                     <span class="text-gray-400 font-normal">(optionnel)</span>
                 </label>
+
                 @if(count($joursEvenement) > 1)
-                <p class="text-xs text-gray-400 mb-3">Sélectionnez les jours où vous serez disponible pour les RDV B2B.</p>
+
+                {{-- Bandeau explicatif --}}
+                <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-orange-500 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-orange-700">Cochez les jours où vous NE SEREZ PAS là</p>
+                        <p class="text-xs text-orange-600 mt-1">
+                            Par défaut, vous êtes considéré présent tous les jours de l'événement.
+                            Si vous savez que vous serez absent certains jours, cochez-les ici.
+                            Le système ne vous programmera aucun rendez-vous ces jours-là.
+                        </p>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                     @foreach($joursEvenement as $jour)
+                    @php $estAbsent = in_array($jour, $jours_absence); @endphp
                     <label class="cursor-pointer">
-                        <input type="checkbox" wire:model="disponibilites" value="{{ $jour }}" class="hidden peer">
-                        <div class="p-4 border-2 rounded-xl text-center transition peer-checked:border-green-400 peer-checked:bg-green-50 hover:bg-gray-50 border-gray-200">
-                            <p class="font-semibold text-sm text-gray-800">{{ \Carbon\Carbon::parse($jour)->locale('fr')->translatedFormat('l') }}</p>
-                            <p class="text-xs text-gray-400 mt-0.5">{{ \Carbon\Carbon::parse($jour)->format('d/m/Y') }}</p>
-                            @if(in_array($jour, $disponibilites))
-                            <i class="fa-solid fa-circle-check text-green-500 mt-1 block"></i>
+                        <input type="checkbox"
+                            wire:model.live="jours_absence"
+                            value="{{ $jour }}"
+                            class="hidden peer">
+                        <div class="p-4 border-2 rounded-xl text-center transition
+                            {{ $estAbsent ? 'border-red-400 bg-red-50' : 'border-green-200 bg-green-50 hover:bg-gray-50' }}">
+                            <p class="font-semibold text-sm {{ $estAbsent ? 'text-red-700' : 'text-green-700' }}">
+                                {{ \Carbon\Carbon::parse($jour)->locale('fr')->translatedFormat('l') }}
+                            </p>
+                            <p class="text-xs mt-0.5 {{ $estAbsent ? 'text-red-400' : 'text-green-400' }}">
+                                {{ \Carbon\Carbon::parse($jour)->format('d/m/Y') }}
+                            </p>
+                            @if($estAbsent)
+                            <span class="inline-flex items-center gap-1 mt-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">
+                                <i class="fa-solid fa-xmark"></i> Absent
+                            </span>
+                            @else
+                            <span class="inline-flex items-center gap-1 mt-2 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-600 font-medium">
+                                <i class="fa-solid fa-check"></i> Présent
+                            </span>
                             @endif
                         </div>
                     </label>
                     @endforeach
                 </div>
+
+                {{-- Récap --}}
+                @php
+                    $joursPresents = array_diff($joursEvenement, $jours_absence);
+                    $joursAbsents  = $jours_absence;
+                @endphp
+                <div class="mt-4 bg-gray-50 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="w-3 h-3 rounded-full bg-green-400 inline-block"></span>
+                        <span class="text-gray-600">Présent : <strong>{{ count($joursPresents) }} jour(s)</strong></span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="w-3 h-3 rounded-full bg-red-400 inline-block"></span>
+                        <span class="text-gray-600">Absent : <strong>{{ count($joursAbsents) }} jour(s)</strong></span>
+                    </div>
+                </div>
+
                 @else
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
                     <p class="text-sm text-blue-700">
                         <i class="fa-solid fa-circle-info mr-1"></i>
                         @if(count($joursEvenement) == 1)
-                        Événement sur 1 seul jour — <strong>{{ \Carbon\Carbon::parse($joursEvenement[0])->locale('fr')->translatedFormat('l d/m/Y') }}</strong>. Vous serez automatiquement disponible ce jour.
+                        Événement sur 1 seul jour —
+                        <strong>{{ \Carbon\Carbon::parse($joursEvenement[0])->locale('fr')->translatedFormat('l d/m/Y') }}</strong>.
+                        Vous serez automatiquement présent ce jour.
                         @else
                         Aucun événement associé à votre compte.
                         @endif
@@ -172,14 +216,17 @@
             </div>
 
             {{-- Bouton --}}
-            <button wire:click="enregistrer" wire:loading.attr="disabled" wire:loading.class="opacity-70 cursor-not-allowed"
+            <button wire:click="enregistrer"
+                wire:loading.attr="disabled"
+                wire:loading.class="opacity-70 cursor-not-allowed"
                 class="w-full py-4 rounded-xl text-white font-bold text-lg transition hover:opacity-90 shadow-lg flex items-center justify-center gap-3"
                 style="background-color: #C8102E;">
                 <span wire:loading.remove><i class="fa-solid fa-check mr-1"></i> Enregistrer mon profil B2B</span>
                 <span wire:loading><i class="fa-solid fa-spinner fa-spin mr-1"></i> Enregistrement...</span>
             </button>
 
-            <a href="{{ route('participant.souhaits') }}" class="block text-center text-sm text-gray-400 hover:text-gray-600 mt-2">
+            <a href="{{ route('participant.souhaits') }}"
+                class="block text-center text-sm text-gray-400 hover:text-gray-600 mt-2">
                 <i class="fa-solid fa-arrow-left mr-1"></i> Retour aux souhaits
             </a>
         </div>

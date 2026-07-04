@@ -24,7 +24,7 @@ class PlanningGenere extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: ' Votre planning B2B — ' . $this->nomEvenement,
+            subject: 'Votre planning B2B — ' . $this->nomEvenement,
         );
     }
 
@@ -32,6 +32,13 @@ class PlanningGenere extends Mailable
     {
         return new Content(
             view: 'emails.planning-genere',
+            // ✅ Passer explicitement les variables à la vue
+            with: [
+                'destinataire' => $this->destinataire,
+                'nomEvenement' => $this->nomEvenement,
+                'dateEvenement'=> $this->dateEvenement,
+                'rendezVous'   => $this->rendezVous,
+            ],
         );
     }
 }
