@@ -66,17 +66,20 @@
             @endforeach
         </nav>
 
+        {{-- Bloc utilisateur en bas de la sidebar --}}
         <div class="p-4 border-t border-green-800">
-            <div class="flex items-center gap-3 px-3 py-2 mb-2">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
                     style="background-color: #C8102E;">
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 </div>
-                <div>
-                    <p class="text-white text-sm font-medium">{{ auth()->user()->name }}</p>
+                <div class="flex-1 min-w-0">
+                    <p class="text-white text-sm font-medium truncate">{{ auth()->user()->name }}</p>
                     <p class="text-green-300 text-xs">Participant</p>
                 </div>
+                @livewire('notification-bell')
             </div>
+
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit"

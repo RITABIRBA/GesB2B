@@ -90,15 +90,17 @@
                 <h2 class="text-lg font-semibold text-gray-700">{{ $title ?? 'Dashboard' }}</h2>
             </div>
             <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-500">
-                    <i class="fa-regular fa-clock mr-1"></i>
-                    {{ now()->format('d/m/Y') }}
-                </span>
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style="background-color: #C8102E;">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                </div>
-            </div>
+    <span class="text-sm text-gray-500">
+        <i class="fa-regular fa-clock mr-1"></i>
+        {{ now()->format('d/m/Y') }}
+    </span>
+    {{-- ✅ Cloche notifications --}}
+    @livewire('notification-bell')
+    <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+        style="background-color: #C8102E;">
+        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+    </div>
+</div>
         </header>
 
         <main class="flex-1 overflow-y-auto p-8">

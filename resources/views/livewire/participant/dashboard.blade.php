@@ -18,6 +18,165 @@
     @endif
 
     {{-- ============================================================
+         ✅ BARRE DE PROGRESSION
+    ============================================================ --}}
+    @if($participant)
+    @php
+        // Déterminer l'étape actuelle
+        $preinscrit = true;
+        $valide     = ($participant->statut_preinscription ?? '') === 'valide';
+        $paye       = $mesInscriptions->contains(fn($i) => $i->statut_paiement === 'paye');
+        $evenementB2B = $mesInscriptions->contains(fn($i) =>
+            $i->evenement && ($i->evenement->type_evenement ?? 'avec_b2b') === 'avec_b2b'
+        );
+        $profilB2BComplet = !empty($participant->zone_geographique)
+            && !empty($participant->types_partenariat)
+            && !empty($participant->secteurs_recherche);
+        $aSouhaits = $totalSouhaits > 0;
+
+        // Étape courante (1 à 5)
+        if (!$valide)          $etapeCourante = 1;
+        elseif (!$paye)        $etapeCourante = 2;
+        elseif ($evenementB2B && !$profilB2BComplet) $etapeCourante = 3;
+        elseif ($evenementB2B && !$aSouhaits)        $etapeCourante = 4;
+        else                   $etapeCourante = 5;
+
+        $etapes = $evenementB2B ? [
+            ['num' => 1, 'label' => 'Préinscrit',  'icon' => 'fa-user-plus',       'desc' => 'Dossier soumis'],
+            ['num' => 2, 'label' => 'Validé',       'icon' => 'fa-user-check',      'desc' => 'Compte créé'],
+            ['num' => 3, 'label' => 'Payé',         'icon' => 'fa-credit-card',     'desc' => 'Inscription confirmée'],
+            ['num' => 4, 'label' => 'Profil B2B',   'icon' => 'fa-handshake',       'desc' => 'Profil complété'],
+            ['num' => 5, 'label' => 'Souhaits',     'icon' => 'fa-heart',           'desc' => 'RDV en cours'],
+        ] : [
+            ['num' => 1, 'label' => 'Préinscrit',   'icon' => 'fa-user-plus',       'desc' => 'Dossier soumis'],
+            ['num' => 2, 'label' => 'Validé',        'icon' => 'fa-user-check',      'desc' => 'Compte créé'],
+            ['num' => 3, 'label' => 'Payé',          'icon' => 'fa-credit-card',     'desc' => 'Inscription confirmée'],
+        ];
+    @endphp
+
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-gray-600 flex items-center gap-2">
+                <i class="fa-solid fa-list-check" style="color: #007A3D;"></i>
+                Mon parcours d'inscription
+            </h3>
+            <span class="text-xs text-gray-400">
+                Étape {{ min($etapeCourante, count($etapes)) }} / {{ count($etapes) }}
+            </span>
+        </div>
+
+        {{-- Barre de progression --}}
+        <div class="relative flex items-start justify-between">
+
+            {{-- Ligne de connexion --}}
+            <div class="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 mx-8 z-0"></div>
+            <div class="absolute top-5 left-0 h-0.5 z-0 transition-all duration-700"
+                style="background: linear-gradient(90deg, #007A3D, #C8102E);
+                       right: calc({{ 100 - (($etapeCourante - 1) / max(count($etapes) - 1, 1)) * 100 }}% + 2rem);
+                       margin-left: 2rem;">
+            </div>
+
+            @foreach($etapes as $etape)
+            @php
+                $estFait    = $etape['num'] < $etapeCourante;
+                $estCourant = $etape['num'] === $etapeCourante;
+                $estFutur   = $etape['num'] > $etapeCourante;
+            @endphp
+            <div class="flex flex-col items-center gap-2 relative z-10 flex-1">
+                {{-- Cercle --}}
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-md
+                    {{ $estFait ? 'text-white' : ($estCourant ? 'text-white ring-4 ring-offset-2' : 'text-gray-400 bg-gray-100') }}"
+                    style="
+                        {{ $estFait ? 'background-color: #007A3D;' : '' }}
+                        {{ $estCourant ? 'background-color: #C8102E; ring-color: rgba(200,16,46,0.2);' : '' }}
+                    ">
+                    @if($estFait)
+                        <i class="fa-solid fa-check text-xs"></i>
+                    @elseif($estCourant)
+                        <i class="fa-solid {{ $etape['icon'] }} text-xs"></i>
+                    @else
+                        <span class="text-xs">{{ $etape['num'] }}</span>
+                    @endif
+                </div>
+
+                {{-- Label --}}
+                <div class="text-center">
+                    <p class="text-xs font-semibold
+                        {{ $estFait ? 'text-green-700' : ($estCourant ? 'text-red-700' : 'text-gray-400') }}">
+                        {{ $etape['label'] }}
+                    </p>
+                    <p class="text-xs text-gray-400 hidden sm:block">{{ $etape['desc'] }}</p>
+                </div>
+
+                {{-- Badge courant --}}
+                @if($estCourant)
+                <span class="text-xs px-2 py-0.5 rounded-full font-bold text-white animate-pulse"
+                    style="background-color: #C8102E;">
+                    En cours
+                </span>
+                @elseif($estFait)
+                <span class="text-xs px-2 py-0.5 rounded-full font-medium text-green-700 bg-green-100">
+                    ✓ Fait
+                </span>
+                @endif
+            </div>
+            @endforeach
+        </div>
+
+        {{-- Message selon l'étape --}}
+        <div class="mt-5 pt-4 border-t border-gray-100">
+            @if($etapeCourante == 1)
+            <div class="flex items-center gap-3 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
+                <i class="fa-solid fa-hourglass-half text-yellow-500"></i>
+                <p class="text-sm text-yellow-700">Votre dossier est en attente de validation par l'administration.</p>
+            </div>
+            @elseif($etapeCourante == 2)
+            <div class="flex items-center justify-between gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-green-500"></i>
+                    <p class="text-sm text-green-700">Préinscription validée ! Procédez au paiement pour confirmer votre inscription.</p>
+                </div>
+                <button wire:click="openModalPaiement"
+                    class="px-4 py-2 rounded-xl text-white text-xs font-bold flex-shrink-0 transition hover:opacity-90"
+                    style="background-color: #C8102E;">
+                    <i class="fa-solid fa-credit-card mr-1"></i> Payer
+                </button>
+            </div>
+            @elseif($etapeCourante == 3 && $evenementB2B)
+            <div class="flex items-center justify-between gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-blue-500"></i>
+                    <p class="text-sm text-blue-700">Paiement confirmé ! Complétez votre profil B2B pour accéder aux souhaits de rendez-vous.</p>
+                </div>
+                <a href="{{ route('participant.completer-profil-b2b') }}"
+                    class="px-4 py-2 rounded-xl text-white text-xs font-bold flex-shrink-0 transition hover:opacity-90"
+                    style="background-color: #2d5a8e;">
+                    <i class="fa-solid fa-pen mr-1"></i> Compléter
+                </a>
+            </div>
+            @elseif($etapeCourante == 4 && $evenementB2B)
+            <div class="flex items-center justify-between gap-3 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-handshake text-purple-500"></i>
+                    <p class="text-sm text-purple-700">Profil B2B complété ! Émettez vos souhaits de rendez-vous dès maintenant.</p>
+                </div>
+                <a href="{{ route('participant.souhaits') }}"
+                    class="px-4 py-2 rounded-xl text-white text-xs font-bold flex-shrink-0 transition hover:opacity-90"
+                    style="background-color: #8b5cf6;">
+                    <i class="fa-solid fa-heart mr-1"></i> Mes souhaits
+                </a>
+            </div>
+            @else
+            <div class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <i class="fa-solid fa-circle-check text-green-500"></i>
+                <p class="text-sm text-green-700 font-medium">🎉 Tout est en ordre ! Vous participez activement à l'événement.</p>
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
+    {{-- ============================================================
          PARCOURS PAIEMENT
     ============================================================ --}}
     @if(!$estMembre && $participant)
@@ -80,29 +239,24 @@
                 </div>
                 <div>
                     <p class="font-bold text-white">✅ Paiement validé !</p>
-                    <p class="text-sm text-green-200">
-                        Votre inscription est désormais complète et confirmée.
-                    </p>
+                    <p class="text-sm text-green-200">Votre inscription est désormais complète et confirmée.</p>
                 </div>
             </div>
             @if($recuPaiement)
-            <a href="{{ route('participant.recu.telecharger', $recuPaiement->id) }}" target="_blank"
-                class="px-6 py-3 rounded-xl bg-white font-bold text-sm transition hover:bg-gray-50 flex items-center gap-2 flex-shrink-0"
-                style="color: #007A3D;">
-                <i class="fa-solid fa-download"></i>
-                Télécharger mon reçu
+            <a href="{{ route('participant.recu.telecharger', $recuPaiement->id) }}"
+                class="px-3 py-1.5 rounded-lg bg-white/20 text-white text-xs font-medium transition hover:bg-white/30 flex items-center gap-1.5 flex-shrink-0">
+                <i class="fa-solid fa-download text-xs"></i> Reçu
             </a>
             @endif
         </div>
 
-        {{-- Message souhaits si événement B2B --}}
         @php
             $derniereInscriptionB2B = $mesInscriptions->first(fn($i) =>
                 $i->evenement && ($i->evenement->type_evenement ?? 'avec_b2b') === 'avec_b2b'
                 && $i->statut_paiement === 'paye'
             );
         @endphp
-        @if($derniereInscriptionB2B)
+        @if($derniereInscriptionB2B && $totalSouhaits == 0)
         <div class="bg-blue-50 border border-blue-200 rounded-xl px-6 py-5 mb-6 flex items-center justify-between gap-4 flex-wrap">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-blue-500 flex-shrink-0">
@@ -110,22 +264,17 @@
                 </div>
                 <div>
                     <p class="font-bold text-blue-800">Vous pouvez maintenant faire vos souhaits de RDV !</p>
-                    <p class="text-sm text-blue-600">
-                        Cet événement inclut des rendez-vous d'affaires B2B.
-                        Sélectionnez les participants que vous souhaitez rencontrer.
-                    </p>
+                    <p class="text-sm text-blue-600">Cet événement inclut des rendez-vous d'affaires B2B.</p>
                 </div>
             </div>
             <a href="{{ route('participant.souhaits') }}"
                 class="px-6 py-3 rounded-xl text-white font-bold text-sm transition hover:opacity-90 flex items-center gap-2 flex-shrink-0"
                 style="background-color: #007A3D;">
-                <i class="fa-solid fa-heart"></i>
-                Faire mes souhaits
+                <i class="fa-solid fa-heart"></i> Faire mes souhaits
             </a>
         </div>
         @endif
         @endif
-
     @endif
 
     {{-- ============================================================
@@ -155,31 +304,6 @@
     @break
     @endif
 
-    @if(($inscription->statut_presence == 'present' || $inscription->statut_paiement == 'paye') && !$preinscriptionEnAttente)
-    <div class="rounded-xl px-6 py-4 mb-4 flex items-center justify-between"
-        style="background: linear-gradient(135deg, #007A3D, #005a2d);">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 flex-shrink-0">
-                <i class="fa-solid fa-id-badge text-white text-lg"></i>
-            </div>
-            <div>
-                <p class="font-semibold text-white">
-                    🎉 Inscription confirmée !
-                </p>
-                <p class="text-sm text-green-200">
-                    Votre inscription à <strong>{{ $inscription->evenement->nom ?? '-' }}</strong>
-                    est confirmée. Votre badge sera disponible à l'entrée de l'événement.
-                </p>
-            </div>
-        </div>
-        <div class="flex-shrink-0 text-center ml-4">
-            <div class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
-                <i class="fa-solid fa-qrcode text-white text-2xl"></i>
-            </div>
-            <p class="text-xs text-green-200 mt-1">Badge</p>
-        </div>
-    </div>
-    @endif
 
     @endforeach
 
@@ -218,8 +342,7 @@
             </div>
             @if($badge)
             <div class="text-center flex-shrink-0">
-                <div class="w-14 h-14 rounded-xl flex items-center justify-center mb-1"
-                    style="background-color: #e6f4ed;">
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center mb-1" style="background-color: #e6f4ed;">
                     <i class="fa-solid fa-qrcode text-3xl" style="color: #007A3D;"></i>
                 </div>
                 <p class="text-xs text-green-600 font-medium">Badge actif</p>
@@ -236,14 +359,10 @@
                 </div>
                 <div>
                     <p class="text-sm font-semibold text-gray-700">{{ $entreprise->nom }}</p>
-                    <p class="text-xs text-gray-400">
-                        {{ $entreprise->secteur_activite }}
-                        · {{ $entreprise->ville }}, {{ $entreprise->pays }}
-                    </p>
+                    <p class="text-xs text-gray-400">{{ $entreprise->secteur_activite }} · {{ $entreprise->ville }}, {{ $entreprise->pays }}</p>
                 </div>
                 @if($entreprise->statut_validation == 'valide')
-                <span class="ml-auto text-xs px-2 py-1 rounded-full text-white font-medium"
-                    style="background-color: #007A3D;">
+                <span class="ml-auto text-xs px-2 py-1 rounded-full text-white font-medium" style="background-color: #007A3D;">
                     <i class="fa-solid fa-circle-check mr-1"></i> Validée
                 </span>
                 @else
@@ -261,34 +380,25 @@
          STATISTIQUES
     ============================================================ --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-
         <div class="bg-white rounded-xl shadow p-6 flex items-center gap-4 border-l-4 hover:shadow-lg transition"
             style="border-color: #C8102E;">
-            <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
-                style="background-color: #fde8ec;">
+            <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style="background-color: #fde8ec;">
                 <i class="fa-solid fa-heart" style="color: #C8102E;"></i>
             </div>
             <div>
                 <p class="text-gray-500 text-sm">Mes Souhaits</p>
                 <p class="text-3xl font-bold text-gray-800">{{ $totalSouhaits }}</p>
                 @if($totalSouhaits < 5)
-                <p class="text-xs text-orange-500 mt-1">
-                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                    Ajoutez des souhaits
-                </p>
+                <p class="text-xs text-orange-500 mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Ajoutez des souhaits</p>
                 @else
-                <p class="text-xs text-green-600 mt-1">
-                    <i class="fa-solid fa-circle-check mr-1"></i>
-                    Objectif atteint
-                </p>
+                <p class="text-xs text-green-600 mt-1"><i class="fa-solid fa-circle-check mr-1"></i>Objectif atteint</p>
                 @endif
             </div>
         </div>
 
         <div class="bg-white rounded-xl shadow p-6 flex items-center gap-4 border-l-4 hover:shadow-lg transition"
             style="border-color: #007A3D;">
-            <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
-                style="background-color: #e6f4ed;">
+            <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style="background-color: #e6f4ed;">
                 <i class="fa-solid fa-handshake" style="color: #007A3D;"></i>
             </div>
             <div>
@@ -299,27 +409,21 @@
 
         <div class="bg-white rounded-xl shadow p-6 flex items-center gap-4 border-l-4 hover:shadow-lg transition"
             style="border-color: #2d5a8e;">
-            <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
-                style="background-color: #e8f0fb;">
+            <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style="background-color: #e8f0fb;">
                 <i class="fa-solid fa-id-badge" style="color: #2d5a8e;"></i>
             </div>
             <div>
                 <p class="text-gray-500 text-sm">Mon Badge</p>
                 @if($badge)
-                <p class="text-sm font-bold text-green-600 mt-1">
-                    <i class="fa-solid fa-circle-check mr-1"></i> Disponible
-                </p>
+                <p class="text-sm font-bold text-green-600 mt-1"><i class="fa-solid fa-circle-check mr-1"></i> Disponible</p>
                 @else
-                <p class="text-sm text-gray-400 mt-1">
-                    En attente
-                </p>
+                <p class="text-sm text-gray-400 mt-1">En attente</p>
                 @endif
             </div>
         </div>
-
     </div>
 
-   {{-- ============================================================
+    {{-- ============================================================
          ÉVÉNEMENTS DISPONIBLES
     ============================================================ --}}
     <div class="bg-white rounded-xl shadow p-6 mb-6">
@@ -328,9 +432,7 @@
                 <i class="fa-solid fa-calendar-star" style="color: #C8102E;"></i>
                 Événements disponibles
             </h3>
-            <span class="text-xs text-gray-400">
-                {{ $evenementsDisponibles->count() }} événement(s) ouvert(s)
-            </span>
+            <span class="text-xs text-gray-400">{{ $evenementsDisponibles->count() }} événement(s) ouvert(s)</span>
         </div>
 
         @forelse($evenementsDisponibles as $evenement)
@@ -345,15 +447,11 @@
         @endphp
 
         <div class="border border-gray-200 rounded-xl p-5 mb-4 hover:border-green-300 hover:shadow-md transition last:mb-0">
-
-            {{-- Bandeau coloré --}}
             <div class="h-1 w-full rounded-full mb-4"
                 style="background: linear-gradient(90deg, {{ $estB2B ? '#007A3D' : '#2d5a8e' }}, #C8102E);"></div>
 
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1">
-
-                    {{-- Nom + badges --}}
                     <div class="flex items-center gap-2 flex-wrap mb-3">
                         <h4 class="font-bold text-gray-800 text-base">{{ $evenement->nom }}</h4>
                         @if($estB2B)
@@ -376,22 +474,17 @@
                         @endif
                     </div>
 
-                    {{-- Détails --}}
                     <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-3">
                         <span class="flex items-center gap-1">
                             <i class="fa-solid fa-calendar text-gray-400 w-4"></i>
                             {{ $dateDebut->format('d/m/Y') }}
-                            @if($dateFin && !$dateFin->isSameDay($dateDebut))
-                            → {{ $dateFin->format('d/m/Y') }}
-                            @endif
+                            @if($dateFin && !$dateFin->isSameDay($dateDebut)) → {{ $dateFin->format('d/m/Y') }} @endif
                         </span>
                         @if($evenement->heure_debut)
                         <span class="flex items-center gap-1">
                             <i class="fa-solid fa-clock text-gray-400 w-4"></i>
                             {{ \Carbon\Carbon::parse($evenement->heure_debut)->format('H\hi') }}
-                            @if($evenement->heure_fin)
-                            → {{ \Carbon\Carbon::parse($evenement->heure_fin)->format('H\hi') }}
-                            @endif
+                            @if($evenement->heure_fin) → {{ \Carbon\Carbon::parse($evenement->heure_fin)->format('H\hi') }} @endif
                         </span>
                         @endif
                         @if($evenement->ville)
@@ -400,15 +493,8 @@
                             {{ $evenement->ville }}
                         </span>
                         @endif
-                        @if($evenement->lieu)
-                        <span class="flex items-center gap-1">
-                            <i class="fa-solid fa-map-pin text-gray-400 w-4"></i>
-                            {{ $evenement->lieu }}
-                        </span>
-                        @endif
                     </div>
 
-                    {{-- Montant --}}
                     @if(!$gratuit && $evenement->montant_inscription)
                     <p class="text-sm font-bold mb-2" style="color: #C8102E;">
                         <i class="fa-solid fa-money-bill mr-1"></i>
@@ -416,32 +502,23 @@
                     </p>
                     @endif
 
-                    {{-- Date de clôture --}}
                     @if($evenement->date_cloture_inscriptions)
                     <div class="flex items-center gap-2 text-xs {{ $joursRestants !== null && $joursRestants <= 7 ? 'text-red-600' : 'text-gray-500' }}">
                         <i class="fa-solid fa-door-closed w-4"></i>
-                        Clôture des inscriptions :
-                        <strong>
-                            {{ \Carbon\Carbon::parse($evenement->date_cloture_inscriptions)->format('d/m/Y') }}
-                        </strong>
+                        Clôture : <strong>{{ \Carbon\Carbon::parse($evenement->date_cloture_inscriptions)->format('d/m/Y') }}</strong>
                         @if($joursRestants !== null && $joursRestants <= 7 && $joursRestants >= 0)
-                        <span class="px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">
-                            ⚠ {{ $joursRestants }}j restant(s)
-                        </span>
+                        <span class="px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">⚠ {{ $joursRestants }}j</span>
                         @endif
                     </div>
                     @endif
 
-                    {{-- Info B2B --}}
                     @if($estB2B)
                     <div class="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 text-xs text-blue-700 flex items-center gap-2">
-                        <i class="fa-solid fa-handshake"></i>
-                        Inclut des rendez-vous d'affaires B2B
+                        <i class="fa-solid fa-handshake"></i> Inclut des rendez-vous d'affaires B2B
                     </div>
                     @endif
                 </div>
 
-                {{-- Bouton inscription --}}
                 <div class="flex-shrink-0">
                     @if($evenement->deja_inscrit)
                     <span class="px-4 py-2 rounded-xl text-xs font-medium text-white flex items-center gap-1"
@@ -452,8 +529,7 @@
                     <a href="{{ route('participant.inscription.wizard', $evenement->id) }}"
                         class="px-4 py-2 rounded-xl text-white text-sm font-medium transition hover:opacity-90 flex items-center gap-1 shadow"
                         style="background-color: #C8102E;">
-                        <i class="fa-solid fa-user-plus"></i>
-                        S'inscrire
+                        <i class="fa-solid fa-user-plus"></i> S'inscrire
                     </a>
                     @endif
                 </div>
@@ -466,9 +542,10 @@
         </div>
         @endforelse
     </div>
-    
-    {{-- 
-         PROCHAINS RENDEZ-VOUS --}}
+
+    {{-- ============================================================
+         PROCHAINS RENDEZ-VOUS
+    ============================================================ --}}
     <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
@@ -500,28 +577,21 @@
                 </div>
                 <div>
                     <p class="font-semibold text-gray-800 text-sm">
-                        {{ $rdv->participant1->nom ?? '-' }}
-                        ↔
-                        {{ $rdv->participant2->nom ?? '-' }}
+                        {{ $rdv->participant1->nom ?? '-' }} ↔ {{ $rdv->participant2->nom ?? '-' }}
                     </p>
                     <p class="text-xs text-gray-400">
                         <i class="fa-solid fa-calendar mr-1"></i>{{ $rdv->date }}
-                        <i class="fa-solid fa-clock ml-2 mr-1"></i>
-                        {{ $rdv->heure_debut }} - {{ $rdv->heure_fin }}
+                        <i class="fa-solid fa-clock ml-2 mr-1"></i>{{ $rdv->heure_debut }} - {{ $rdv->heure_fin }}
                     </p>
                 </div>
             </div>
-            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">
-                Planifié
-            </span>
+            <span class="px-3 py-1 rounded-full text-xs text-white font-medium bg-blue-600">Planifié</span>
         </div>
         @empty
         <div class="text-center py-8 text-gray-400">
             <i class="fa-solid fa-calendar-xmark text-3xl mb-2 block text-gray-300"></i>
             <p class="text-sm">Aucun rendez-vous planifié pour le moment</p>
-            <p class="text-xs text-gray-300 mt-1">
-                Émettez vos souhaits pour obtenir des rendez-vous
-            </p>
+            <p class="text-xs text-gray-300 mt-1">Émettez vos souhaits pour obtenir des rendez-vous</p>
         </div>
         @endforelse
     </div>
@@ -544,41 +614,31 @@
                         <p class="text-green-200 text-xs">Choisissez votre mode de paiement</p>
                     </div>
                 </div>
-                <button wire:click="closeModalPaiement"
-                    class="text-white/70 hover:text-white text-2xl">&times;</button>
+                <button wire:click="closeModalPaiement" class="text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
 
             <div class="p-8">
-
                 <div class="bg-gray-50 rounded-xl p-4 mb-6 text-center border border-gray-200">
                     <p class="text-xs text-gray-500 mb-1">Montant à payer</p>
                     @if($pourcentage_remise > 0)
                     <p class="text-sm text-gray-400 line-through">{{ number_format($montant_brut, 0, ',', ' ') }} FCFA</p>
-                    <p class="text-3xl font-bold" style="color: #007A3D;">
-                        {{ number_format($montant_paiement, 0, ',', ' ') }} FCFA
-                    </p>
+                    <p class="text-3xl font-bold" style="color: #007A3D;">{{ number_format($montant_paiement, 0, ',', ' ') }} FCFA</p>
                     <span class="inline-block mt-1 text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold">
                         <i class="fa-solid fa-tag mr-1"></i>
                         Remise de {{ $pourcentage_remise }}% appliquée (-{{ number_format($montant_remise, 0, ',', ' ') }} FCFA)
                     </span>
                     @else
-                    <p class="text-3xl font-bold" style="color: #007A3D;">
-                        {{ number_format($montant_paiement, 0, ',', ' ') }} FCFA
-                    </p>
+                    <p class="text-3xl font-bold" style="color: #007A3D;">{{ number_format($montant_paiement, 0, ',', ' ') }} FCFA</p>
                     @endif
                 </div>
 
                 @if($etape_paiement == 1)
-
-                <p class="text-sm font-semibold text-gray-700 mb-4">
-                    Choisissez votre mode de paiement :
-                </p>
+                <p class="text-sm font-semibold text-gray-700 mb-4">Choisissez votre mode de paiement :</p>
                 <div class="space-y-3 mb-5">
                     <button type="button" wire:click="$set('mode_paiement', 'orange_money')"
                         class="w-full border-2 rounded-xl p-4 transition flex items-center gap-4
                             {{ $mode_paiement === 'orange_money' ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:bg-orange-50' }}">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
-                            style="background-color: #FF6600;">OM</div>
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style="background-color: #FF6600;">OM</div>
                         <div class="text-left">
                             <p class="font-bold text-gray-800">Orange Money</p>
                             <p class="text-xs text-gray-400">Composez *144*4*6# pour votre OTP</p>
@@ -593,8 +653,7 @@
                     <button type="button" wire:click="$set('mode_paiement', 'moov_money')"
                         class="w-full border-2 rounded-xl p-4 transition flex items-center gap-4
                             {{ $mode_paiement === 'moov_money' ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-blue-50' }}">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
-                            style="background-color: #0066CC;">MM</div>
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style="background-color: #0066CC;">MM</div>
                         <div class="text-left">
                             <p class="font-bold text-gray-800">Moov Africa</p>
                             <p class="text-xs text-gray-400">Paiement via Moov Money</p>
@@ -609,8 +668,7 @@
                     <button type="button" wire:click="$set('mode_paiement', 'cheque')"
                         class="w-full border-2 rounded-xl p-4 transition flex items-center gap-4
                             {{ $mode_paiement === 'cheque' ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:bg-red-50' }}">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
-                            style="background-color: #C8102E;">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style="background-color: #C8102E;">
                             <i class="fa-solid fa-money-check"></i>
                         </div>
                         <div class="text-left">
@@ -627,118 +685,88 @@
 
                 @if($mode_paiement === 'cheque')
                 <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5">
-                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                        Numéro du chèque *
-                    </label>
+                    <label class="block text-gray-600 text-sm font-medium mb-1.5">Numéro du chèque *</label>
                     <input wire:model="numero_cheque" type="text"
                         class="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm font-mono"
                         placeholder="Ex: 0012345">
-                    @error('numero_cheque')
-                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                    @enderror
+                    @error('numero_cheque')<span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>@enderror
                     <p class="text-xs text-red-600 mt-2">
                         <i class="fa-solid fa-circle-info mr-1"></i>
                         Remettez le chèque physiquement à l'administration.
-                        Votre paiement sera validé après réception et vérification.
                     </p>
                 </div>
-
                 <button wire:click="payerParCheque"
-                    wire:loading.attr="disabled"
-                    wire:loading.class="opacity-70 cursor-not-allowed"
+                    wire:loading.attr="disabled" wire:loading.class="opacity-70 cursor-not-allowed"
                     class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg flex items-center justify-center gap-2"
                     style="background-color: #C8102E;">
                     <span wire:loading.remove wire:target="payerParCheque">
-                        <i class="fa-solid fa-paper-plane mr-1"></i>
-                        Soumettre le paiement par chèque
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Soumettre le paiement par chèque
                     </span>
                     <span wire:loading wire:target="payerParCheque">
-                        <i class="fa-solid fa-spinner fa-spin mr-1"></i>
-                        Envoi...
+                        <i class="fa-solid fa-spinner fa-spin mr-1"></i> Envoi...
                     </span>
                 </button>
-
                 @else
                 <div class="mb-5">
-                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                        Votre numéro de téléphone *
-                    </label>
+                    <label class="block text-gray-600 text-sm font-medium mb-1.5">Votre numéro de téléphone *</label>
                     <input wire:model="telephone_paiement" type="text"
                         class="w-full border rounded-xl px-4 py-3 focus:outline-none text-lg text-center font-mono"
                         placeholder="{{ $mode_paiement == 'orange_money' ? '07XXXXXXXX' : '01XXXXXXXX' }}">
-                    @error('telephone_paiement')
-                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                    @enderror
+                    @error('telephone_paiement')<span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>@enderror
                 </div>
 
                 @if($mode_paiement == 'orange_money')
                 <div class="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-5 text-xs text-orange-700 flex items-start gap-2">
                     <i class="fa-solid fa-circle-info mt-0.5 flex-shrink-0"></i>
-                    Composez <strong>*144*4*6#</strong> sur votre téléphone Orange
-                    pour générer votre OTP avant de continuer.
+                    Composez <strong>*144*4*6#</strong> sur votre téléphone Orange pour générer votre OTP avant de continuer.
                 </div>
                 @endif
 
                 <button wire:click="envoyerOtp"
                     class="w-full py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90 shadow-lg flex items-center justify-center gap-2"
                     style="background-color: #007A3D;">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    Continuer et recevoir mon OTP
+                    <i class="fa-solid fa-paper-plane"></i> Continuer et recevoir mon OTP
                 </button>
                 @endif
 
                 @elseif($etape_paiement == 2)
                 <div class="text-center mb-6">
-                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
-                        style="background-color: #e6f4ed;">
+                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3" style="background-color: #e6f4ed;">
                         <i class="fa-solid fa-shield-halved text-3xl" style="color: #007A3D;"></i>
                     </div>
                     <p class="font-bold text-gray-800">Vérification OTP</p>
-                    <p class="text-sm text-gray-500 mt-1">
-                        Code envoyé au <strong>{{ $telephone_paiement }}</strong>
-                    </p>
+                    <p class="text-sm text-gray-500 mt-1">Code envoyé au <strong>{{ $telephone_paiement }}</strong></p>
                 </div>
-
                 <div class="mb-4">
-                    <label class="block text-gray-600 text-sm font-medium mb-1.5">
-                        Code OTP reçu *
-                    </label>
+                    <label class="block text-gray-600 text-sm font-medium mb-1.5">Code OTP reçu *</label>
                     <input wire:model="otp_saisi" type="text" maxlength="6"
                         class="w-full border rounded-xl px-4 py-3 text-2xl text-center font-mono tracking-widest"
                         placeholder="_ _ _ _ _ _">
-                    @error('otp_saisi')
-                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                    @enderror
+                    @error('otp_saisi')<span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>@enderror
                 </div>
-
                 <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center text-xs text-yellow-700 mb-5">
                     <i class="fa-solid fa-triangle-exclamation mr-1"></i>
                     <strong>Simulation :</strong> Votre code OTP est
                     <span class="font-mono font-bold text-red-600 text-lg ml-1">{{ $otp_code }}</span>
                 </div>
-
                 <div class="flex gap-3">
                     <button wire:click="$set('etape_paiement', 1)"
                         class="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition text-sm">
                         <i class="fa-solid fa-arrow-left mr-1"></i> Retour
                     </button>
                     <button wire:click="confirmerOtp"
-                        wire:loading.attr="disabled"
-                        wire:loading.class="opacity-70 cursor-not-allowed"
+                        wire:loading.attr="disabled" wire:loading.class="opacity-70 cursor-not-allowed"
                         class="flex-1 py-2.5 rounded-xl text-white font-medium transition hover:opacity-90 text-sm flex items-center justify-center gap-2"
                         style="background-color: #007A3D;">
                         <span wire:loading.remove wire:target="confirmerOtp">
-                            <i class="fa-solid fa-check mr-1"></i>
-                            Confirmer le paiement
+                            <i class="fa-solid fa-check mr-1"></i> Confirmer le paiement
                         </span>
                         <span wire:loading wire:target="confirmerOtp">
-                            <i class="fa-solid fa-spinner fa-spin mr-1"></i>
-                            Traitement...
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i> Traitement...
                         </span>
                     </button>
                 </div>
                 @endif
-
             </div>
         </div>
     </div>
