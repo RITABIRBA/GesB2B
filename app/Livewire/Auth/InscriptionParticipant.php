@@ -48,8 +48,16 @@ class InscriptionParticipant extends Component
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
     public string $secteur_activite        = '';
+    // ✅ CORRECTION : propriété manquante pour la saisie libre du secteur
+    // d'activité quand "Autre" est sélectionné (voir suivant() pour la
+    // validation et la conversion avant sauvegarde).
+    public string $secteur_activite_autre  = '';
     public string $sous_secteur            = '';
     public bool   $profilB2BRempli         = false; // true si rempli, false si passé
+
+    // ✅ Disponibilités (jours d'absence) — étape 3, cohérent avec le reste
+    // de l'application (CompleterProfilB2B, InscriptionWizard participant).
+    public array $jours_absence = [];
 
     public $id_evenement = '';
     public $id_cdd       = '';
@@ -132,6 +140,24 @@ class InscriptionParticipant extends Component
         return $this->villes_par_pays[$this->pays] ?? ['Autre'];
     }
 
+    // ✅ Liste des jours de l'événement sélectionné, pour les cases
+    // "jours d'absence" de l'étape 3.
+    public function getJoursEvenementProperty(): array
+    {
+        if (!$this->id_evenement) return [];
+        $evenement = Evenement::find($this->id_evenement);
+        if (!$evenement || !$evenement->date_debut) return [];
+
+        $debut = \Carbon\Carbon::parse($evenement->date_debut);
+        $fin   = \Carbon\Carbon::parse($evenement->date_fin ?? $evenement->date_debut);
+        $jours = [];
+        while ($debut->lte($fin)) {
+            $jours[] = $debut->format('Y-m-d');
+            $debut->addDay();
+        }
+        return $jours;
+    }
+
     // ✅ Vérifie si l'événement sélectionné est avec B2B
     public function getEvenementEstB2BProperty(): bool
     {
@@ -178,6 +204,14 @@ class InscriptionParticipant extends Component
         }
         if (!in_array('Autre', $this->objectifs_participation)) {
             $this->objectif_autre = '';
+        }
+    }
+
+    // ✅ Réinitialise le champ de précision si "Autre" n'est plus sélectionné
+    public function updatedSecteurActivite(): void
+    {
+        if ($this->secteur_activite !== 'Autre') {
+            $this->secteur_activite_autre = '';
         }
     }
 
@@ -287,9 +321,23 @@ class InscriptionParticipant extends Component
                     return;
                 }
             }
+
+            // ✅ CORRECTION : si "Autre" est choisi pour le secteur d'activité,
+            // on exige et on récupère la précision saisie par l'utilisateur.
+            if ($this->secteur_activite === 'Autre' && trim($this->secteur_activite_autre) === '') {
+                $this->addError('secteur_activite_autre', 'Veuillez préciser votre secteur d\'activité.');
+                return;
+            }
+
             if (!in_array('Autre', $this->types_partenariat)) {
                 $this->type_partenariat_autre = '';
             }
+
+            // ✅ Convertit "Autre" en la valeur réellement saisie avant de continuer
+            if ($this->secteur_activite === 'Autre') {
+                $this->secteur_activite = $this->secteur_activite_autre;
+            }
+
             $this->profilB2BRempli = !empty($this->zone_geographique);
             $this->etape = 4;
         }
@@ -351,6 +399,14 @@ class InscriptionParticipant extends Component
             $data['profils_partenaire']      = !empty($this->profils_partenaire) ? json_encode($this->profils_partenaire) : null;
             $data['secteurs_recherche']      = !empty($this->secteurs_recherche) ? json_encode($this->secteurs_recherche) : null;
             $data['secteur_recherche_autre'] = in_array('Autre', $this->secteurs_recherche) ? $this->secteur_recherche_autre : null;
+
+            // ✅ Conversion jours d'ABSENCE cochés → jours réellement
+            // DISPONIBLES avant sauvegarde, pour garder `disponibilites`
+            // cohérent avec le reste de l'application.
+            $joursEvt = $this->joursEvenement;
+            $data['disponibilites'] = !empty($joursEvt)
+                ? json_encode(array_values(array_diff($joursEvt, $this->jours_absence)))
+                : null;
         }
 
         if ($this->type_inscrit === 'membre_entreprise' && $this->entreprise_trouvee) {
@@ -427,6 +483,7 @@ class InscriptionParticipant extends Component
             'objectifsOptions'  => $this->objectifsOptions,
             'evenementEstB2B'   => $this->evenementEstB2B,
             'nbEtapes'          => $this->nbEtapes,
+            'joursEvenement'    => $this->joursEvenement,
         ])->layout('layouts.guest');
     }
 }

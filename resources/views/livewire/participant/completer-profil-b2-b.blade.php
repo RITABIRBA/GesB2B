@@ -38,7 +38,7 @@
                     </div>
                 </div>
                 @else
-                <select wire:model="secteur_activite"
+                <select wire:model.live="secteur_activite"
                     class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white">
                     <option value="">-- Choisir votre secteur --</option>
                     @foreach($secteurs as $s)
@@ -46,10 +46,17 @@
                     @endforeach
                 </select>
                 @error('secteur_activite') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                {{-- ✅ Champ de saisie libre quand "Autre" est sélectionné --}}
+                @if($secteur_activite === 'Autre')
+                <input wire:model="secteur_activite_autre" type="text"
+                    class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
+                    placeholder="Précisez votre secteur d'activité...">
+                @error('secteur_activite_autre') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                @endif
                 <div class="mt-2">
                     <input wire:model="sous_secteur" type="text"
                         class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm bg-white"
-                        placeholder="Sous-secteur (optionnel) — Ex: Céréales, Logiciels, Textile...">
+                        placeholder="Sous-secteur (optionnel)">
                 </div>
                 @endif
             </div>
@@ -140,7 +147,6 @@
 
                 @if(count($joursEvenement) > 1)
 
-                {{-- Bandeau explicatif --}}
                 <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4 flex items-start gap-3">
                     <i class="fa-solid fa-triangle-exclamation text-orange-500 mt-0.5 flex-shrink-0"></i>
                     <div>
@@ -183,10 +189,8 @@
                     @endforeach
                 </div>
 
-                {{-- Récap --}}
                 @php
                     $joursPresents = array_diff($joursEvenement, $jours_absence);
-                    $joursAbsents  = $jours_absence;
                 @endphp
                 <div class="mt-4 bg-gray-50 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
                     <div class="flex items-center gap-2 text-sm">
@@ -195,7 +199,7 @@
                     </div>
                     <div class="flex items-center gap-2 text-sm">
                         <span class="w-3 h-3 rounded-full bg-red-400 inline-block"></span>
-                        <span class="text-gray-600">Absent : <strong>{{ count($joursAbsents) }} jour(s)</strong></span>
+                        <span class="text-gray-600">Absent : <strong>{{ count($jours_absence) }} jour(s)</strong></span>
                     </div>
                 </div>
 

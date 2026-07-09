@@ -421,13 +421,24 @@
                             Votre secteur d'activité
                             <span class="text-gray-400 font-normal text-xs">(ce que vous faites / proposez)</span>
                         </label>
-                        <select wire:model="secteur_activite"
+                        <select wire:model.live="secteur_activite"
                             class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm bg-white">
                             <option value="">-- Choisir votre secteur --</option>
                             @foreach($secteurs as $s)
                             <option value="{{ $s }}">{{ $s }}</option>
                             @endforeach
                         </select>
+
+                        {{-- ✅ CORRECTION : champ de saisie libre affiché quand "Autre" est choisi --}}
+                        @if($secteur_activite === 'Autre')
+                        <div class="mt-2" wire:key="secteur-activite-autre-wrapper-b2b">
+                            <input wire:model.live="secteur_activite_autre" type="text"
+                                class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm bg-white"
+                                placeholder="Précisez votre secteur d'activité...">
+                            @error('secteur_activite_autre') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                        </div>
+                        @endif
+
                         <div class="mt-2">
                             <input wire:model="sous_secteur" type="text"
                                 class="w-full border rounded-xl px-4 py-2.5 focus:outline-none text-sm bg-white"
@@ -512,6 +523,65 @@
                         @endif
                     </div>
 
+                    {{-- ✅ NOUVEAU : Disponibilités (jours d'absence) --}}
+                    <div>
+                        <label class="block text-gray-600 text-sm font-medium mb-2">
+                            Jours d'absence
+                            <span class="text-gray-400 font-normal">(optionnel)</span>
+                        </label>
+
+                        @if(count($joursEvenement) > 1)
+                        <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+                            <i class="fa-solid fa-triangle-exclamation text-orange-500 mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-orange-700">Cochez les jours où vous NE SEREZ PAS là</p>
+                                <p class="text-xs text-orange-600 mt-1">
+                                    Par défaut, vous êtes considéré présent tous les jours de l'événement.
+                                    Si vous savez que vous serez absent certains jours, cochez-les ici.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            @foreach($joursEvenement as $jour)
+                            @php $estAbsent = in_array($jour, $jours_absence); @endphp
+                            <label class="cursor-pointer">
+                                <input type="checkbox" wire:model.live="jours_absence" value="{{ $jour }}" class="hidden peer">
+                                <div class="p-4 border-2 rounded-xl text-center transition
+                                    {{ $estAbsent ? 'border-red-400 bg-red-50' : 'border-green-200 bg-green-50 hover:bg-gray-50' }}">
+                                    <p class="font-semibold text-sm {{ $estAbsent ? 'text-red-700' : 'text-green-700' }}">
+                                        {{ \Carbon\Carbon::parse($jour)->locale('fr')->translatedFormat('l') }}
+                                    </p>
+                                    <p class="text-xs mt-0.5 {{ $estAbsent ? 'text-red-400' : 'text-green-400' }}">
+                                        {{ \Carbon\Carbon::parse($jour)->format('d/m/Y') }}
+                                    </p>
+                                    @if($estAbsent)
+                                    <span class="inline-flex items-center gap-1 mt-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">
+                                        <i class="fa-solid fa-xmark"></i> Absent
+                                    </span>
+                                    @else
+                                    <span class="inline-flex items-center gap-1 mt-2 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-600 font-medium">
+                                        <i class="fa-solid fa-check"></i> Présent
+                                    </span>
+                                    @endif
+                                </div>
+                            </label>
+                            @endforeach
+                        </div>
+                        @else
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p class="text-sm text-blue-700">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                @if(count($joursEvenement) == 1)
+                                Événement sur 1 seul jour — vous serez automatiquement présent ce jour.
+                                @else
+                                Sélectionnez un événement à l'étape 1 pour indiquer vos disponibilités.
+                                @endif
+                            </p>
+                        </div>
+                        @endif
+                    </div>
+
                 </div>
 
                 <div class="flex justify-between mt-6 gap-3">
@@ -584,7 +654,78 @@
                     @endif
                     @endif
 
-                    {{-- ✅ Objectifs dans le récapitulatif --}}
+                    {{-- ✅ NOUVEAU : Profil B2B complet dans le récapitulatif --}}
+                    @if($evenementEstB2B)
+                    @if($profilB2BRempli)
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                        <p class="text-xs font-bold text-indigo-700 mb-3">
+                            <i class="fa-solid fa-handshake mr-1"></i> PROFIL B2B
+                        </p>
+                        <div class="space-y-3 text-sm">
+                            @if($secteur_activite)
+                            <div>
+                                <span class="text-gray-400 text-xs">Secteur d'activité</span>
+                                <p class="font-semibold text-gray-800">{{ $secteur_activite }}@if($sous_secteur) — {{ $sous_secteur }}@endif</p>
+                            </div>
+                            @endif
+                            @if($zone_geographique)
+                            <div>
+                                <span class="text-gray-400 text-xs">Zone géographique ciblée</span>
+                                <p class="font-semibold text-gray-800">{{ $zone_geographique }}</p>
+                            </div>
+                            @endif
+                            @if(!empty($types_partenariat))
+                            <div>
+                                <span class="text-gray-400 text-xs block mb-1">Type de partenariat proposé</span>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($types_partenariat as $t)
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">{{ $t === 'Autre' ? $type_partenariat_autre : $t }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+                            @if(!empty($profils_partenaire))
+                            <div>
+                                <span class="text-gray-400 text-xs block mb-1">Profil de partenaire recherché</span>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($profils_partenaire as $p)
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">{{ $p }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+                            @if(!empty($secteurs_recherche))
+                            <div>
+                                <span class="text-gray-400 text-xs block mb-1">Secteurs recherchés</span>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($secteurs_recherche as $s)
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">{{ $s === 'Autre' ? $secteur_recherche_autre : $s }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+                            @if(count($joursEvenement) > 1)
+                            <div>
+                                <span class="text-gray-400 text-xs block mb-1">Disponibilité</span>
+                                @if(empty($jours_absence))
+                                <p class="text-xs text-green-700"><i class="fa-solid fa-circle-check mr-1"></i>Disponible tous les jours de l'événement</p>
+                                @else
+                                <p class="text-xs text-orange-700">
+                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>Absent le(s)
+                                    {{ collect($jours_absence)->map(fn($j) => \Carbon\Carbon::parse($j)->locale('fr')->translatedFormat('l d/m'))->implode(', ') }}
+                                </p>
+                                @endif
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @else
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-500">
+                        <i class="fa-solid fa-circle-info mr-1"></i>
+                        Profil B2B non complété — vous pourrez le remplir plus tard depuis votre espace.
+                    </div>
+                    @endif
+                    @endif
                     @if(!empty($objectifs_participation))
                     <div class="bg-green-50 border border-green-200 rounded-xl p-4">
                         <p class="text-xs font-bold text-green-700 mb-2">

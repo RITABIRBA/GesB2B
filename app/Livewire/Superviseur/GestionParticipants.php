@@ -10,7 +10,11 @@ use App\Models\User;
 use App\Models\Notification;
 use App\Models\Inscription;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use App\Mail\PreinscriptionValidee;
+use App\Mail\PreinscriptionRejetee;
 
 class GestionParticipants extends Component
 {
@@ -57,6 +61,7 @@ class GestionParticipants extends Component
     public bool $isEditing = false;
     public string $search = '';
     public string $filtre_evenement = '';
+    public string $filtre_preinscription = '';
     public string $entreprise_trouvee = '';
 
     public bool $showModalCompte = false;
@@ -65,9 +70,14 @@ class GestionParticipants extends Component
     public string $compte_code_acces = '';
     public bool $compte_has_email = false;
 
+    // ✅ NOUVEAU : validation/rejet de préinscription
+    public bool $showModalPreinscription = false;
+    public $preinscription_courante = null;
+    public bool $showModalRejet = false;
+    public string $motif_rejet = '';
+
     // --- OPTIONS DES LISTES DÉROULANTES ---
     
-    // Correction de l'erreur : Ajout de la variable manquante pour le Blade
     public array $joursDisponibles = [
         'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
     ];
@@ -272,15 +282,145 @@ class GestionParticipants extends Component
         session()->flash('success', 'Participant supprimé avec succès.');
     }
 
+    // ✅ NOUVEAU : validation / rejet de préinscription (sans restriction)
+
+    public function ouvrirValidationPreinscription(int $id): void
+    {
+        $this->preinscription_courante = Participant::with('entreprise', 'evenement')->findOrFail($id);
+        $this->showModalPreinscription = true;
+    }
+
+    public function fermerValidationPreinscription(): void
+    {
+        $this->showModalPreinscription = false;
+        $this->preinscription_courante = null;
+    }
+
+    public function validerPreinscription(): void
+    {
+        if (!$this->preinscription_courante) return;
+
+        $participant = Participant::findOrFail($this->preinscription_courante->id);
+
+        $participant->update(['statut_preinscription' => 'valide']);
+
+        $password_genere = null;
+
+        if ($participant->email) {
+            $userExiste = User::where('email', $participant->email)->exists();
+
+            if (!$userExiste) {
+                try {
+                    $password_genere = substr(str_shuffle(
+                        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                    ), 0, 8);
+
+                    $user = User::create([
+                        'name'     => $participant->nom . ' ' . $participant->prenom,
+                        'email'    => $participant->email,
+                        'password' => Hash::make($password_genere),
+                    ]);
+
+                    $user->assignRole($participant->id_entreprise ? 'entreprise' : 'participant');
+                } catch (\Exception $e) {
+                    $password_genere = null;
+                    Log::error('Création compte échouée', ['erreur' => $e->getMessage()]);
+                }
+            }
+        }
+
+        Notification::create([
+            'id_participant' => $participant->id,
+            'contenu'        => '✅ Votre préinscription a été validée ! '
+                . 'Vous pouvez vous connecter avec votre code d\'accès : '
+                . $participant->code_acces
+                . ($participant->email ? ' ou via votre email.' : '.'),
+            'date_envoie'    => now()->toDateString(),
+            'type'           => 'systeme',
+        ]);
+
+        if ($participant->email) {
+            try {
+                Mail::to($participant->email)->send(
+                    new PreinscriptionValidee($participant, $password_genere)
+                );
+            } catch (\Exception $e) {
+                Log::error('Email validation échoué', [
+                    'participant_id' => $participant->id,
+                    'erreur'         => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->compte_email      = $participant->email ?? '';
+        $this->compte_password   = $password_genere;
+        $this->compte_code_acces = $participant->code_acces;
+        $this->compte_has_email  = !empty($participant->email);
+
+        $this->fermerValidationPreinscription();
+        $this->showModalCompte = true;
+
+        session()->flash('success', 'Préinscription validée ! Le compte a été créé.');
+    }
+
+    public function ouvrirRejetPreinscription(int $id): void
+    {
+        $this->preinscription_courante = Participant::findOrFail($id);
+        $this->motif_rejet             = '';
+        $this->showModalRejet          = true;
+    }
+
+    public function fermerRejetPreinscription(): void
+    {
+        $this->showModalRejet          = false;
+        $this->preinscription_courante = null;
+        $this->motif_rejet             = '';
+    }
+
+    public function rejeterPreinscription(): void
+    {
+        $this->validate([
+            'motif_rejet' => 'required|min:5',
+        ], [
+            'motif_rejet.required' => 'Veuillez indiquer le motif du rejet.',
+            'motif_rejet.min'      => 'Le motif est trop court.',
+        ]);
+
+        $participant = Participant::findOrFail($this->preinscription_courante->id);
+
+        $participant->update(['statut_preinscription' => 'rejete']);
+
+        Notification::create([
+            'id_participant' => $participant->id,
+            'contenu'        => '❌ Votre préinscription a été rejetée. Motif : ' . $this->motif_rejet,
+            'date_envoie'    => now()->toDateString(),
+            'type'           => 'systeme',
+        ]);
+
+        if ($participant->email) {
+            try {
+                Mail::to($participant->email)->send(
+                    new PreinscriptionRejetee($participant, 'Business Forum', $this->motif_rejet)
+                );
+            } catch (\Exception $e) {
+                Log::error('Email rejet échoué', ['erreur' => $e->getMessage()]);
+            }
+        }
+
+        $this->fermerRejetPreinscription();
+        session()->flash('success', 'Préinscription rejetée. Le participant a été notifié.');
+    }
+
     public function render()
     {
         return view('livewire.superviseur.gestion-participants', [
-            'participants' => Participant::when($this->search, function($q) {
+            'participants' => Participant::with(['entreprise', 'evenement'])->when($this->search, function($q) {
                 $q->where('nom', 'like', '%' . $this->search . '%')
                   ->orWhere('prenom', 'like', '%' . $this->search . '%')
                   ->orWhere('email', 'like', '%' . $this->search . '%');
             })
             ->when($this->filtre_evenement, fn($q) => $q->where('id_evenement', $this->filtre_evenement))
+            ->when($this->filtre_preinscription, fn($q) => $q->where('statut_preinscription', $this->filtre_preinscription))
             ->latest()->get(),
             'entreprises'       => Entreprise::orderBy('nom')->get(),
             'evenements'        => Evenement::orderBy('nom')->get(),

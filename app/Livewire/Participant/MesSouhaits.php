@@ -81,10 +81,8 @@ class MesSouhaits extends Component
 
         $cible = Participant::find($id_cible);
 
-        if (!$this->ontDisponibiliteCommune($participant, $cible)) {
-            $this->alertError = 'Vous n\'avez aucune disponibilité commune avec ce participant.';
-            return;
-        }
+        // ✅ On ne bloque plus l'envoi en cas d'absence de jour commun.
+        // Le front (wire:confirm) affiche l'avertissement avant d'appeler cette méthode.
 
         $scoreCompatibilite = $this->calculerCompatibilite($participant, $cible);
 
@@ -246,12 +244,43 @@ class MesSouhaits extends Component
         return is_array($dispo) ? $dispo : [];
     }
 
-    private function ontDisponibiliteCommune(Participant $moi, Participant $cible): bool
+    /**
+     * ✅ Statut fin de disponibilité entre 2 participants :
+     * - 'disponible'      : les deux ont renseigné leurs dispos ET partagent au moins un jour
+     * - 'non_renseignee'  : l'un des deux (ou les deux) n'a pas encore renseigné ses dispos
+     * - 'aucune'          : les deux ont renseigné leurs dispos mais aucun jour en commun
+     */
+    private function statutDisponibilite(Participant $moi, Participant $cible): string
     {
         $dispoMoi   = $this->getDisponibilites($moi);
         $dispoCible = $this->getDisponibilites($cible);
-        if (empty($dispoMoi) || empty($dispoCible)) return true;
-        return count(array_intersect($dispoMoi, $dispoCible)) > 0;
+
+        if (empty($dispoMoi) || empty($dispoCible)) {
+            return 'non_renseignee';
+        }
+
+        return count(array_intersect($dispoMoi, $dispoCible)) > 0
+            ? 'disponible'
+            : 'aucune';
+    }
+
+    /**
+     * ✅ Utilisé uniquement pour le filtre strict des Recommandations :
+     * true seulement si les deux ont un jour réellement en commun.
+     */
+    private function aAuMoinsUnJourCommun(Participant $moi, Participant $cible): bool
+    {
+        return $this->statutDisponibilite($moi, $cible) === 'disponible';
+    }
+
+    /**
+     * ✅ Retourne la liste des jours réellement en commun entre 2 participants.
+     */
+    private function joursCommuns(Participant $moi, Participant $cible): array
+    {
+        $dispoMoi   = $this->getDisponibilites($moi);
+        $dispoCible = $this->getDisponibilites($cible);
+        return array_values(array_intersect($dispoMoi, $dispoCible));
     }
 
     private function calculerCompatibilite(Participant $moi, Participant $cible): int
@@ -352,7 +381,20 @@ class MesSouhaits extends Component
         $nbTous               = 0;
 
         if ($participant && $inscriptionValide && !$souhaitsfermes && $profilB2BComplet && !$evenementSansB2B) {
-            $tousLesCandidats = Participant::with('entreprise')
+
+            $mapper = function ($p) use ($participant, $idsCibles) {
+                $p->score_compatibilite = $this->calculerCompatibilite($participant, $p);
+                $p->souhait_emis        = in_array($p->id, $idsCibles);
+                $p->est_mutuel          = Souhait::where('id_participant', $p->id)
+                    ->where('id_participant_cible', $participant->id)
+                    ->exists();
+                // ✅ 'disponible' | 'non_renseignee' | 'aucune'
+                $p->statut_dispo        = $this->statutDisponibilite($participant, $p);
+                $p->jours_communs       = $this->joursCommuns($participant, $p);
+                return $p;
+            };
+
+            $baseQuery = Participant::with('entreprise')
                 ->where('id_evenement', $participant->id_evenement)
                 ->where('id', '!=', $participant->id)
                 ->where('participation_rdv', true)
@@ -370,56 +412,28 @@ class MesSouhaits extends Component
                               $q->where('nom', 'like', '%' . $this->search . '%')
                           );
                     })
-                )
-                ->get()
-                // ✅ Filtre par disponibilité commune (jours partagés)
-                ->filter(fn($p) => $this->ontDisponibiliteCommune($participant, $p))
-                ->map(function ($p) use ($participant, $idsCibles) {
-                    $p->score_compatibilite = $this->calculerCompatibilite($participant, $p);
-                    $p->souhait_emis        = in_array($p->id, $idsCibles);
-                    $p->est_mutuel          = Souhait::where('id_participant', $p->id)
-                        ->where('id_participant_cible', $participant->id)
-                        ->exists();
-                    return $p;
-                })
+                );
+
+            // ✅ Recommandations = jour en commun réel ET score > 0
+            $compatibles = (clone $baseQuery)->get()
+                ->filter(fn($p) => $this->aAuMoinsUnJourCommun($participant, $p))
+                ->map($mapper)
+                ->filter(fn($p) => $p->score_compatibilite > 0)
                 ->sortBy([
                     ['souhait_emis', 'asc'],
                     ['score_compatibilite', 'desc'],
                 ])
                 ->values();
 
-            // ✅ Recommandations = score > 0 (secteur compatible + disponibilité)
-            $compatibles = $tousLesCandidats->filter(fn($p) => $p->score_compatibilite > 0)->values();
-
-            // ✅ Tous = TOUS les participants de l'événement (filtre disponibilité seulement)
-            $tousLesCandidatsSansFiltreSeceur = Participant::with('entreprise')
-                ->where('id_evenement', $participant->id_evenement)
-                ->where('id', '!=', $participant->id)
-                ->where('participation_rdv', true)
-                ->when($participant->id_entreprise, fn($q) =>
-                    $q->where(function ($q) use ($participant) {
-                        $q->whereNull('id_entreprise')->orWhere('id_entreprise', '!=', $participant->id_entreprise);
-                    })
-                )
-                ->when($this->search, fn($q) =>
-                    $q->where(function ($q) {
-                        $q->where('nom', 'like', '%'.$this->search.'%')
-                          ->orWhere('prenom', 'like', '%'.$this->search.'%')
-                          ->orWhereHas('entreprise', fn($q) => $q->where('nom', 'like', '%'.$this->search.'%'));
-                    })
-                )
-                ->get()
-                ->filter(fn($p) => $this->ontDisponibiliteCommune($participant, $p))
-                ->map(function ($p) use ($participant, $idsCibles) {
-                    $p->score_compatibilite = $this->calculerCompatibilite($participant, $p);
-                    $p->souhait_emis        = in_array($p->id, $idsCibles);
-                    $p->est_mutuel          = Souhait::where('id_participant', $p->id)->where('id_participant_cible', $participant->id)->exists();
-                    return $p;
-                })
-                ->sortBy([['souhait_emis', 'asc'], ['score_compatibilite', 'desc']])
+            // ✅ Tous = tout le monde, aucun filtre de disponibilité/score,
+            // juste un indicateur calculé sur chaque carte
+            $tous = (clone $baseQuery)->get()
+                ->map($mapper)
+                ->sortBy([
+                    ['souhait_emis', 'asc'],
+                    ['score_compatibilite', 'desc'],
+                ])
                 ->values();
-
-            $tous = $tousLesCandidatsSansFiltreSeceur;
 
             $nbCompatibles = $compatibles->count();
             $nbTous        = $tous->count();

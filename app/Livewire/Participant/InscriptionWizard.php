@@ -54,7 +54,13 @@ class InscriptionWizard extends Component
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
 
-    public array $disponibilites = [];
+    // ✅ CORRECTION : on ne stocke plus les jours "disponibles" (opt-in) mais
+    // les jours "d'absence" (opt-out), exactement comme dans CompleterProfilB2B.
+    // Au moment de la sauvegarde, on convertit en jours réellement disponibles
+    // avant d'écrire dans la colonne `disponibilites`, pour garder un sens
+    // unique et cohérent de cette colonne partout dans l'application.
+    public array $jours_absence  = [];
+
     public $id_chef_delegation   = '';
     public $id_stand_choisi      = '';
 
@@ -235,17 +241,6 @@ class InscriptionWizard extends Component
         }
     }
 
-    public function toggleDisponibilite(string $jour): void
-    {
-        if (in_array($jour, $this->disponibilites)) {
-            $this->disponibilites = array_values(
-                array_filter($this->disponibilites, fn($d) => $d !== $jour)
-            );
-        } else {
-            $this->disponibilites[] = $jour;
-        }
-    }
-
     private function getDashboardRoute(): string
     {
         $user = auth()->user();
@@ -319,8 +314,19 @@ class InscriptionWizard extends Component
             $this->profils_partenaire      = $participant->profils_partenaire ?? [];
             $this->secteurs_recherche      = $participant->secteurs_recherche ?? [];
             $this->secteur_recherche_autre = $participant->secteur_recherche_autre ?? '';
-            $this->disponibilites          = $participant->disponibilites ?? [];
             $this->id_chef_delegation      = $participant->id_chef_delegation ?? '';
+
+            // ✅ CORRECTION : `disponibilites` en base contient les jours où le
+            // participant EST disponible. On reconstruit les jours d'ABSENCE
+            // (ce que le formulaire affiche) en soustrayant des jours de
+            // l'événement les jours déjà marqués disponibles.
+            $joursEvt = $this->getJoursEvenement();
+            if (count($joursEvt) > 1) {
+                $joursDisponiblesActuels = $participant->disponibilites ?? [];
+                $this->jours_absence = array_values(array_diff($joursEvt, $joursDisponiblesActuels));
+            } else {
+                $this->jours_absence = [];
+            }
 
             if ($participant->id_entreprise) {
                 $this->estMembre       = true;
@@ -417,7 +423,7 @@ class InscriptionWizard extends Component
                 $this->fonction = $fonctionFinal;
             }
 
-            // ✅ NOUVEAU : Étudiant → on saute l'étape 3 (activité professionnelle)
+            // ✅ Étudiant → on saute l'étape 3 (activité professionnelle)
             if ($estEtudiantCheck) {
                 $this->secteur_activite       = '';
                 $this->secteur_activite_autre = '';
@@ -486,10 +492,9 @@ class InscriptionWizard extends Component
             $this->etape = 5;
 
         } elseif ($this->etape == 5) {
-            if ($this->getIsMultiJours() && empty($this->disponibilites)) {
-                $this->addError('disponibilites', 'Veuillez sélectionner au moins un jour.');
-                return;
-            }
+            // ✅ CORRECTION : les jours d'absence sont optionnels — on ne bloque
+            // plus la progression si l'utilisateur n'en coche aucun (cela
+            // signifie simplement qu'il est disponible tous les jours).
             $this->etape = 6;
         }
     }
@@ -547,6 +552,13 @@ class InscriptionWizard extends Component
             return redirect()->route($this->getDashboardRoute());
         }
 
+        // ✅ CORRECTION : on convertit les jours d'ABSENCE cochés en jours
+        // réellement DISPONIBLES avant de les stocker dans `disponibilites`,
+        // pour que cette colonne ait toujours le même sens (jours où le
+        // participant est présent) partout dans l'application.
+        $joursEvt              = $this->getJoursEvenement();
+        $joursDisponiblesReels = array_values(array_diff($joursEvt, $this->jours_absence));
+
         $participant->update([
             'nom'                    => $this->nom,
             'prenom'                 => $this->prenom,
@@ -579,7 +591,7 @@ class InscriptionWizard extends Component
             'secteur_recherche_autre' => $this->estB2B && in_array('Autre', $this->secteurs_recherche)
                 ? $this->secteur_recherche_autre : null,
             'disponibilites'         => $this->estB2B
-                ? $this->normalizeArrayField($this->disponibilites) : null,
+                ? $this->normalizeArrayField($joursDisponiblesReels) : null,
             'id_chef_delegation'     => $this->id_chef_delegation ?: null,
             'id_evenement'           => $this->id_evenement,
             'statut_preinscription'  => 'en_attente',

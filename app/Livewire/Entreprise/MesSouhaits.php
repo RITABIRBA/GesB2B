@@ -118,10 +118,8 @@ class MesSouhaits extends Component
 
         $cible = Participant::find($id_cible);
 
-        if (!$this->ontDisponibiliteCommune($participant, $cible)) {
-            $this->alertError = 'Vous n\'avez aucune disponibilité commune avec ce participant.';
-            return;
-        }
+        // ✅ On ne bloque plus l'envoi en cas d'absence de jour commun.
+        // Le front (wire:confirm) affiche l'avertissement avant d'appeler cette méthode.
 
         $scoreCompatibilite = $this->calculerCompatibilite($participant, $cible);
         $dernierePriorite   = Souhait::where('id_participant', $participant->id)->max('priorite') ?? 0;
@@ -288,12 +286,43 @@ class MesSouhaits extends Component
         return is_array($dispo) ? $dispo : [];
     }
 
-    private function ontDisponibiliteCommune(Participant $moi, Participant $cible): bool
+    /**
+     * ✅ Statut fin de disponibilité entre 2 participants :
+     * - 'disponible'      : les deux ont renseigné leurs dispos ET partagent au moins un jour
+     * - 'non_renseignee'  : l'un des deux (ou les deux) n'a pas encore renseigné ses dispos
+     * - 'aucune'          : les deux ont renseigné leurs dispos mais aucun jour en commun
+     */
+    private function statutDisponibilite(Participant $moi, Participant $cible): string
     {
         $dispoMoi   = $this->getDisponibilites($moi);
         $dispoCible = $this->getDisponibilites($cible);
-        if (empty($dispoMoi) || empty($dispoCible)) return true;
-        return count(array_intersect($dispoMoi, $dispoCible)) > 0;
+
+        if (empty($dispoMoi) || empty($dispoCible)) {
+            return 'non_renseignee';
+        }
+
+        return count(array_intersect($dispoMoi, $dispoCible)) > 0
+            ? 'disponible'
+            : 'aucune';
+    }
+
+    /**
+     * ✅ Utilisé uniquement pour le filtre strict des Recommandations :
+     * true seulement si les deux ont un jour réellement en commun.
+     */
+    private function aAuMoinsUnJourCommun(Participant $moi, Participant $cible): bool
+    {
+        return $this->statutDisponibilite($moi, $cible) === 'disponible';
+    }
+
+    /**
+     * ✅ Retourne la liste des jours réellement en commun entre 2 participants.
+     */
+    private function joursCommuns(Participant $moi, Participant $cible): array
+    {
+        $dispoMoi   = $this->getDisponibilites($moi);
+        $dispoCible = $this->getDisponibilites($cible);
+        return array_values(array_intersect($dispoMoi, $dispoCible));
     }
 
     private function secteurCompatible(Participant $moi, Participant $cible): bool
@@ -377,6 +406,9 @@ class MesSouhaits extends Component
                 $p->score_compatibilite = $this->calculerCompatibilite($participant, $p);
                 $p->souhait_emis        = in_array($p->id, $idsCibles);
                 $p->est_mutuel          = Souhait::where('id_participant', $p->id)->where('id_participant_cible', $participant->id)->exists();
+                // ✅ 'disponible' | 'non_renseignee' | 'aucune'
+                $p->statut_dispo        = $this->statutDisponibilite($participant, $p);
+                $p->jours_communs       = $this->joursCommuns($participant, $p);
                 return $p;
             };
 
@@ -395,18 +427,18 @@ class MesSouhaits extends Component
                     })
                 );
 
-            // ✅ Recommandations = filtre secteur + disponibilité + score > 0
+            // ✅ Recommandations = jour en commun réel + secteur compatible + score > 0
             $compatibles = (clone $baseQuery)->get()
-                ->filter(fn($p) => $this->ontDisponibiliteCommune($participant, $p))
+                ->filter(fn($p) => $this->aAuMoinsUnJourCommun($participant, $p))
                 ->filter(fn($p) => $this->secteurCompatible($participant, $p))
                 ->map($mapper)
                 ->filter(fn($p) => $p->score_compatibilite > 0)
                 ->sortBy([['souhait_emis', 'asc'], ['score_compatibilite', 'desc']])
                 ->values();
 
-            // ✅ Tous = filtre disponibilité seulement, pas de filtre secteur
+            // ✅ Tous = tout le monde, aucun filtre de disponibilité/secteur,
+            // juste un indicateur calculé sur chaque carte
             $tous = (clone $baseQuery)->get()
-                ->filter(fn($p) => $this->ontDisponibiliteCommune($participant, $p))
                 ->map($mapper)
                 ->sortBy([['souhait_emis', 'asc'], ['score_compatibilite', 'desc']])
                 ->values();

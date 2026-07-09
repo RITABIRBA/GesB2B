@@ -18,9 +18,11 @@ class CompleterProfilB2B extends Component
     public array  $secteurs_recherche      = [];
     public string $secteur_recherche_autre = '';
     public string $secteur_activite        = '';
+    public string $secteur_activite_autre  = '';
     public string $sous_secteur            = '';
 
-    // ✅ NOUVEAU : jours d'absence (au lieu de disponibilités)
+    // Jours d'absence (opt-out) — voir enregistrer() pour la conversion
+    // vers les jours réellement disponibles avant sauvegarde en base.
     public array  $jours_absence           = [];
 
     public bool   $secteurAutoEntreprise   = false;
@@ -70,10 +72,6 @@ class CompleterProfilB2B extends Component
         $this->secteur_activite        = $participant->secteur_activite ?? '';
         $this->sous_secteur            = $participant->sous_secteur ?? '';
 
-        // ✅ Charger les jours d'absence depuis disponibilites
-        // On stocke les jours ABSENTS dans disponibilites
-        $this->jours_absence = $participant->disponibilites ?? [];
-
         if ($participant->id_entreprise) {
             $entreprise = Entreprise::find($participant->id_entreprise);
             if ($entreprise && $entreprise->secteur_activite) {
@@ -82,6 +80,28 @@ class CompleterProfilB2B extends Component
                 $this->secteurAutoEntreprise = true;
                 $this->secteurNomEntreprise  = $entreprise->nom;
             }
+        }
+
+        if (!$this->secteurAutoEntreprise && $this->secteur_activite !== '' && !in_array($this->secteur_activite, $this->secteurs)) {
+            // ✅ Valeur enregistrée hors liste → on la restaure dans le champ "Autre"
+            $this->secteur_activite_autre = $this->secteur_activite;
+            $this->secteur_activite       = 'Autre';
+        }
+
+        // ✅ CORRECTION : `disponibilites` en base contient les jours où le
+        // participant EST disponible. On reconstruit les jours d'ABSENCE
+        // affichés dans le formulaire en soustrayant des jours de
+        // l'événement les jours déjà marqués disponibles. Pour un
+        // événement d'1 seul jour (ou sans jours listés), on force
+        // l'absence de sélection : la présence est automatique.
+        // (placé après le chargement de l'entreprise pour bénéficier de
+        // $this->joursEvenement, qui dépend de l'événement du participant)
+        $joursEvt = $this->joursEvenement;
+        if (count($joursEvt) > 1) {
+            $joursDisponiblesActuels = $participant->disponibilites ?? [];
+            $this->jours_absence = array_values(array_diff($joursEvt, $joursDisponiblesActuels));
+        } else {
+            $this->jours_absence = [];
         }
     }
 
@@ -153,10 +173,22 @@ class CompleterProfilB2B extends Component
 
         $participant = Participant::findForUser(auth()->user());
 
-        // ✅ On sauvegarde les jours ABSENTS dans disponibilites
-        // Le système lira disponibilites = jours absents
+        // ✅ Si "Autre" est sélectionné manuellement, on utilise la valeur saisie
+        $secteurFinal = (!$this->secteurAutoEntreprise && $this->secteur_activite === 'Autre')
+            ? $this->secteur_activite_autre
+            : $this->secteur_activite;
+
+        // ✅ CORRECTION : on convertit les jours d'ABSENCE cochés en jours
+        // réellement DISPONIBLES avant de les stocker dans `disponibilites`,
+        // pour que cette colonne ait toujours le même sens (jours où le
+        // participant est présent) partout dans l'application — y compris
+        // pour la comparaison avec des participants inscrits via le wizard
+        // de préinscription.
+        $joursEvt              = $this->joursEvenement;
+        $joursDisponiblesReels = array_values(array_diff($joursEvt, $this->jours_absence));
+
         $participant->update([
-            'secteur_activite'        => $this->secteur_activite,
+            'secteur_activite'        => $secteurFinal,
             'sous_secteur'            => $this->sous_secteur ?: null,
             'zone_geographique'       => $this->zone_geographique,
             'types_partenariat'       => $this->types_partenariat,
@@ -164,7 +196,7 @@ class CompleterProfilB2B extends Component
             'profils_partenaire'      => $this->profils_partenaire,
             'secteurs_recherche'      => $this->secteurs_recherche,
             'secteur_recherche_autre' => in_array('Autre', $this->secteurs_recherche) ? $this->secteur_recherche_autre : null,
-            'disponibilites'          => $this->jours_absence, // ✅ stocke les jours ABSENTS
+            'disponibilites'          => $joursDisponiblesReels, // ✅ stocke les jours réellement DISPONIBLES
         ]);
 
         session()->flash('success', 'Votre profil B2B a été complété ! Vous pouvez maintenant émettre des souhaits.');

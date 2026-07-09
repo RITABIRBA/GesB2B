@@ -46,6 +46,11 @@ class InscriptionEntreprise extends Component
     public string $secteur_recherche_autre = '';
     public bool   $profilB2BRempli         = false;
 
+    // ✅ Disponibilités (jours d'absence) — étape 3, cohérent avec le reste
+    // de l'application (CompleterProfilB2B, InscriptionWizard participant,
+    // InscriptionParticipant).
+    public array $jours_absence = [];
+
     public $id_evenement = '';
     public bool $confirme = false;
 
@@ -126,6 +131,24 @@ class InscriptionEntreprise extends Component
     public function getNbEtapesProperty(): int
     {
         return $this->evenementEstB2B ? 4 : 3;
+    }
+
+    // ✅ Liste des jours de l'événement sélectionné, pour les cases
+    // "jours d'absence" de l'étape 3.
+    public function getJoursEvenementProperty(): array
+    {
+        if (!$this->id_evenement) return [];
+        $evenement = Evenement::find($this->id_evenement);
+        if (!$evenement || !$evenement->date_debut) return [];
+
+        $debut = \Carbon\Carbon::parse($evenement->date_debut);
+        $fin   = \Carbon\Carbon::parse($evenement->date_fin ?? $evenement->date_debut);
+        $jours = [];
+        while ($debut->lte($fin)) {
+            $jours[] = $debut->format('Y-m-d');
+            $debut->addDay();
+        }
+        return $jours;
     }
 
     public function updatedPays(): void { $this->ville = ''; }
@@ -235,6 +258,17 @@ class InscriptionEntreprise extends Component
                     return;
                 }
             }
+
+            // ✅ CORRECTION : si "Autre" est re-sélectionné pour le secteur
+            // d'activité à cette étape, on exige et récupère la précision.
+            if ($this->secteur_activite === 'Autre' && trim($this->secteur_autre) === '') {
+                $this->addError('secteur_autre', 'Veuillez préciser votre secteur d\'activité.');
+                return;
+            }
+            if ($this->secteur_activite === 'Autre') {
+                $this->secteur_activite = $this->secteur_autre;
+            }
+
             $this->profilB2BRempli = !empty($this->zone_geographique);
             $this->etape = 4;
         }
@@ -298,6 +332,14 @@ class InscriptionEntreprise extends Component
             $dataRep['profils_partenaire']      = !empty($this->profils_partenaire) ? json_encode($this->profils_partenaire) : null;
             $dataRep['secteurs_recherche']      = !empty($this->secteurs_recherche) ? json_encode($this->secteurs_recherche) : null;
             $dataRep['secteur_recherche_autre'] = in_array('Autre', $this->secteurs_recherche) ? $this->secteur_recherche_autre : null;
+
+            // ✅ Conversion jours d'ABSENCE cochés → jours réellement
+            // DISPONIBLES avant sauvegarde, pour garder `disponibilites`
+            // cohérent avec le reste de l'application.
+            $joursEvt = $this->joursEvenement;
+            $dataRep['disponibilites'] = !empty($joursEvt)
+                ? json_encode(array_values(array_diff($joursEvt, $this->jours_absence)))
+                : null;
         }
 
         $representant = Participant::create($dataRep);
@@ -346,6 +388,7 @@ class InscriptionEntreprise extends Component
             'objectifsOptions'  => $this->objectifsOptions,
             'evenementEstB2B'   => $this->evenementEstB2B,
             'nbEtapes'          => $this->nbEtapes,
+            'joursEvenement'    => $this->joursEvenement,
         ])->layout('layouts.guest');
     }
 }

@@ -170,7 +170,15 @@
     @if($onglet === 'compatibles')
     <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4 text-sm text-green-700 flex items-center gap-2">
         <i class="fa-solid fa-circle-info flex-shrink-0"></i>
-        Ces participants ont été sélectionnés par le système en fonction de votre profil B2B — secteur d'activité, zone géographique et type de partenariat.
+        Ces participants ont été sélectionnés par le système en fonction de votre profil B2B — secteur d'activité, zone géographique, type de partenariat et disponibilité commune.
+    </div>
+    @else
+    <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-sm text-gray-600 flex items-center gap-2 flex-wrap">
+        <i class="fa-solid fa-circle-info flex-shrink-0"></i>
+        <span>Tous les participants de l'événement sont affichés. L'indicateur de disponibilité vous aide à voir qui partage un jour avec vous :</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">🟢 Disponible</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium">🟡 Non renseignée</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">🔴 Pas de jour commun</span>
     </div>
     @endif
 
@@ -188,7 +196,31 @@
         </h4>
 
         @forelse($listeAffichee as $p)
-        @php $points = $p->score_compatibilite; @endphp
+        @php
+            $points = $p->score_compatibilite;
+
+            // ✅ Config de l'indicateur de disponibilité
+            $dispoConfig = [
+                'disponible'     => ['🟢 Disponible',              'bg-green-100 text-green-700'],
+                'non_renseignee' => ['🟡 Dispo non renseignée',    'bg-yellow-100 text-yellow-700'],
+                'aucune'         => ['🔴 Pas de jour commun',      'bg-red-100 text-red-700'],
+            ];
+            [$dispoLabel, $dispoClasses] = $dispoConfig[$p->statut_dispo] ?? $dispoConfig['non_renseignee'];
+            // ✅ Ajoute les jours réels sur une seule ligne compacte, ex: "🟢 Disponible · Lundi, Mercredi"
+            if ($p->statut_dispo === 'disponible' && !empty($p->jours_communs)) {
+                $dispoLabel .= ' · ' . implode(', ', array_map('ucfirst', $p->jours_communs));
+            }
+
+            // ✅ Message de confirmation adapté si aucune disponibilité commune
+            if ($p->statut_dispo === 'aucune') {
+                $texteConfirm = "⚠️ Attention, vous n'avez aucune disponibilité en commun avec {$p->prenom} {$p->nom}. Voulez-vous quand même émettre ce souhait ?";
+            } else {
+                $texteConfirm = "Êtes-vous sûr de vouloir contacter {$p->prenom} {$p->nom}"
+                    . ($p->fonction ? " ({$p->fonction})" : '')
+                    . ($p->entreprise ? " — {$p->entreprise->nom}" : '')
+                    . " ?";
+            }
+        @endphp
 
         <div class="bg-white rounded-xl shadow mb-4 overflow-hidden {{ $p->souhait_emis ? 'opacity-75' : '' }}">
 
@@ -210,11 +242,17 @@
                     </span>
                     @endif
                 </div>
-                @if($p->souhait_emis)
-                <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                    <i class="fa-solid fa-circle-check mr-1"></i> Souhait émis
-                </span>
-                @endif
+                <div class="flex items-center gap-2 flex-wrap">
+                    {{-- ✅ Indicateur de disponibilité (uniquement onglet "Tous") --}}
+                    @if($onglet === 'tous')
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium {{ $dispoClasses }}">{{ $dispoLabel }}</span>
+                    @endif
+                    @if($p->souhait_emis)
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Souhait émis
+                    </span>
+                    @endif
+                </div>
             </div>
 
             <div class="p-5">
@@ -298,20 +336,20 @@
                     $matchZone           = $participant->zone_geographique && $p->zone_geographique && $participant->zone_geographique === $p->zone_geographique;
                     $matchProfil         = !empty($mesProfilsRecherches) && !empty($pTypesPartenariat) && count(array_intersect($mesProfilsRecherches, $pTypesPartenariat)) > 0;
                 @endphp
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <span class="text-xs px-2 py-1 rounded-full font-medium {{ $matchSecteurMoi ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400' }}">
-                        <i class="fa-solid {{ $matchSecteurMoi ? 'fa-check' : 'fa-xmark' }} mr-1"></i>Mon secteur dans sa recherche
-                    </span>
-                    <span class="text-xs px-2 py-1 rounded-full font-medium {{ $matchSecteurCible ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400' }}">
-                        <i class="fa-solid {{ $matchSecteurCible ? 'fa-check' : 'fa-xmark' }} mr-1"></i>Son secteur dans ma recherche
-                    </span>
-                    <span class="text-xs px-2 py-1 rounded-full font-medium {{ $matchZone ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400' }}">
-                        <i class="fa-solid {{ $matchZone ? 'fa-check' : 'fa-xmark' }} mr-1"></i>Zone géographique
-                    </span>
-                    <span class="text-xs px-2 py-1 rounded-full font-medium {{ $matchProfil ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400' }}">
-                        <i class="fa-solid {{ $matchProfil ? 'fa-check' : 'fa-xmark' }} mr-1"></i>Profil partenaire
-                    </span>
-                </div>
+                @php
+                    // ✅ Ne garder que les critères qui matchent réellement, sur une seule ligne compacte
+                    $matchsReels = [];
+                    if ($matchSecteurCible) $matchsReels[] = $p->secteur_activite;
+                    if ($matchZone)         $matchsReels[] = $p->zone_geographique;
+                    if ($matchProfil)       $matchsReels[] = 'Partenariat compatible';
+                    if ($matchSecteurMoi && !$matchSecteurCible) $matchsReels[] = 'Votre secteur l\'intéresse';
+                @endphp
+                @if(!empty($matchsReels))
+                <p class="text-xs text-green-700 mb-4 flex items-center gap-1 flex-wrap">
+                    <i class="fa-solid fa-circle-check flex-shrink-0"></i>
+                    Pourquoi recommandé : {{ implode(' · ', $matchsReels) }}
+                </p>
+                @endif
                 @endif
 
                 <div class="flex items-center justify-between pt-3 border-t border-gray-100">
@@ -327,14 +365,18 @@
                     @else
                     <button
                         wire:click="emettresouhait({{ $p->id }})"
-                        wire:confirm="Êtes-vous sûr de vouloir contacter {{ $p->prenom }} {{ $p->nom }}{{ $p->fonction ? ' (' . $p->fonction . ')' : '' }}{{ $p->entreprise ? ' — ' . $p->entreprise->nom : '' }} ?"
+                        wire:confirm="{{ $texteConfirm }}"
                         wire:loading.attr="disabled"
                         wire:loading.class="opacity-70 cursor-not-allowed"
                         wire:target="emettresouhait({{ $p->id }})"
                         class="px-5 py-2.5 rounded-xl text-white text-sm font-medium transition hover:opacity-90 shadow flex items-center gap-2"
-                        style="background-color: #C8102E;">
+                        style="background-color: {{ $p->statut_dispo === 'aucune' ? '#b45309' : '#C8102E' }};">
                         <span wire:loading.remove wire:target="emettresouhait({{ $p->id }})">
+                            @if($p->statut_dispo === 'aucune')
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Émettre quand même
+                            @else
                             <i class="fa-solid fa-heart mr-1"></i> Je suis intéressé
+                            @endif
                         </span>
                         <span wire:loading wire:target="emettresouhait({{ $p->id }})">
                             <i class="fa-solid fa-spinner fa-spin mr-1"></i> En cours...

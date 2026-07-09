@@ -147,7 +147,7 @@
         </div>
 
         <div class="p-8">
-            {{-- ✅ NOUVEAU : Alerte si inscriptions closes --}}
+            {{-- ✅ Alerte si inscriptions closes --}}
             @if(!$evenement->inscriptionsOuvertes())
             <div class="bg-red-50 border border-red-300 rounded-xl p-4 mb-6 flex items-center gap-3">
                 <i class="fa-solid fa-lock text-red-500 text-xl"></i>
@@ -189,7 +189,7 @@
                     [2, 'Informations personnelles', 'Nom, prénom, fonction, contact', 'fa-user'],
                     [3, 'Activité professionnelle', 'Secteur, description, objectif', 'fa-briefcase'],
                     [4, 'Recherche de partenariat', 'Type, profil, secteurs (max 3)', 'fa-handshake'],
-                    [5, 'Disponibilités & CDD', 'Jours disponibles et chef de délégation', 'fa-calendar-days'],
+                    [5, 'Disponibilités & CDD', 'Jours d\'absence et chef de délégation', 'fa-calendar-days'],
                     [6, 'Confirmation', 'Récapitulatif et validation', 'fa-circle-check'],
                 ] : [
                     [1, 'Détails de l\'événement', 'Consultez les informations', 'fa-calendar'],
@@ -404,7 +404,7 @@
                 @error('telephone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
 
-            {{-- ✅ NOUVEAU : Date de naissance --}}
+            {{-- ✅ Date de naissance --}}
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">
                     Date de naissance
@@ -441,7 +441,7 @@
                 @error('fonction') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
 
-            {{-- ✅ NOUVEAU : Filière + Université si étudiant --}}
+            {{-- ✅ Filière + Université si étudiant --}}
             @if($estEtudiant)
             <div class="col-span-2">
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -503,7 +503,7 @@
             </div>
             @endif
 
-            {{-- ✅ NOUVEAU : Statut participant --}}
+            {{-- ✅ Statut participant --}}
             <div class="col-span-2">
                 <label class="block text-gray-600 text-sm font-medium mb-2">
                     Statut de participation
@@ -579,12 +579,17 @@
                     <option value="{{ $s }}">{{ $s }}</option>
                     @endforeach
                 </select>
-                @if($secteur_activite === 'Autre')
-                <input wire:model="secteur_activite_autre" type="text"
-                    class="w-full mt-2 border rounded-xl px-4 py-2.5 focus:outline-none text-sm"
-                    placeholder="Précisez le secteur...">
-                @endif
                 @error('secteur_activite') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+
+                {{-- ✅ Champ de saisie libre affiché uniquement si "Autre" est choisi --}}
+                @if($secteur_activite === 'Autre')
+                <div class="mt-2" wire:key="secteur-activite-autre-wrapper">
+                    <input wire:model.live="secteur_activite_autre" type="text"
+                        class="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
+                        placeholder="Précisez votre secteur d'activité...">
+                    @error('secteur_activite_autre') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                </div>
+                @endif
             </div>
             <div>
                 <label class="block text-gray-600 text-sm font-medium mb-1.5">Sous-secteur</label>
@@ -766,36 +771,81 @@
             Disponibilités & Chef de Délégation
         </h3>
 
+        {{-- ✅ CORRECTION : logique opt-out (jours d'absence), identique à
+             "Compléter mon profil B2B", pour que la colonne `disponibilites`
+             garde toujours le même sens partout dans l'application. --}}
         <div class="mb-6">
             <p class="text-sm font-semibold text-gray-700 mb-3">
-                Jours de disponibilité
+                Jours d'absence
                 <span class="text-gray-400 font-normal">(optionnel)</span>
             </p>
+
             @if($isMultiJours)
+
+            <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-orange-500 mt-0.5 flex-shrink-0"></i>
+                <div>
+                    <p class="text-sm font-semibold text-orange-700">Cochez les jours où vous NE SEREZ PAS là</p>
+                    <p class="text-xs text-orange-600 mt-1">
+                        Par défaut, vous êtes considéré présent tous les jours de l'événement.
+                        Si vous savez que vous serez absent certains jours, cochez-les ici.
+                        Le système ne vous programmera aucun rendez-vous ces jours-là.
+                    </p>
+                </div>
+            </div>
+
             <div class="grid grid-cols-3 gap-3">
                 @foreach($joursEvenement as $jour)
+                @php $estAbsent = in_array($jour, $jours_absence); @endphp
                 <label class="cursor-pointer">
-                    <input type="checkbox" wire:model="disponibilites" value="{{ $jour }}" class="hidden peer">
+                    <input type="checkbox" wire:model.live="jours_absence" value="{{ $jour }}" class="hidden peer">
                     <div class="p-4 border-2 rounded-xl text-center transition
-                        peer-checked:border-green-400 peer-checked:bg-green-50 hover:bg-gray-50 border-gray-200">
-                        <p class="font-semibold text-sm text-gray-800">
+                        {{ $estAbsent ? 'border-red-400 bg-red-50' : 'border-green-200 bg-green-50 hover:bg-gray-50' }}">
+                        <p class="font-semibold text-sm {{ $estAbsent ? 'text-red-700' : 'text-green-700' }}">
                             {{ \Carbon\Carbon::parse($jour)->locale('fr')->translatedFormat('l') }}
                         </p>
-                        <p class="text-xs text-gray-400 mt-0.5">{{ \Carbon\Carbon::parse($jour)->format('d/m/Y') }}</p>
+                        <p class="text-xs mt-0.5 {{ $estAbsent ? 'text-red-400' : 'text-green-400' }}">
+                            {{ \Carbon\Carbon::parse($jour)->format('d/m/Y') }}
+                        </p>
+                        @if($estAbsent)
+                        <span class="inline-flex items-center gap-1 mt-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">
+                            <i class="fa-solid fa-xmark"></i> Absent
+                        </span>
+                        @else
+                        <span class="inline-flex items-center gap-1 mt-2 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-600 font-medium">
+                            <i class="fa-solid fa-check"></i> Présent
+                        </span>
+                        @endif
                     </div>
                 </label>
                 @endforeach
             </div>
+
+            @php
+                $joursPresents = array_diff($joursEvenement, $jours_absence);
+            @endphp
+            <div class="mt-4 bg-gray-50 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="w-3 h-3 rounded-full bg-green-400 inline-block"></span>
+                    <span class="text-gray-600">Présent : <strong>{{ count($joursPresents) }} jour(s)</strong></span>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="w-3 h-3 rounded-full bg-red-400 inline-block"></span>
+                    <span class="text-gray-600">Absent : <strong>{{ count($jours_absence) }} jour(s)</strong></span>
+                </div>
+            </div>
+
             @else
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p class="text-sm text-blue-700">
                     <i class="fa-solid fa-circle-info mr-1"></i>
                     Événement sur 1 jour —
-                    <strong>{{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }}</strong>
+                    <strong>{{ \Carbon\Carbon::parse($evenement->date_debut)->format('d/m/Y') }}</strong>.
+                    Vous serez automatiquement présent ce jour.
                 </p>
             </div>
             @endif
-            @error('disponibilites') <p class="text-red-500 text-xs mt-2">{{ $message }}</p> @enderror
+            @error('jours_absence') <p class="text-red-500 text-xs mt-2">{{ $message }}</p> @enderror
         </div>
 
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
